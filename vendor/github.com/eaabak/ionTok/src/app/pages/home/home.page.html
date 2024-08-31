@@ -1,19 +1,28 @@
-<ion-header class="ion-no-border ion-text-center">
+<!--ion-header class="ion-no-border ion-text-center">
   <ion-toolbar>
     <ion-title>
       <ion-text>Following | </ion-text>
       <strong>For You</strong></ion-title>
   </ion-toolbar>
-</ion-header>
+</ion-header-->
 
 <ion-content fullscreen>
 
-  <ion-slides [options]="slideOpts">
+  <ion-slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList">
-      <video autoplay loop playsinline src="{{video.url}}" [muted]="true"></video>
+      <video autoplay loop playsinline muted src="{{video.url}}" ></video>
       <app-feed [video]="video"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
 
+  <audio id="background-audio" autoplay muted>
+    <source src="https://crowdcloudcomputer.com/audio.mp3" type="audio/mp3">
+    Your browser does not support the audio element.
+  </audio>
+
+  <!-- Button to unmute audio -->
+  <ion-button onclick="document.getElementById('background-audio').muted = false; document.getElementById('background-audio').play();" style="position: absolute; top: 20px; right: 20px;">Unmute Audio</ion-button>
+
   </ion-slides>
 </ion-content>
+

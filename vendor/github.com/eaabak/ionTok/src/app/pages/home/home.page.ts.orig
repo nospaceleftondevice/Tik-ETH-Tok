@@ -1,0 +1,34 @@
+import {Component, OnInit} from '@angular/core';
+import {DataService} from "../../services/data.service";
+
+@Component({
+    selector: 'app-home',
+    templateUrl: './home.page.html',
+    styleUrls: ['./home.page.scss'],
+})
+export class HomePage implements OnInit {
+    slideOpts = {
+        direction: 'vertical'
+    };
+    videoList: any = [];
+
+    constructor(private data: DataService) {
+    }
+
+    ngOnInit() {
+        console.log('Get video list');
+        this.videoList = this.data.getVideoList();
+        console.log('Page loaded');
+    }
+
+    pageChanged() { 
+        console.log('Page change'); 
+        console.dir(this.videoList);
+        const videos = document.querySelectorAll('video');
+
+        // Loop through each video element and pause it
+        videos.forEach(video => {
+          video.pause();
+        });
+    }
+}

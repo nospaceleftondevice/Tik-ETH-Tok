@@ -12,6 +12,13 @@ export class DataService {
     getVideoList() {
         const videoList = [
             {
+                userName: 'balexand',
+                likes: '344',
+                comments: '40',
+                url: 'https://stream.mux.com/DeKMk02eVhDvdqKxbchkZ38VDrQo312701pDqXpgrJzkc/high.mp4',
+                userPic: 'https://image.mux.com/DeKMk02eVhDvdqKxbchkZ38VDrQo312701pDqXpgrJzkc/thumbnail.png',
+            },
+            {
                 userName: 'userName2',
                 likes: '344',
                 comments: '40',
