@@ -25,11 +25,17 @@ export class HomePage implements OnInit {
 
   ionViewDidEnter() {
     // Call this when the page is loaded and visible
-    //this.checkActiveSlide();
+    this.checkActiveSlide();
   }
 
   async checkActiveSlide() {
-    const index = await this.slides.getActiveIndex();
+    var index = 0;
+    try {
+      index = await this.slides.getActiveIndex();
+    }
+    catch (error) {
+      console.log("------------------ error: " + error)
+    }
     console.log('Active slide index:', index);
 
     // You can now perform actions based on the active slide index
@@ -44,10 +50,24 @@ export class HomePage implements OnInit {
       slides.forEach((slide, index) => {
         const videos = slide.querySelectorAll('video');
         videos.forEach(video => {
-          video.addEventListener('canplay', () => {
+          video.addEventListener('loadedmetadata', () => {
+            console.log("loadedmetadata");
             video.play().catch(error => {
               console.error('Autoplay prevented:', error);
             });
+            // Create a new element (e.g., a div with some text or an icon)
+            const newElement = document.createElement('div');
+            newElement.innerText = 'Video is ready to play ' + video.getAttribute("src");
+            newElement.style.position = 'absolute';
+            newElement.style.bottom = '10px';
+            newElement.style.left = '10px';
+            newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            newElement.style.color = 'white';
+            newElement.style.padding = '5px';
+            newElement.style.borderRadius = '5px';
+            
+            // Append the new element to the slide
+            slide.appendChild(newElement);
           });
         })
 
@@ -57,15 +77,23 @@ export class HomePage implements OnInit {
           console.log('Paused videos on slide index:', index);
         }
         else {
-          videos.forEach(video => video.play());
-          console.log('Play videos on slide index:', index);
+          videos.forEach(video=> {
+           const floating_vid = document.getElementById('float');
+           floating_vid.setAttribute('src',video.src); 
+           console.log('Play videos on slide index:', index);
+          });
           //videos.forEach(video => video.muted = !video.muted);
+          //videos.forEach(video => video.play());
         }
     });
   }
 
   // Trigger this function on slide change
   onSlideDidChange() {
+    const floating_vid = document.getElementById('float');
+    floating_vid.style.display = "block"; 
+    floating_vid.setAttribute("muted","false");
+    console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]")
     this.checkActiveSlide();
   }
 }

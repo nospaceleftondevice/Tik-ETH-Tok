@@ -7,22 +7,32 @@
 </ion-header-->
 
 <ion-content fullscreen>
-
+  <!-- Floating Video -->
+  
   <ion-slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList">
-      <video autoplay loop playsinline muted src="{{video.url}}" ></video>
+      <video loop playsinline muted preload="metadata" src="{{video.url}}" ></video>
       <app-feed [video]="video"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
 
   <audio id="background-audio" autoplay muted>
-    <source src="https://crowdcloudcomputer.com/audio.mp3" type="audio/mp3">
+    <source src="https://crowdcloudcomputer.com/2-seconds-of-silence.mp3" type="audio/mp3">
     Your browser does not support the audio element.
   </audio>
 
   <!-- Button to unmute audio -->
-  <ion-button onclick="document.getElementById('background-audio').muted = false; document.getElementById('background-audio').play();" style="position: absolute; top: 20px; right: 20px;">Unmute Audio</ion-button>
+  <ion-button onclick="document.getElementById('background-audio').muted = false;
+    document.getElementById('background-audio').play();
+    document.getElementById('float').muted = false;
+    document.querySelector('ion-slides').slideNext();" 
+    style="position: absolute; top: 200px; right: 20px;">Unmute Audio
+  </ion-button>
 
-  </ion-slides>
+</ion-slides>
+
+<video class="floating-video" id="float" autoplay loop playsinline muted controls src=""
+    style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9999; pointer-events: auto;"></video>
+
 </ion-content>
 

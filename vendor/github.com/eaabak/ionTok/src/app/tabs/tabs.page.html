@@ -1,6 +1,6 @@
 <ion-tabs (ionTabsDidChange)="tabClicked($event)">
 
-    <ion-tab-bar slot="bottom" [ngClass]="isNotHome === true ? 'bg-white' : 'bg-transparent'">
+    <ion-tab-bar style="top: -100px;" slot="bottom" [ngClass]="isNotHome === true ? 'bg-white' : 'bg-transparent'">
         <ion-tab-button tab="home">
             <ion-icon size="large"
                       src="{{isIconChange ? '../assets/svg/home-black.svg' : '../assets/svg/home.svg'}}"></ion-icon>
