@@ -1,2 +1,4 @@
 .DS_Store
 showcase
+
+**/node_modules

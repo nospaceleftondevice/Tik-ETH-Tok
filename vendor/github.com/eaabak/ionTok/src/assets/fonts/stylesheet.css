@@ -1,0 +1,78 @@
+@font-face {
+    font-family: 'TikTok Display';
+    src: url('TikTokDisplay-Bold.eot');
+    src: local('TikTok Display Bold'), local('TikTokDisplay-Bold'),
+        url('TikTokDisplay-Bold.eot?#iefix') format('embedded-opentype'),
+        url('TikTokDisplay-Bold.woff2') format('woff2'),
+        url('TikTokDisplay-Bold.woff') format('woff'),
+        url('TikTokDisplay-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'TikTok Display';
+    src: url('TikTokDisplay-Regular.eot');
+    src: local('TikTok Display Regular'), local('TikTokDisplay-Regular'),
+        url('TikTokDisplay-Regular.eot?#iefix') format('embedded-opentype'),
+        url('TikTokDisplay-Regular.woff2') format('woff2'),
+        url('TikTokDisplay-Regular.woff') format('woff'),
+        url('TikTokDisplay-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'TikTok Text';
+    src: url('TikTokText-Bold.eot');
+    src: local('TikTok Text Bold'), local('TikTokText-Bold'),
+        url('TikTokText-Bold.eot?#iefix') format('embedded-opentype'),
+        url('TikTokText-Bold.woff2') format('woff2'),
+        url('TikTokText-Bold.woff') format('woff'),
+        url('TikTokText-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'TikTok Text';
+    src: url('TikTokText-Medium.eot');
+    src: local('TikTok Text Medium'), local('TikTokText-Medium'),
+        url('TikTokText-Medium.eot?#iefix') format('embedded-opentype'),
+        url('TikTokText-Medium.woff2') format('woff2'),
+        url('TikTokText-Medium.woff') format('woff'),
+        url('TikTokText-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'TikTok Text';
+    src: url('TikTokText-Regular.eot');
+    src: local('TikTok Text Regular'), local('TikTokText-Regular'),
+        url('TikTokText-Regular.eot?#iefix') format('embedded-opentype'),
+        url('TikTokText-Regular.woff2') format('woff2'),
+        url('TikTokText-Regular.woff') format('woff'),
+        url('TikTokText-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'TikTok Display';
+    src: url('TikTokDisplay-Medium.eot');
+    src: local('TikTok Display Medium'), local('TikTokDisplay-Medium'),
+        url('TikTokDisplay-Medium.eot?#iefix') format('embedded-opentype'),
+        url('TikTokDisplay-Medium.woff2') format('woff2'),
+        url('TikTokDisplay-Medium.woff') format('woff'),
+        url('TikTokDisplay-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
