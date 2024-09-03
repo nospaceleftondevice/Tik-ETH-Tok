@@ -10,23 +10,55 @@
   <!-- Floating Video -->
   
   <ion-slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
-    <ion-slide *ngFor="let video of videoList">
-      <video loop playsinline muted preload="metadata" src="{{video.url}}" ></video>
-      <app-feed [video]="video"></app-feed>
+    <ion-slide *ngFor="let video of videoList; let i = index">
+      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" ></video>
+      <app-feed *ngIf="i !== 0" [video]="video"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
 
   <audio id="background-audio" autoplay muted>
-    <source src="https://crowdcloudcomputer.com/2-seconds-of-silence.mp3" type="audio/mp3">
+    <source src="https://your.cmptr.cloud:2017/2-seconds-of-silence.mp3" type="audio/mp3">
     Your browser does not support the audio element.
   </audio>
+
 
   <!-- Button to unmute audio -->
   <ion-button onclick="document.getElementById('background-audio').muted = false;
     document.getElementById('background-audio').play();
     document.getElementById('float').muted = false;
-    document.querySelector('ion-slides').slideNext();" 
-    style="position: absolute; top: 200px; right: 20px;">Unmute Audio
+    //document.querySelector('ion-slides').slideNext();
+    // Create and append iframe
+    var iframe = document.createElement('iframe');
+    iframe.id = 'web3auth';
+    //iframe.src = 'http://192.168.1.183:5173';
+    var protocol = window.location.protocol; // 'http:' or 'https:'
+    var host = window.location.hostname;
+    iframe.src = protocol + '//' + host + ':5173';
+    iframe.style.position = 'absolute';
+    iframe.style.top = '-160px'; // Adjust the position as needed
+    //iframe.style.left = '50%';
+    iframe.style.zIndex = '9999';
+    iframe.style.width = '100%'; // Adjust the size as needed
+    iframe.style.height = '170%'; // Adjust the size as needed
+    iframe.style.transform = 'scale(.80)'; // Scale content to 120%
+    //iframe.style.transformOrigin = '0 0'; // Set the origin for scaling
+
+    // Create and add the blur overlay
+    var overlay = document.createElement('div');
+    overlay.id = 'blur-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'; /* Semi-transparent overlay */
+    overlay.style.backdropFilter = 'blur(10px) brightness(1.2)'; /* Apply the blur effect */
+    overlay.style.zIndex = '9998'; /* Ensure it covers everything but the iframe */
+    document.body.appendChild(overlay);
+
+    document.body.appendChild(iframe);
+    " 
+    style="position: absolute; bottom: 6px; left: 50%;">web3auth
   </ion-button>
 
 </ion-slides>
