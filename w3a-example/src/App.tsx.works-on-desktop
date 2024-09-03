@@ -1,0 +1,125 @@
+import { useEffect, useState } from "react";
+import { useWeb3Auth } from "@web3auth/modal-react-hooks";
+import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base";
+
+import "./App.css";
+// import RPC from "./web3RPC"; // for using web3.js
+import RPC from "./viemRPC"; // for using viem
+// import RPC from "./ethersRPC"; // for using ethers.js
+import { useWalletServicesPlugin } from "@web3auth/wallet-services-plugin-react-hooks";
+
+const newChain = {
+  chainNamespace: CHAIN_NAMESPACES.EIP155,
+  chainId: "0x89", // hex of 137, polygon mainnet
+  rpcTarget: "https://rpc.ankr.com/polygon",
+  // Avoid using public rpcTarget in production.
+  // Use services like Infura, Quicknode etc
+  displayName: "Polygon Mainnet",
+  blockExplorerUrl: "https://polygonscan.com",
+  ticker: "MATIC",
+  tickerName: "MATIC",
+  logo: "https://images.toruswallet.io/polygon.svg",
+};
+
+function App() {
+  const {
+    initModal,
+    provider,
+    web3Auth,
+    isConnected,
+    connect,
+    authenticateUser,
+    logout,
+    addChain,
+    switchChain,
+    userInfo,
+    isMFAEnabled,
+    enableMFA,
+    status,
+    addAndSwitchChain,
+  } = useWeb3Auth();
+
+  const { showCheckout, showWalletConnectScanner, showWalletUI, isPluginConnected } = useWalletServicesPlugin();
+  const [unloggedInView, setUnloggedInView] = useState<JSX.Element | null>(null);
+  const [MFAHeader, setMFAHeader] = useState<JSX.Element | null>(
+    <div>
+      <h2>MFA is disabled</h2>
+    </div>
+  );
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        if (web3Auth) {
+          await initModal();
+          console.log("Web3Auth initialized");
+          
+          if (!isConnected) {
+            console.log("User not connected, attempting to connect...");
+            await connect();
+          } else {
+            console.log("User is already connected");
+          }
+        }
+      } catch (error) {
+        console.error("Error during initialization:", error);
+      }
+    };
+
+    init();
+  }, [initModal, web3Auth, connect, isConnected]);
+
+  useEffect(() => {
+    setUnloggedInView(
+      <div>
+        <h2>Web3Auth hook status: {status}</h2>
+        <h2>Web3Auth status: {web3Auth?.status}</h2>
+        <button onClick={connect} className="card">
+          Login
+        </button>
+      </div>
+    );
+  }, [connect, status, web3Auth]);
+
+  useEffect(() => {
+    if (isMFAEnabled) {
+      setMFAHeader(
+        <div>
+          <h2>MFA is enabled</h2>
+        </div>
+      );
+    }
+  }, [isMFAEnabled]);
+
+  return (
+    <div className="container">
+      <h1 className="title">
+        <a target="_blank" href="https://web3auth.io/docs/sdk/pnp/web/modal" rel="noreferrer">
+          Web3Auth{" "}
+        </a>
+        & React Ethereum Example
+      </h1>
+      <div className="container" style={{ textAlign: "center" }}>
+        {isConnected && MFAHeader}
+      </div>
+
+      <div className="grid">{isConnected ? loggedInView : unloggedInView}</div>
+
+      <footer className="footer">
+        <a
+          href="https://github.com/Web3Auth/web3auth-pnp-examples/tree/main/web-modal-sdk/blockchain-connection-examples/evm-modal-example"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Source code
+        </a>
+        <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FWeb3Auth%2Fweb3auth-pnp-examples%2Ftree%2Fmain%2Fweb-modal-sdk%2Fblockchain-connection-examples%2Fevm-modal-example&project-name=w3a-evm-modal&repository-name=w3a-evm-modal">
+          <img src="https://vercel.com/button" alt="Deploy with Vercel" />
+        </a>
+      </footer>
+    </div>
+  );
+}
+
+export default App;
+
