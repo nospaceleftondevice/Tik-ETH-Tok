@@ -23,7 +23,7 @@
     Your browser does not support the audio element.
   </audio>
 
-
+  <!--  overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe-->
   <!-- Button to unmute audio -->
   <ion-button onclick="document.getElementById('background-audio').muted = false;
     document.getElementById('background-audio').play();
@@ -35,13 +35,21 @@
     //iframe.src = 'http://192.168.1.183:5173';
     var protocol = window.location.protocol; // 'http:' or 'https:'
     var host = window.location.hostname;
-    iframe.src = protocol + '//' + host + ':5173';
+    iframe.src = protocol + '//' + host + ':5173' + window.sessionStorage.getItem('next');
+    iframe.style.overflow = 'hidden';
+    iframe.style.opacity = '0.99';
+    iframe.style.backgroundColor = 'transparent';
     iframe.style.position = 'absolute';
-    iframe.style.top = '-160px'; // Adjust the position as needed
+    iframe.style.borderRadius = '10px';
+    //iframe.style.top = '-160px'; // Adjust the position as needed
+    iframe.style.top = '10px'; // Adjust the position as needed
     //iframe.style.left = '50%';
+    iframe.frameBorder = 0;
     iframe.style.zIndex = '9999';
+    //iframe.style.width = '100%'; // Adjust the size as needed
+    //iframe.style.height = '170%'; // Adjust the size as needed
     iframe.style.width = '100%'; // Adjust the size as needed
-    iframe.style.height = '170%'; // Adjust the size as needed
+    iframe.style.height = '100%'; // Adjust the size as needed
     iframe.style.transform = 'scale(.80)'; // Scale content to 120%
     //iframe.style.transformOrigin = '0 0'; // Set the origin for scaling
 

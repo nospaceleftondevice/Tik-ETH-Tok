@@ -94,7 +94,7 @@ function App() {
         console.log("User's account: " + accounts);
         uiConsole(accounts); // Optionally, display accounts in the UI
 
-        if (window.parent) {
+        if (window.parent && !window.location.search.startsWith("?logout")) {
           window.parent.postMessage({ account: accounts, view: "loggedInView" }, "*");
         }
       } catch (error) {
@@ -245,6 +245,19 @@ function App() {
   };
 
   const loggedInView = (
+        <div>
+          <button
+            onClick={() => {
+              logout();
+            }}
+            className="card"
+          >
+            Log Out
+          </button>
+        </div>
+  );
+
+  const loggedInViewOrig = (
     <>
       <div className="flex-container">
         <div>
@@ -451,10 +464,12 @@ function App() {
   );
 
   useEffect(() => {
+    window.parent.postMessage({ view: 'login', status: `${web3Auth?.status}` }, '*');
+        /* <h2>Web3Auth hook status: {status}</h2>
+        <h2>Web3Auth status: {web3Auth?.status}</h2> */
+
     setUnloggedInView(
       <div>
-        <h2>Web3Auth hook status: {status}</h2>
-        <h2>Web3Auth status: {web3Auth?.status}</h2>
         <button onClick={connect} className="card">
           Login
         </button>
@@ -463,22 +478,42 @@ function App() {
   }, [connect, status, web3Auth]);
 
   useEffect(() => {
-    if (isMFAEnabled) {
+    const currentLocation = window.location.search;
+    if (window.location.search.length > 0) {
       setMFAHeader(
         <div>
-          <h2>MFA is enabled</h2>
+          <h2>Your are logged in.</h2>
+        </div>
+      );
+    } 
+    else {
+      setMFAHeader(
+        <div>
+          <h2>Please log in.</h2>
         </div>
       );
     }
+    /*
+    if (isMFAEnabled && window.location.search.length > 0) {
+      setMFAHeader(
+        <div>
+          <h2>MFA is enabled location: {currentLocation}</h2>
+        </div>
+      );
+    }
+    else {
+      setMFAHeader(
+        <div>
+          <h2>MFA is disabled location: {currentLocation}</h2>
+        </div>
+      );
+    }
+    */
   }, [isMFAEnabled]);
 
   return (
     <div className="container">
       <h1 className="title">
-        <br></br>
-        <a target="_blank" href="https://web3auth.io/docs/sdk/pnp/web/modal" rel="noreferrer">
-          Web3Auth{" "}
-        </a>
       </h1>
       <div className="container" style={{ textAlign: "center" }}>
         {isConnected && MFAHeader}

@@ -21,6 +21,7 @@ export class HomePage implements OnInit {
   constructor(private data: DataService) { }
 
   ngOnInit() {
+    window.sessionStorage.setItem("next","");
     console.log('Get video list');
     //this.videoList = this.data.getVideoList();
     window.addEventListener('message', this.receiveMessage.bind(this), false);
@@ -54,9 +55,14 @@ export class HomePage implements OnInit {
     const data = event.data;
     console.log('Message received from iframe:', data);
 
+    if (data.view === 'login') {
+      console.log(`Login box with status ${data.status}`);
+    }
+
     // Handle the received data (e.g., update UI, log data, etc.)
     if (data.view === 'loggedInView' || data.view === "abort" ) {
       console.log('Iframe is in loggedInView, account:', data.account);
+      window.sessionStorage.setItem("next","?logout");
       var element = document.getElementById('web3auth');
       if (element) {
         element.remove(); // This will remove the element from the DOM
