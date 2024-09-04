@@ -110,7 +110,7 @@ export class HomePage implements OnInit {
           newElement.innerHTML = `<h1 id="title-${index}" style="font-color: #000;font-family: \'TikTok Display\'; font-weight: bold; font-style: normal;">TikΞTok</h1><br><p id="description-${index}">Browse and discover ETHGlobal hackathon projects.</p>` 
         }
         else {
-         newElement.innerHTML = '<iframe src="assets/fonts/intro.html" frameBorder="0" style="opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>';
+         newElement.innerHTML = '<iframe src="assets/fonts/intro.html" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>';
         }
         const userAgent = navigator.userAgent;
         const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;  // Check if user agent is iOS
