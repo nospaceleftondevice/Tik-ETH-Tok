@@ -524,7 +524,6 @@ function App() {
       <footer className="footer">
         <a
           href=""
-          target="_blank"
           rel="noopener noreferrer"
           onClick={() => parent.postMessage({ view: 'abort', account: '000000' }, '*')}
 >
