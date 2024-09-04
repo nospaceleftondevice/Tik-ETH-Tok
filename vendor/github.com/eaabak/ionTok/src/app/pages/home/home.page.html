@@ -11,7 +11,9 @@
   
   <ion-slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index">
-      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" ></video>
+      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
+      title="{{video.userName}}" class="{{video.userPic}}"></video>
+      <!--button (click)="loadMoreVideos()" style="position: absolute; top: 20px; left: 10px">Load More</button-->
       <app-feed *ngIf="i !== 0" [video]="video"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
