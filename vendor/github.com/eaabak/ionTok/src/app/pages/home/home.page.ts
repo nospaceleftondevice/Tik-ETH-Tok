@@ -112,15 +112,19 @@ export class HomePage implements OnInit {
         else {
          newElement.innerHTML = '<iframe src="assets/fonts/intro.html" frameBorder="0" style="opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>';
         }
+        const userAgent = navigator.userAgent;
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;  // Check if user agent is iOS
+
         newElement.style.position = 'absolute';
         newElement.style.bottom = '10px';
         newElement.style.left = '10px';
         newElement.style.right = '10px';
         newElement.style.height = '50%';
-        index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)' : /* transparent box */
+        //index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)' : /* transparent box */
+        !isIOS && index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)' : /* transparent box */
          newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)'
            
-        newElement.style.color = 'black';
+        !isIOS ? newElement.style.color = 'white' : newElement.style.color = 'black';
         newElement.style.padding = '5px';
         newElement.style.borderRadius = '5px';
            
