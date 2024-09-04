@@ -62,7 +62,8 @@ export class HomePage implements OnInit {
     // Handle the received data (e.g., update UI, log data, etc.)
     if (data.view === 'loggedInView' || data.view === "abort" ) {
       console.log('Iframe is in loggedInView, account:', data.account);
-      window.sessionStorage.setItem("next","?logout");
+      if (data.view !== "abort")
+        window.sessionStorage.setItem("next","?logout");
       var element = document.getElementById('web3auth');
       if (element) {
         element.remove(); // This will remove the element from the DOM
