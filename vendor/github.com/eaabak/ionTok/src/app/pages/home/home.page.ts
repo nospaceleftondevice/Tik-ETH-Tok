@@ -56,7 +56,13 @@ export class HomePage implements OnInit {
     console.log('Message received from iframe:', data);
 
     if (data.view === 'login') {
-      console.log(`Login box with status ${data.status}`);
+      console.log(`Login box with status [${data.status}]`);
+      if (data.status === "ready") {
+        console.log("resise login iframe");
+        document.getElementById("web3auth").style.transform = 'scale(.70)';
+        document.getElementById("web3auth").style.top = '-150px';
+        document.getElementById("web3auth").style.height = '170%';
+      }
     }
 
     // Handle the received data (e.g., update UI, log data, etc.)
