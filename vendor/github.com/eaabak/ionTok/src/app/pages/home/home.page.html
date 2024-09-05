@@ -63,7 +63,7 @@
     overlay.style.height = '100%';
     overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'; /* Semi-transparent overlay */
     overlay.style.backdropFilter = 'blur(10px) brightness(1.2)'; /* Apply the blur effect */
-    overlay.style.zIndex = '9998'; /* Ensure it covers everything but the iframe */
+    overlay.style.zIndex = '9995'; /* Ensure it covers everything but the iframe */
     document.body.appendChild(overlay);
 
     document.body.appendChild(iframe);
@@ -74,7 +74,7 @@
 </ion-slides>
 
 <video class="floating-video" id="float" autoplay loop playsinline muted controls src=""
-    style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9999; pointer-events: auto;"></video>
+    style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9998; pointer-events: auto;"></video>
 
 </ion-content>
 
