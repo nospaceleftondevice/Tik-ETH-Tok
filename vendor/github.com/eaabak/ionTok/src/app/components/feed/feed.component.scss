@@ -1,7 +1,7 @@
 .actions {
   position: absolute;
   right: -25px;
-  top: 55%;
+  top: 53%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -25,10 +25,10 @@ p {
   font-weight: normal;
 }
 
-count {
+p.count {
   display: block;
   color: red;
-  margin-top: 15px;
+  margin-top: 18px;
   font-size: 13px;
   line-height: 16px;
   font-weight: normal;
