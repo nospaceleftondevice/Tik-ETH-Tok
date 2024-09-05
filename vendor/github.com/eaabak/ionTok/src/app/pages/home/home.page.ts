@@ -62,6 +62,7 @@ export class HomePage implements OnInit {
     // Handle the received data (e.g., update UI, log data, etc.)
     if (data.view === 'loggedInView' || data.view === "abort" ) {
       console.log('Iframe is in loggedInView, account:', data.account);
+      window.sessionStorage.setItem("account",data.account);
       if (data.view !== "abort")
         window.sessionStorage.setItem("next","?logout");
       var element = document.getElementById('web3auth');
@@ -117,7 +118,8 @@ export class HomePage implements OnInit {
           newElement.innerHTML = `<h1 id="title-${index}" style="font-color: #000;font-family: \'TikTok Display\'; font-weight: bold; font-style: normal;">TikΞTok</h1><br><p id="description-${index}">Browse and discover ETHGlobal hackathon projects.</p>` 
         }
         else {
-         newElement.innerHTML = '<iframe src="assets/fonts/intro.html" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>';
+         newElement.id = "intro-box";
+         newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
         }
         const userAgent = navigator.userAgent;
         const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;  // Check if user agent is iOS
@@ -137,6 +139,8 @@ export class HomePage implements OnInit {
            
         if (document.getElementById(`project-${index}`) !== null)
           document.getElementById(`project-${index}`).remove();
+        if (document.getElementById("intro-box") !== null && index == 0)
+          document.getElementById("intro-box").remove();
         // Append the new element to the slide
         slide.appendChild(newElement);
 
