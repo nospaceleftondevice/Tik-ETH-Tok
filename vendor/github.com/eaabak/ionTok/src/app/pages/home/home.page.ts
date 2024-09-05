@@ -18,12 +18,69 @@ export class HomePage implements OnInit {
   currentPage: number = 1;
   limit: number = 10;
 
+  chainName: string;
+
+  // Map of Chain IDs to Chain Names
+  chainMap = {
+    '1': 'Ethereum Mainnet',
+    '3': 'Ropsten Testnet',
+    '4': 'Rinkeby Testnet',
+    '5': 'Goerli Testnet',
+    '42': 'Kovan Testnet',
+    '97': 'Binance Smart Chain Testnet',
+    '137': 'Polygon Mainnet',
+    '80001': 'Polygon Mumbai Testnet',
+    '250': 'Fantom Opera',
+    '4002': 'Fantom Testnet',
+    '43114': 'Avalanche Mainnet',
+    '43113': 'Avalanche Fuji Testnet',
+    '42161': 'Arbitrum One',
+    '421611': 'Arbitrum Rinkeby Testnet',
+    '10': 'Optimism Mainnet',
+    '69': 'Optimism Kovan Testnet',
+    '100': 'xDai Chain (Gnosis)',
+    '128': 'Huobi ECO Chain Mainnet',
+    '256': 'Huobi ECO Chain Testnet',
+    '1666600000': 'Harmony Mainnet',
+    '1666700000': 'Harmony Testnet',
+    '66': 'OKExChain Mainnet',
+    '65': 'OKExChain Testnet',
+    '42220': 'Celo Mainnet',
+    '44787': 'Celo Alfajores Testnet',
+    '11297108109': 'Palm Mainnet',
+    '11297108099': 'Palm Testnet',
+    '25': 'Cronos Mainnet',
+    '338': 'Cronos Testnet',
+    '321': 'KCC Mainnet',
+    '322': 'KCC Testnet',
+    '1284': 'Moonbeam Mainnet',
+    '1285': 'Moonriver',
+    '1287': 'Moonbase Alpha Testnet',
+    '42262': 'Oasis Emerald Mainnet',
+    '42261': 'Oasis Emerald Testnet',
+    '70': 'Hoo Smart Chain Mainnet',
+    '1663': 'Latam Mainnet',
+    '4690': 'IoTeX Testnet',
+    '50': 'XinFin XDC Network',
+    '56': 'Binance Smart Chain Mainnet',
+    '40': 'Telos EVM Mainnet',
+    '41': 'Telos EVM Testnet',
+    '122': 'Fuse Mainnet',
+    '1088': 'Metis Andromeda Mainnet',
+    '4689': 'IoTeX Mainnet',
+    '592': 'Astar Mainnet',
+    '8217': 'Klaytn Mainnet',
+    '11155111': 'Ethereum Sepolia',
+  };
+
   constructor(private data: DataService) { }
 
   ngOnInit() {
     window.sessionStorage.setItem("next","");
     console.log('Get video list');
     //this.videoList = this.data.getVideoList();
+    const chainId = window.sessionStorage.getItem('chain');
+    this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
     console.log('Page loaded');
@@ -69,6 +126,9 @@ export class HomePage implements OnInit {
     if (data.view === 'loggedInView' || data.view === "abort" ) {
       console.log('Iframe is in loggedInView, account:', data.account);
       window.sessionStorage.setItem("account",data.account);
+      window.sessionStorage.setItem("chain",String(data.chain));
+      //const chainId = window.sessionStorage.getItem("chain");
+      //alert(`${chainId} ${this.chainMap[chainId]}`);
       if (data.view !== "abort")
         window.sessionStorage.setItem("next","?logout");
       var element = document.getElementById('web3auth');
@@ -90,6 +150,11 @@ export class HomePage implements OnInit {
   }
 
   ionViewDidEnter() {
+    const chainId = window.sessionStorage.getItem('chain');
+    //alert(this.chainMap[chainId]);
+    console.log(`Chain Id: ${chainId}`);
+    console.dir(chainId);
+    this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     // Call this when the page is loaded and visible
     this.checkActiveSlide();
   }
@@ -193,7 +258,12 @@ export class HomePage implements OnInit {
   }
 
   // Trigger this function on slide change
-  async onSlideDidChange() {
+  async onSlideDidChange() { 
+    const chainId = window.sessionStorage.getItem('chain');
+    //alert(this.chainMap[chainId]);
+    console.log(`Chain Id: ${chainId}`);
+    console.dir(chainId);
+    this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     const floating_vid = document.getElementById('float');
     floating_vid.style.display = "block"; 
     floating_vid.setAttribute("muted","false");

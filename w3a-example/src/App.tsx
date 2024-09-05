@@ -91,11 +91,12 @@ function App() {
       try {
         const rpc = new RPC(provider as IProvider);
         const accounts = await rpc.getAccounts(); // Ensure that getAccounts is awaited
+        const chainId = await rpc.getChainId();
         console.log("User's account: " + accounts);
         uiConsole(accounts); // Optionally, display accounts in the UI
 
         if (window.parent && !window.location.search.startsWith("?logout")) {
-          window.parent.postMessage({ account: accounts, view: "loggedInView" }, "*");
+          window.parent.postMessage({ account: accounts, chain: chainId, view: "loggedInView" }, "*");
         }
       } catch (error) {
         console.error("Failed to fetch accounts:", error);

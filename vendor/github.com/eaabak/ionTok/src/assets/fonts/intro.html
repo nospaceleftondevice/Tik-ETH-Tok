@@ -168,6 +168,7 @@
         <h3 style="font-family: 'TikTok Display'; font-weight: bold; font-style: normal;">Ξtherum</h3> 
         <div class="font-container" style="font-family: 'TikTok Display'; font-weight: bold; font-style: normal;">
             <p style="font-size: 10px;" id="account">The quick brown fox jumps over the lazy dog.</p>
+            <p style="font-size: 10px;" id="chain">The quick brown fox jumps over the lazy dog.</p>
         </div>
         <pre title="Usage">TikΞTok: v0.0.1
 author: 'nospaceleftondevice@gmail.com';
@@ -182,11 +183,13 @@ components:;
 
 	  // Retrieve the value from sessionStorage
 	  var storedText = window.location.search;
+	  var chain = window.sessionStorage.getItem("chain");
 
 	  // Update the content of the <p> tag with the stored value
 	  if (storedText) {
 	    document.getElementById("account").textContent = storedText;
 	  }
+	  document.getElementById("chain").textContent = `Chain: [${chain}]`;
   });
 </script>
 </body>
