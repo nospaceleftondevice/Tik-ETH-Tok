@@ -115,10 +115,23 @@ export class HomePage implements OnInit {
     if (data.view === 'login') {
       console.log(`Login box with status [${data.status}]`);
       if (data.status === "ready") {
-        console.log("resise login iframe");
+        console.log("resize login iframe");
         document.getElementById("web3auth").style.transform = 'scale(.70)';
         document.getElementById("web3auth").style.top = '-150px';
         document.getElementById("web3auth").style.height = '170%';
+      }
+    }
+
+    if (data.view == 'logout') {
+      window.sessionStorage.setItem("account",null);
+      window.sessionStorage.setItem("chain",null);
+      var element = document.getElementById('web3auth');
+      if (element) {
+        element.remove(); // This will remove the element from the DOM
+      }
+      var element = document.getElementById('blur-overlay');
+      if (element) {
+        element.remove(); // This will remove the element from the DOM
       }
     }
 

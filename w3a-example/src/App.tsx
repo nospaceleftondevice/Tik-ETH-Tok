@@ -250,10 +250,39 @@ function App() {
           <button
             onClick={() => {
               logout();
+              //window.parent.postMessage({ view: 'logout', status: `${web3Auth?.status}` }, '*');
             }}
             className="card"
           >
             Log Out
+          </button>
+        </div>
+  );
+
+  const loggedOutView = (
+        <div>
+          <button
+            onClick={() => {
+            }}
+            className="card-no-outline"
+          >
+            You are logged in
+          </button>
+        </div>
+  );
+
+  const preLoginInfoView = (
+        <div>
+          <br></br>
+          <br></br>
+          <br></br>
+          <br></br>
+          <button
+            onClick={() => {
+            }}
+            className="card-no-outline"
+          >
+            &#9888; Currently the only tested authentication method is MetaMask.
           </button>
         </div>
   );
@@ -482,9 +511,14 @@ function App() {
     const currentLocation = window.location.search;
     if (window.location.search.length > 0) {
       setMFAHeader(
-        <div>
-          <h2>Your are logged in.</h2>
-        </div>
+      <header className="header">
+        <a
+          href=""
+          rel="noopener noreferrer"
+        >
+          Connected
+        </a>
+      </header>
       );
     } 
     else {
@@ -514,12 +548,8 @@ function App() {
 
   return (
     <div className="container">
-      <h1 className="title">
-      </h1>
-      <div className="container" style={{ textAlign: "center" }}>
-        {isConnected && MFAHeader}
-      </div>
 
+      <div className="grid">{isConnected ? loggedOutView : preLoginInfoView }</div>
       <div className="grid">{isConnected ? loggedInView : unloggedInView}</div>
 
       <footer className="footer">
@@ -527,8 +557,7 @@ function App() {
           href=""
           rel="noopener noreferrer"
           onClick={() => parent.postMessage({ view: 'abort', account: '000000' }, '*')}
->
-          Skip
+       > &larr; Back
         </a>
       </footer>
     </div>
