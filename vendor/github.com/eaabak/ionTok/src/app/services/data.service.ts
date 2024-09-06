@@ -32,6 +32,7 @@ export class DataService {
                         url: video.url || '',
                         userPic: video.userPic || '',
                         showcase_url: video.showcase_url || '',
+                        id: video.id || '',
                     }));
                 })
             );
@@ -39,6 +40,7 @@ export class DataService {
             // Use the hardcoded video list if protocol is not https
             const videoList = [
                 {
+                    id: '1',
                     userName: 'balexand',
                     likes: '1344:1040',
                     comments: '2040089:1400493',
@@ -47,6 +49,7 @@ export class DataService {
                     showcase_url: 'https://ethglobal.b-cdn.net/projects/s5fha/banner/default.jpg',
                 },
                 {
+                    id: '2',
                     userName: 'userName2',
                     likes: '0:0',
                     comments: '10:10',

@@ -26,8 +26,8 @@ def load_video_data():
     cur.execute('''
         CREATE TABLE IF NOT EXISTS videos (
             id SERIAL PRIMARY KEY,
-            user_name TEXT NOT NULL,
-            user_pic TEXT,
+            userName TEXT NOT NULL,
+            userPic TEXT,
             url TEXT NOT NULL,
             showcase_url TEXT,
             likes TEXT DEFAULT '0:0',
@@ -39,20 +39,20 @@ def load_video_data():
     # Insert the video data into the database
     for video in video_data:
         try:
-            user_name = video.get('userName', None)  # Retrieve the userName
-            user_pic = video.get('userPic', '')      # Retrieve the userPic (description-like field)
+            userName = video.get('userName', None)  # Retrieve the userName
+            userPic = video.get('userPic', '')      # Retrieve the userPic (description-like field)
             url = video.get('url', None)             # Retrieve the video URL
             showcase_url = video.get('showcase_url', '')  # Retrieve the showcase URL
 
             # If userName or url is missing, raise an error
-            if user_name is None or url is None:
+            if userName is None or url is None:
                 raise KeyError("Missing required 'userName' or 'url' field")
 
             # Insert the data into the database
             cur.execute('''
-                INSERT INTO videos (user_name, user_pic, url, showcase_url, likes, comments)
+                INSERT INTO videos (userName, userPic, url, showcase_url, likes, comments)
                 VALUES (%s, %s, %s, %s, %s, %s)
-            ''', (user_name, user_pic, url, showcase_url, video['likes'], video['comments']))
+            ''', (userName, userPic, url, showcase_url, video['likes'], video['comments']))
 
         except KeyError as e:
             print(f"Error inserting video data: {e}. Video data: {video}")
@@ -79,7 +79,7 @@ def get_videos():
         search_query = f"%{search}%"
         cur.execute('''
             SELECT * FROM videos 
-            WHERE user_name ILIKE %s OR user_pic ILIKE %s
+            WHERE userName ILIKE %s OR userPic ILIKE %s
             LIMIT %s OFFSET %s
         ''', (search_query, search_query, limit, offset))
     else:
@@ -101,8 +101,8 @@ def get_videos():
         "videos": [
             {
                 "id": video[0],
-                "user_name": video[1],
-                "user_pic": video[2],
+                "userName": video[1],
+                "userPic": video[2],
                 "url": video[3],
                 "showcase_url": video[4],
                 "likes": video[5],
@@ -192,5 +192,5 @@ def update_comments(video_id):
 
 if __name__ == '__main__':
     load_video_data()  # Load data into PostgreSQL when the app starts
-    app.run(port=7000, debug=True)
+    app.run(host="0.0.0.0", port=7000, debug=True)
 
