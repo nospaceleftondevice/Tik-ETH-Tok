@@ -40,6 +40,10 @@ export class FeedComponent implements OnInit {
     }
   }
 
+  buttonClicked(button) {
+    console.log("Button clicked: " + button)
+  }
+
   calculateRightOffset(value: number): string {
     const length = value.toString().length;
     
