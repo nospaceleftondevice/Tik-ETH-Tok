@@ -5,7 +5,7 @@
 </h1>
 
 
-> Note: TikTok clone was made with the latest version of ionic framework and Angular.
+> Note: TikEthTok was tested using the MetaMask mobile wallet on Android and iOS devices.  Other wallets may malfunction, or not work at all.
 
 ## Preview
 
@@ -23,7 +23,7 @@
 
 <p>To run the application, you must first follow the steps below</p>
 
-* Download **nodeJS**.
+* Download **python3**, **nodeJS**, **npm** and **docker** including **docker-compose **cli.
 
 * Download ionic cli.
  ~~~
@@ -31,15 +31,55 @@ npm install -g @ionic/cli
  ~~~
 
 * Download the project from this repository.
-
 * Go to the download location of the project.
 
-* Open the project in terminal and run command.
+ ~~~
+cd vendor/github.com/eaabak/ionTok
+ ~~~
+
+* Install node packages
+
 ~~~ 
 npm install 
 ~~~
 
-* Run this command to run locally
+* Run this command to run the front end locally
 ~~~
-./start.sh
+ionic serve --external
+~~~
+
+<p>Start the web3auth server</p>
+
+* Open a new **terminal**, and go to the download location of the project.
+
+ ~~~
+cd web3auth
+ ~~~
+
+* Run these commands to run the web3auth server.
+
+~~~
+npm install
+npm run start
+# or
+cd w3a-example
+yarn
+yarn start
+~~~
+
+<p>OPTIONAL: Start the database and backend server</p>
+
+* NOTE:  running the database and server requires SSL certificates. You will need docker, docker-compose, python3 and python venv installed. Open a new **terminal**, and go to the download location of the project.
+
+ ~~~
+./setup.sh
+ ~~~
+
+* Run these commands to run the database and backend server.
+
+~~~
+source ./showcase/bin/activate
+cd server
+docker-compose up -d
+python3 server.py
 ~~~
