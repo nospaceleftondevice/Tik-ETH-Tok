@@ -1,7 +1,7 @@
 .actions {
   position: absolute;
-  right: 10px;
-  top: 40%;
+  right: -25px;
+  top: 53%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -11,12 +11,24 @@ ion-icon {
   color: white;
   height: 40px;
   width: 50px;
+  right: -5px;
+  position: fixed;
+  z-index: 9999 !important;
 }
 
 p {
   display: block;
   color: white;
-  margin-top: 0px;
+  margin-top: -9px;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: normal;
+}
+
+p.count {
+  display: block;
+  color: red;
+  margin-top: 18px;
   font-size: 13px;
   line-height: 16px;
   font-weight: normal;

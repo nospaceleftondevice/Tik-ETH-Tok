@@ -1,22 +1,54 @@
-<div class="actions" style="z-index: 9999">
-  <div style="visibility: hidden;">
-    <ion-icon size="large" src="../assets/svg/comment.svg">></ion-icon>
+<div class="actions" style="z-index: 9999;right: 30px;bottom: 30px;">
+  <div style="display: none;">
+    <ion-icon size="large" src="../assets/svg/comment.svg"></ion-icon>
     <p>{{video.comments}}</p>
   </div>
-  <div>
-    <ion-icon size="large" name="heart"></ion-icon>
-    <p>{{video.likes}}</p>
+
+  <div onclick="buttonClicked('test')" style="margin-bottom: 48px;">
+    <ion-icon size="large" name="search"></ion-icon>
   </div>
-  <div>
+
+ <div (click)="buttonClicked('like')" 
+     [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
+  <ion-icon size="large" name="heart"></ion-icon>
+  
+  <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
+  <p [ngStyle]="{'visibility': getFirstLike(video.likes) === 0 ? 'hidden' : 'visible'}">
+    {{formatNumber(getFirstLike(video.likes))}}
+  </p>
+  
+  <!--p class="count" style="position: absolute; right: -22px;"
+     [ngStyle]="{'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible'}">
+    {{formatNumber(getSecondLike(video.likes))}}
+  </p-->
+  <p class="count" 
+  [ngStyle]="{
+    'position': 'absolute',
+    'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible',
+    'right': calculateRightOffset(getSecondLike(video.likes))
+  }">
+ {{formatNumber(getSecondLike(video.likes))}}
+</p>
+</div>
+ 
+  <div (click)="buttonClicked('bookmarks')"
+     [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
     <ion-icon size="large" name="bookmark"></ion-icon>
-    <p>{{video.likes}}</p>
+    <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
+    <p [ngStyle]="{'visibility': getFirstLike(video.comments) === 0 ? 'hidden' : 'visible'}">
+      {{formatNumber(getFirstLike(video.comments))}}
+    </p>
+    <p class="count" 
+  [ngStyle]="{
+    'position': 'absolute',
+    'visibility': getSecondLike(video.comments) === 0 ? 'hidden' : 'visible',
+    'right': calculateRightOffset(getSecondLike(video.comments))
+  }">
+      {{formatNumber(getSecondLike(video.comments))}}
+    </p>
   </div>
-  <div>
+   
+  <div (click)="buttonClicked('info')" style="margin-bottom: 36px;">
     <ion-icon size="large" name="information-circle-outline"></ion-icon>
-    <p>Information</p>
   </div>
 </div>
-
-
-
-

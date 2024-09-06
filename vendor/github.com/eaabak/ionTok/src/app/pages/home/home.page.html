@@ -7,11 +7,23 @@
 </ion-header-->
 
 <ion-content fullscreen>
-  <!-- Floating Video -->
-  
+  <div style="position: fixed; height: 30px;top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
+  (click)="handleWeb3Auth()">
+<ng-container *ngIf="chainName !== 'Unknown Chain'; else notConnected">
+ Connected to {{ chainName }} 
+ <ion-icon style="position: absolute; top: 12px; color: #3880ff; " name="log-out-outline"></ion-icon>
+</ng-container>
+<ng-template #notConnected>
+ You may not be connected 
+ <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-in-outline"></ion-icon>
+</ng-template>
+</div>
+
   <ion-slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index">
-      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" ></video>
+      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
+      title="{{video.userName}}" class="{{video.userPic}}"></video>
+      <!--button (click)="loadMoreVideos()" style="position: absolute; top: 20px; left: 10px">Load More</button-->
       <app-feed *ngIf="i !== 0" [video]="video"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
@@ -21,50 +33,16 @@
     Your browser does not support the audio element.
   </audio>
 
-
+  <!--  overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe-->
   <!-- Button to unmute audio -->
-  <ion-button onclick="document.getElementById('background-audio').muted = false;
-    document.getElementById('background-audio').play();
-    document.getElementById('float').muted = false;
-    //document.querySelector('ion-slides').slideNext();
-    // Create and append iframe
-    var iframe = document.createElement('iframe');
-    iframe.id = 'web3auth';
-    //iframe.src = 'http://192.168.1.183:5173';
-    var protocol = window.location.protocol; // 'http:' or 'https:'
-    var host = window.location.hostname;
-    iframe.src = protocol + '//' + host + ':5173';
-    iframe.style.position = 'absolute';
-    iframe.style.top = '-160px'; // Adjust the position as needed
-    //iframe.style.left = '50%';
-    iframe.style.zIndex = '9999';
-    iframe.style.width = '100%'; // Adjust the size as needed
-    iframe.style.height = '170%'; // Adjust the size as needed
-    iframe.style.transform = 'scale(.80)'; // Scale content to 120%
-    //iframe.style.transformOrigin = '0 0'; // Set the origin for scaling
-
-    // Create and add the blur overlay
-    var overlay = document.createElement('div');
-    overlay.id = 'blur-overlay';
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'; /* Semi-transparent overlay */
-    overlay.style.backdropFilter = 'blur(10px) brightness(1.2)'; /* Apply the blur effect */
-    overlay.style.zIndex = '9998'; /* Ensure it covers everything but the iframe */
-    document.body.appendChild(overlay);
-
-    document.body.appendChild(iframe);
-    " 
-    style="position: absolute; bottom: 6px; left: 50%;">web3auth
+  <ion-button (click)="handleWeb3Auth()"
+  style="position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%);">
+    web3auth
   </ion-button>
-
 </ion-slides>
 
 <video class="floating-video" id="float" autoplay loop playsinline muted controls src=""
-    style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9999; pointer-events: auto;"></video>
+    style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9998; pointer-events: auto;"></video>
 
 </ion-content>
 

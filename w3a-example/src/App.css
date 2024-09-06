@@ -28,6 +28,7 @@
 	text-decoration: none;
 }
 
+
 .grid {
 	display: flex;
 	align-items: center;
@@ -48,11 +49,35 @@
 	font-size: large;
 }
 
+.card-no-outline {
+	margin: 0.5rem;
+	padding: 0.7rem;
+	text-align: center;
+	color: #0070f3;
+	background-color: white;
+	text-decoration: none;
+	border: 0px solid #0070f3;
+	border-radius: 10px;
+	transition: color 0.15s ease, border-color 0.15s ease;
+	width: 100%;
+	font-size: large;
+}
 .card:hover,
 .card:focus,
 .card:active {
 	cursor: pointer;
 	background-color: #f1f1f1;
+}
+
+.header a {
+	line-height: 1.15;
+	font-size: 1.3rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-grow: 1;
+	color: black; 
+	text-decoration: none;
 }
 
 .footer {
@@ -66,10 +91,14 @@
 }
 
 .footer a {
+	line-height: 1.15;
+	font-size: 1.3rem;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	flex-grow: 1;
+	color: #0070f3;
+	text-decoration: none;
 }
 
 .logo {

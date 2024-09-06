@@ -91,11 +91,12 @@ function App() {
       try {
         const rpc = new RPC(provider as IProvider);
         const accounts = await rpc.getAccounts(); // Ensure that getAccounts is awaited
+        const chainId = await rpc.getChainId();
         console.log("User's account: " + accounts);
         uiConsole(accounts); // Optionally, display accounts in the UI
 
-        if (window.parent) {
-          window.parent.postMessage({ account: accounts, view: "loggedInView" }, "*");
+        if (window.parent && !window.location.search.startsWith("?logout")) {
+          window.parent.postMessage({ account: accounts, chain: chainId, view: "loggedInView" }, "*");
         }
       } catch (error) {
         console.error("Failed to fetch accounts:", error);
@@ -245,6 +246,48 @@ function App() {
   };
 
   const loggedInView = (
+        <div>
+          <button
+            onClick={() => {
+              logout();
+              //window.parent.postMessage({ view: 'logout', status: `${web3Auth?.status}` }, '*');
+            }}
+            className="card"
+          >
+            Log Out
+          </button>
+        </div>
+  );
+
+  const loggedOutView = (
+        <div>
+          <button
+            onClick={() => {
+            }}
+            className="card-no-outline"
+          >
+            You are logged in
+          </button>
+        </div>
+  );
+
+  const preLoginInfoView = (
+        <div>
+          <br></br>
+          <br></br>
+          <br></br>
+          <br></br>
+          <button
+            onClick={() => {
+            }}
+            className="card-no-outline"
+          >
+            &#9888; Currently the only tested authentication method is MetaMask.
+          </button>
+        </div>
+  );
+
+  const loggedInViewOrig = (
     <>
       <div className="flex-container">
         <div>
@@ -451,10 +494,12 @@ function App() {
   );
 
   useEffect(() => {
+    window.parent.postMessage({ view: 'login', status: `${web3Auth?.status}` }, '*');
+        /* <h2>Web3Auth hook status: {status}</h2>
+        <h2>Web3Auth status: {web3Auth?.status}</h2> */
+
     setUnloggedInView(
       <div>
-        <h2>Web3Auth hook status: {status}</h2>
-        <h2>Web3Auth status: {web3Auth?.status}</h2>
         <button onClick={connect} className="card">
           Login
         </button>
@@ -463,37 +508,56 @@ function App() {
   }, [connect, status, web3Auth]);
 
   useEffect(() => {
-    if (isMFAEnabled) {
+    const currentLocation = window.location.search;
+    if (window.location.search.length > 0) {
+      setMFAHeader(
+      <header className="header">
+        <a
+          href=""
+          rel="noopener noreferrer"
+        >
+          Connected
+        </a>
+      </header>
+      );
+    } 
+    else {
       setMFAHeader(
         <div>
-          <h2>MFA is enabled</h2>
+          <h2>Please log in.</h2>
         </div>
       );
     }
+    /*
+    if (isMFAEnabled && window.location.search.length > 0) {
+      setMFAHeader(
+        <div>
+          <h2>MFA is enabled location: {currentLocation}</h2>
+        </div>
+      );
+    }
+    else {
+      setMFAHeader(
+        <div>
+          <h2>MFA is disabled location: {currentLocation}</h2>
+        </div>
+      );
+    }
+    */
   }, [isMFAEnabled]);
 
   return (
     <div className="container">
-      <h1 className="title">
-        <br></br>
-        <a target="_blank" href="https://web3auth.io/docs/sdk/pnp/web/modal" rel="noreferrer">
-          Web3Auth{" "}
-        </a>
-      </h1>
-      <div className="container" style={{ textAlign: "center" }}>
-        {isConnected && MFAHeader}
-      </div>
 
+      <div className="grid">{isConnected ? loggedOutView : preLoginInfoView }</div>
       <div className="grid">{isConnected ? loggedInView : unloggedInView}</div>
 
       <footer className="footer">
         <a
           href=""
-          target="_blank"
           rel="noopener noreferrer"
           onClick={() => parent.postMessage({ view: 'abort', account: '000000' }, '*')}
->
-          Skip
+       > &larr; Back
         </a>
       </footer>
     </div>
