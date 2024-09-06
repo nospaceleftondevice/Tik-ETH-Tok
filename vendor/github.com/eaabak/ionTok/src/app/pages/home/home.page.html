@@ -11,11 +11,11 @@
   (click)="handleWeb3Auth()">
 <ng-container *ngIf="chainName !== 'Unknown Chain'; else notConnected">
  Connected to {{ chainName }} 
- <ion-icon name="log-out-outline"></ion-icon>
+ <ion-icon style="position: absolute; top: 12px; color: #3880ff; " name="log-out-outline"></ion-icon>
 </ng-container>
 <ng-template #notConnected>
  You may not be connected 
- <ion-icon name="log-in-outline"></ion-icon>
+ <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-in-outline"></ion-icon>
 </ng-template>
 </div>
 
