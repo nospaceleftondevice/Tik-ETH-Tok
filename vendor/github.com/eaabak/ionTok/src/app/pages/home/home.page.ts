@@ -101,7 +101,49 @@ export class HomePage implements OnInit {
     this.currentPage++;
     this.loadVideos();
   }
-
+  handleWeb3Auth() {
+    const audioElement = document.getElementById('background-audio') as HTMLAudioElement;
+    const floatingVideo = document.getElementById('float') as HTMLVideoElement;
+  
+    audioElement.muted = false;
+    audioElement.play();
+    floatingVideo.muted = false;
+  
+    // Create and append iframe
+    const iframe = document.createElement('iframe');
+    iframe.id = 'web3auth';
+    const protocol = window.location.protocol; // 'http:' or 'https:'
+    const host = window.location.hostname;
+    iframe.src = `${protocol}//${host}:5173${window.sessionStorage.getItem('next')}`;
+    iframe.style.overflow = 'hidden';
+    iframe.style.opacity = '0.99';
+    iframe.style.backgroundColor = 'transparent';
+    iframe.style.position = 'absolute';
+    iframe.style.borderRadius = '10px';
+    iframe.style.top = '10px';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.transform = 'scale(.80)';
+    iframe.style.zIndex = '9999';
+  
+    // Create and add the blur overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'blur-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'; /* Semi-transparent overlay */
+    overlay.style.zIndex = '9995'; /* Ensure it covers everything but the iframe */
+  
+    // Set the backdropFilter property using setProperty
+    overlay.style.setProperty('backdrop-filter', 'blur(10px) brightness(1.2)');
+  
+    document.body.appendChild(overlay);
+    document.body.appendChild(iframe);
+  }
+  
   receiveMessage(event: MessageEvent) {
     // Optionally, you can check event.origin to ensure the message comes from the expected origin
     //if (event.origin !== 'http://192.168.1.183:5173') {
