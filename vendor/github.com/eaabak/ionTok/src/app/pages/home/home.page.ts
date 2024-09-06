@@ -258,6 +258,11 @@ export class HomePage implements OnInit {
         //index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)' : /* transparent box */
         !isIOS && index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)' : /* transparent box */
          newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)'
+
+        if (!isIOS && index != 0) {
+          newElement.style.left = '2px';
+          newElement.style.right = '2px';
+        }
            
         !isIOS ? newElement.style.color = 'white' : newElement.style.color = 'black';
         newElement.style.padding = '5px';
@@ -282,6 +287,7 @@ export class HomePage implements OnInit {
         if (index > 0 && current_video !== null) {
            project.innerText = current_video.getAttribute('title') === null ? "" : current_video.getAttribute('title');
            description.innerText = current_video.getAttribute('class') === null ? "" : current_video.getAttribute('class');
+           description.style.width = "87%";
         }
         if (index !== activeIndex) {
           videos.forEach(video => video.pause());

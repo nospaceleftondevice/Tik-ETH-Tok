@@ -40,16 +40,16 @@ export class DataService {
             const videoList = [
                 {
                     userName: 'balexand',
-                    likes: '344',
-                    comments: '40',
+                    likes: '1344:1040',
+                    comments: '2040:0',
                     url: 'https://stream.mux.com/DeKMk02eVhDvdqKxbchkZ38VDrQo312701pDqXpgrJzkc/high.mp4',
                     userPic: 'https://image.mux.com/DeKMk02eVhDvdqKxbchkZ38VDrQo312701pDqXpgrJzkc/thumbnail.png',
                     showcase_url: 'https://ethglobal.b-cdn.net/projects/s5fha/banner/default.jpg',
                 },
                 {
                     userName: 'userName2',
-                    likes: '344',
-                    comments: '40',
+                    likes: '0:0',
+                    comments: '0:0',
                     url: 'https://firebasestorage.googleapis.com/v0/b/testvideo-91d3a.appspot.com/o/1.mp4?alt=media&token=36032747-7815-473d-beef-061098f08c18',
                     userPic: 'https://firebasestorage.googleapis.com/v0/b/testvideo-91d3a.appspot.com/o/profile_pics%2Fprofile2.jpeg?alt=media&token=b1fdd00d-5d6e-4705-980d-4ef3e70ff6c5',
                     showcase_url: 'https://ethglobal.com/showcase/flexpay-1yt8q',

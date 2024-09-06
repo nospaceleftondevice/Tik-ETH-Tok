@@ -1,26 +1,38 @@
 <div class="actions" style="z-index: 9999;right: 30px;bottom: 30px;">
   <div style="display: none;">
-    <ion-icon size="large" src="../assets/svg/comment.svg">></ion-icon>
+    <ion-icon size="large" src="../assets/svg/comment.svg"></ion-icon>
     <p>{{video.comments}}</p>
   </div>
+
   <div onclick="alert('clicked')" style="margin-bottom: 48px;">
     <ion-icon size="large" name="search"></ion-icon>
   </div>
+
   <div onclick="alert('clicked')" style="margin-bottom: 44px;">
     <ion-icon size="large" name="heart"></ion-icon>
-    <p>{{video.likes}}</p>
-    <p class="count" style="position: absolute; right: -22px;">{{video.likes}}</p>
+    <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
+    <p [ngStyle]="{'visibility': getFirstLike(video.likes) === 0 ? 'hidden' : 'visible'}">
+      {{formatNumber(getFirstLike(video.likes))}}
+    </p>
+    <p class="count" style="position: absolute; right: -22px;"
+       [ngStyle]="{'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible'}">
+      {{formatNumber(getSecondLike(video.likes))}}
+    </p>
   </div>
+  
   <div onclick="alert('clicked')" style="margin-bottom: 36px;">
     <ion-icon size="large" name="bookmark"></ion-icon>
-    <p>{{video.likes}}</p>
-    <p class="count" style="position: absolute; right: -22px;">{{video.likes}}</p>
+    <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
+    <p [ngStyle]="{'visibility': getFirstLike(video.comments) === 0 ? 'hidden' : 'visible'}">
+      {{formatNumber(getFirstLike(video.comments))}}
+    </p>
+    <p class="count" style="position: absolute; right: -22px;"
+       [ngStyle]="{'visibility': getSecondLike(video.comments) === 0 ? 'hidden' : 'visible'}">
+      {{formatNumber(getSecondLike(video.comments))}}
+    </p>
   </div>
+   
   <div onclick="alert('clicked')" style="margin-bottom: 36px;">
     <ion-icon size="large" name="information-circle-outline"></ion-icon>
   </div>
 </div>
-
-
-
-
