@@ -4,11 +4,11 @@
     <p>{{video.comments}}</p>
   </div>
 
-  <div onclick="alert('clicked')" style="margin-bottom: 48px;">
+  <div onclick="console.log('button clicked')" style="margin-bottom: 48px;">
     <ion-icon size="large" name="search"></ion-icon>
   </div>
 
- <div (click)="alert('clicked')" 
+ <div (click)="console.log('button clicked')" 
      [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
   <ion-icon size="large" name="heart"></ion-icon>
   
@@ -31,7 +31,7 @@
 </p>
 </div>
  
-  <div onclick="alert('clicked')"
+  <div onclick="console.log('button clicked')"
      [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
     <ion-icon size="large" name="bookmark"></ion-icon>
     <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
@@ -48,7 +48,7 @@
     </p>
   </div>
    
-  <div onclick="alert('clicked')" style="margin-bottom: 36px;">
+  <div onclick="console.log('button clicked')" style="margin-bottom: 36px;">
     <ion-icon size="large" name="information-circle-outline"></ion-icon>
   </div>
 </div>
