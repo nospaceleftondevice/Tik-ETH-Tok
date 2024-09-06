@@ -35,5 +35,5 @@ def get_videos():
     return jsonify(response)
 
 if __name__ == '__main__':
-    app.run(port=5115,debug=True)
+    app.run(port=7000,debug=True)
 
