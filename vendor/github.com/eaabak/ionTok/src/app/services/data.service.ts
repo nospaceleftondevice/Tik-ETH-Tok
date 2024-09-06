@@ -41,17 +41,17 @@ export class DataService {
                 {
                     userName: 'balexand',
                     likes: '1344:1040',
-                    comments: '2040:0',
+                    comments: '2040089:1400493',
                     url: 'https://stream.mux.com/DeKMk02eVhDvdqKxbchkZ38VDrQo312701pDqXpgrJzkc/high.mp4',
-                    userPic: 'https://image.mux.com/DeKMk02eVhDvdqKxbchkZ38VDrQo312701pDqXpgrJzkc/thumbnail.png',
+                    userPic: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
                     showcase_url: 'https://ethglobal.b-cdn.net/projects/s5fha/banner/default.jpg',
                 },
                 {
                     userName: 'userName2',
                     likes: '0:0',
-                    comments: '0:0',
+                    comments: '10:10',
                     url: 'https://firebasestorage.googleapis.com/v0/b/testvideo-91d3a.appspot.com/o/1.mp4?alt=media&token=36032747-7815-473d-beef-061098f08c18',
-                    userPic: 'https://firebasestorage.googleapis.com/v0/b/testvideo-91d3a.appspot.com/o/profile_pics%2Fprofile2.jpeg?alt=media&token=b1fdd00d-5d6e-4705-980d-4ef3e70ff6c5',
+                    userPic: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
                     showcase_url: 'https://ethglobal.com/showcase/flexpay-1yt8q',
                 },
                 // Add more video entries as needed

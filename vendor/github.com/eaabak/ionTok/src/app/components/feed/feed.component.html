@@ -8,26 +8,42 @@
     <ion-icon size="large" name="search"></ion-icon>
   </div>
 
-  <div onclick="alert('clicked')" style="margin-bottom: 44px;">
-    <ion-icon size="large" name="heart"></ion-icon>
-    <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
-    <p [ngStyle]="{'visibility': getFirstLike(video.likes) === 0 ? 'hidden' : 'visible'}">
-      {{formatNumber(getFirstLike(video.likes))}}
-    </p>
-    <p class="count" style="position: absolute; right: -22px;"
-       [ngStyle]="{'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible'}">
-      {{formatNumber(getSecondLike(video.likes))}}
-    </p>
-  </div>
+ <div (click)="alert('clicked')" 
+     [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
+  <ion-icon size="large" name="heart"></ion-icon>
   
-  <div onclick="alert('clicked')" style="margin-bottom: 36px;">
+  <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
+  <p [ngStyle]="{'visibility': getFirstLike(video.likes) === 0 ? 'hidden' : 'visible'}">
+    {{formatNumber(getFirstLike(video.likes))}}
+  </p>
+  
+  <!--p class="count" style="position: absolute; right: -22px;"
+     [ngStyle]="{'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible'}">
+    {{formatNumber(getSecondLike(video.likes))}}
+  </p-->
+  <p class="count" 
+  [ngStyle]="{
+    'position': 'absolute',
+    'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible',
+    'right': calculateRightOffset(getSecondLike(video.likes))
+  }">
+ {{formatNumber(getSecondLike(video.likes))}}
+</p>
+</div>
+ 
+  <div onclick="alert('clicked')"
+     [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
     <ion-icon size="large" name="bookmark"></ion-icon>
     <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
     <p [ngStyle]="{'visibility': getFirstLike(video.comments) === 0 ? 'hidden' : 'visible'}">
       {{formatNumber(getFirstLike(video.comments))}}
     </p>
-    <p class="count" style="position: absolute; right: -22px;"
-       [ngStyle]="{'visibility': getSecondLike(video.comments) === 0 ? 'hidden' : 'visible'}">
+    <p class="count" 
+  [ngStyle]="{
+    'position': 'absolute',
+    'visibility': getSecondLike(video.comments) === 0 ? 'hidden' : 'visible',
+    'right': calculateRightOffset(getSecondLike(video.comments))
+  }">
       {{formatNumber(getSecondLike(video.comments))}}
     </p>
   </div>

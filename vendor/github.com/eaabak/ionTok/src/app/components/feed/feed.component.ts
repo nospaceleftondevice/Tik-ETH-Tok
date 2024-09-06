@@ -40,4 +40,18 @@ export class FeedComponent implements OnInit {
     }
   }
 
+  calculateRightOffset(value: number): string {
+    const length = value.toString().length;
+    
+    if (length === 1) {
+      return '-13px';
+    } else if (length === 2) {
+      return '-18px';
+    } else if (length >= 3) {
+      return '-22px';
+    }
+    
+    return '-22px'; // Default to -22px if for some reason it's 0 or undefined
+  }
+  
 }

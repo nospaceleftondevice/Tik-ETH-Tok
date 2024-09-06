@@ -288,6 +288,7 @@ export class HomePage implements OnInit {
            project.innerText = current_video.getAttribute('title') === null ? "" : current_video.getAttribute('title');
            description.innerText = current_video.getAttribute('class') === null ? "" : current_video.getAttribute('class');
            description.style.width = "87%";
+           description.style.textAlign = "left";
         }
         if (index !== activeIndex) {
           videos.forEach(video => video.pause());
