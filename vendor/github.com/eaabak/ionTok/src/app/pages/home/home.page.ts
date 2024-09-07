@@ -344,16 +344,23 @@ export class HomePage implements OnInit {
         }
         else {
          newElement.id = "intro-box";
-         newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+	 if (window.sessionStorage.getItem('videoResults')) {
+           newElement.innerHTML = `<iframe src="assets/fonts/search_results.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%%; height: 100%;" allowTransparency="true"></iframe>`;
+           newElement.style.height = '90%';
+           newElement.style.left = '5px';
+	 }
+	 else {
+           newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+           newElement.style.height = '50%';
+           newElement.style.left = '10px';
+	  }
         }
         const userAgent = navigator.userAgent;
         const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;  // Check if user agent is iOS
 
         newElement.style.position = 'absolute';
         newElement.style.bottom = '10px';
-        newElement.style.left = '10px';
         newElement.style.right = '10px';
-        newElement.style.height = '50%';
         //index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)' : /* transparent box */
         !isIOS && index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)' : /* transparent box */
          newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)'

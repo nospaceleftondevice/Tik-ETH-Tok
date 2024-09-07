@@ -77,19 +77,35 @@ export class DataService {
                 console.log(`Search Response: ${response}`);
                 console.log(`Number of Response(s): ${response.length}`);
                 console.dir(response);
+            
                 const videos = response.videos || [];
-                return videos.map(video => ({
-                    userName: video.userName || '',
-                    likes: video.likes || '0',
-                    comments: video.comments || '0',
-                    url: video.url || '',
-                    userPic: video.userPic || '',
-                    showcase_url: video.showcase_url || '',
-                    id: video.id || '',
-                }));
+            
+                // If there are no results, remove 'videoResults' from sessionStorage
+                if (videos.length === 0) {
+                    window.sessionStorage.removeItem('videoResults');
+                    console.log('No results found, videoResults removed from sessionStorage');
+                } else {
+                    // Process the videos and store them in sessionStorage
+                    const processedVideos = videos.map(video => ({
+                        userName: video.userName || '',
+                        likes: video.likes || '0',
+                        comments: video.comments || '0',
+                        url: video.url || '',
+                        userPic: video.userPic || '',
+                        showcase_url: video.showcase_url || '',
+                        id: video.id || '',
+                    }));
+                
+                    // Store the processed video array in sessionStorage as a JSON string
+                    window.sessionStorage.setItem('videoResults', JSON.stringify(processedVideos));
+                    console.log('Results stored in sessionStorage');
+                }
+
+                return videos;
             })
         );
     }
+
 
     // Method to get trending videos
     getTrends() {
