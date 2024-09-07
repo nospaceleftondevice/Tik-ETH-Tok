@@ -14,6 +14,10 @@ export class FeedComponent implements OnInit {
     path: './assets/animations/music.json'
   };
 
+  showSearchBar: boolean = false; // Variable to track the visibility of the search bar
+  heartStyle: string = '';  // To dynamically change the heart icon color
+  bookmarkStyle: string = '';  // To dynamically change the bookmark icon color
+
   constructor(private http: HttpClient) {} // Inject HttpClient into the constructor
 
   ngOnInit() {}
@@ -41,6 +45,14 @@ export class FeedComponent implements OnInit {
   buttonClicked(button: string, video_id: number) {
     console.log("Button clicked: " + button);
     console.log("Video id: " + video_id);
+
+    if (button === 'likes') {
+      // Toggle the heart color (red when clicked)
+      this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
+    } else if (button === 'comments') {
+      // Toggle the bookmark color (black when clicked)
+      this.bookmarkStyle = this.bookmarkStyle === 'color: black;' ? '' : 'color: black;';
+    }
 
     // Get the account number from session storage
     const accountNumber = window.sessionStorage.getItem("account");
@@ -78,5 +90,12 @@ export class FeedComponent implements OnInit {
 
     return '-22px'; // Default to -22px if for some reason it's 0 or undefined
   }
+
+  onSearch(event: any) {
+    const searchTerm = event.target.value;
+    console.log('Searching for:', searchTerm);
+  // Implement your search logic here
+  }
+
 }
 

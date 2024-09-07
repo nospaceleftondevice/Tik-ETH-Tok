@@ -7,6 +7,11 @@
   align-items: center;
 }
 
+.heart-red {
+  --ionicon-stroke-color: red;  /* For outline icons */
+  --ionicon-fill-color: red;    /* For filled icons */
+}
+
 ion-icon {
   color: white;
   height: 40px;
