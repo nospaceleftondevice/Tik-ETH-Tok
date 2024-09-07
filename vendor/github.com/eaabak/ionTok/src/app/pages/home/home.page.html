@@ -47,7 +47,7 @@
     style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9998; pointer-events: auto;"></video>
 
 <div>
-  <ion-searchbar style="z-index: 9999;position: absolute; top: 45%; left: 0px;" placeholder="Search..."></ion-searchbar>
+  <ion-searchbar *ngIf="showSearchBar" id="search" style="z-index: 9999;position: absolute; top: 45%; left: 0px;" placeholder="Search..."></ion-searchbar>
 </div>
 </ion-content>
 

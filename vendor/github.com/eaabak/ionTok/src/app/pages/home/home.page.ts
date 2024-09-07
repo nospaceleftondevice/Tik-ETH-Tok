@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { IonSlides } from '@ionic/angular';
 import { DataService } from "../../services/data.service";
 
@@ -9,6 +9,18 @@ import { DataService } from "../../services/data.service";
 })
 export class HomePage implements OnInit {
   @ViewChild(IonSlides, { static: false }) slides: IonSlides;
+  @ViewChild('searchbar', { static: false }) searchbar: ElementRef;
+  showSearchBar: boolean = false; // Initially hidden
+
+  // Method to show the searchbar
+  showSearchbar() {
+    this.showSearchBar = true;
+  }
+
+  // Method to hide the searchbar
+  hideSearchbar() {
+    this.showSearchBar = false;
+  }
 
   slideOpts = {
     direction: 'vertical'
@@ -232,6 +244,12 @@ export class HomePage implements OnInit {
   pauseInactiveSlides(activeIndex: number) {
       // Get all ion-slide elements
       const slides = document.querySelectorAll('ion-slide');
+
+	 
+      if (activeIndex == 0 )
+	this.hideSearchbar();
+      else
+	this.showSearchbar();
 
       slides.forEach((slide, index) => {
         const videos = slide.querySelectorAll('video');
