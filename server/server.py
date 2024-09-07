@@ -138,7 +138,7 @@ def update_likes(video_id):
         else:
             invalid_likes += 1
 
-        new_likes = f"{valid_likes}:{invalid_likes}"
+        new_likes = f"{invalid_likes}:{valid_likes}"
 
         # Update the likes in the database
         cur.execute('UPDATE videos SET likes = %s WHERE id = %s', (new_likes, video_id))
@@ -176,7 +176,7 @@ def update_comments(video_id):
         else:
             invalid_comments += 1
 
-        new_comments = f"{valid_comments}:{invalid_comments}"
+        new_comments = f"{invalid_comments}:{valid_comments}"
 
         # Update the comments in the database
         cur.execute('UPDATE videos SET comments = %s WHERE id = %s', (new_comments, video_id))
