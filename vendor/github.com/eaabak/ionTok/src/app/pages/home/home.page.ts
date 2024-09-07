@@ -1,16 +1,93 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { IonSlides } from '@ionic/angular';
 import { DataService } from "../../services/data.service";
+import { ToastController } from '@ionic/angular';
+import { IonSearchbar } from '@ionic/angular';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
 })
+
 export class HomePage implements OnInit {
-  @ViewChild(IonSlides, { static: false }) slides: IonSlides;
-  @ViewChild('searchbar', { static: false }) searchbar: ElementRef;
+  //@ViewChild(IonSlides, { static: false }) slides: IonSlides;
+  @ViewChild('slides', { static: false }) slides: IonSlides;  // Reference the IonSlides component
+  //@ViewChild('searchbar', { static: false }) searchbar: ElementRef;
+  @ViewChild('searchbar', { static: false }) searchbar: IonSearchbar; // Use IonSearchbar instead of ElementRef
+
   showSearchBar: boolean = false; // Initially hidden
+
+  videoList: any = [];
+  searchResults: any[] = [];  // Add searchResults property
+  count = 0;
+  currentPage: number = 1;
+  limit: number = 10;
+
+  chainName: string;
+
+  onSearch(event: any) {
+    const searchTerm = event.target.value;
+    if (searchTerm.trim() !== '') {
+      this.performSearch(searchTerm);
+    }
+  }
+
+  onSearchKeyup(event: KeyboardEvent) {
+    const searchTerm = (event.target as HTMLInputElement).value;
+  
+    // Check if the Enter key was pressed
+    if (event.key === 'Enter' || event.key === 'Return') {
+      if (searchTerm.trim() !== '') {
+        this.performSearch(searchTerm);  // Trigger the search only when Enter is pressed
+        setTimeout(() => {
+          this.searchbar.getInputElement().then((input) => {
+            input.blur();
+          });
+        }, 10);
+      }
+    }
+  }
+
+  performSearch(searchTerm: string) {
+    // Reset the current page to 1 for search
+    const payload = { search: searchTerm, page: 1, limit: this.limit };
+
+    this.data.searchVideos(payload).subscribe(
+      (response: any) => {
+        console.log("Got results from searchVideos:");
+        console.dir(response);
+        this.searchResults = response || [];
+
+        // Call updateVideoList to insert the search results
+        this.updateVideoList(this.searchResults);
+      },
+      (error) => {
+        console.error('Search failed:', error);
+      }
+    );
+  }
+
+  updateVideoList(results: any[]) {
+    if (results.length > 0) {
+      //const insertIndex = this.videoList.length; // Insert at the end of the current list
+      const insertIndex = 0
+      console.log(`Inserting ${results.length} results at index: ${insertIndex}`);
+      this.presentToast(`Adding search results to your feed`);
+
+      // Insert the results at the current index in the videoList
+      this.videoList.splice(insertIndex, 0, ...results);
+      // Programmatically navigate the slides
+      this.slides.slideTo(0);  // Go to the first slide
+      document.querySelector('ion-slides').slideTo(0);
+      //this.slides.slideTo(1);  // Then go to the second slide
+      this.slides.update();  // This refreshes the slides component
+      this.presentToast(`Search results added.`);
+      //document.querySelector('ion-slides').slideTo(1);
+      setTimeout(document.querySelector('ion-slides').slideNext, 1000);
+    }
+  }
+
 
   // Method to show the searchbar
   showSearchbar() {
@@ -25,12 +102,6 @@ export class HomePage implements OnInit {
   slideOpts = {
     direction: 'vertical'
   };
-  videoList: any = [];
-  count = 0;
-  currentPage: number = 1;
-  limit: number = 10;
-
-  chainName: string;
 
   // Map of Chain IDs to Chain Names
   chainMap = {
@@ -85,7 +156,17 @@ export class HomePage implements OnInit {
     '11155111': 'Ethereum Sepolia',
   };
 
-  constructor(private data: DataService) { }
+  constructor(private data: DataService, private toastController: ToastController) { }
+
+  // Method to present a toast
+  async presentToast(message: string) {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 2000,  // Toast will be shown for 2 seconds
+      position: 'bottom',  // You can set position as 'top', 'middle', or 'bottom'
+    });
+    toast.present();
+  }
 
   ngOnInit() {
     window.sessionStorage.setItem("next","");
