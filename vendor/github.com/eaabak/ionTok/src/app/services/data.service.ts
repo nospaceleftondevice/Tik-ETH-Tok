@@ -22,10 +22,11 @@ export class DataService {
                 map((response: any) => {
                     // Access the videos array from the response object
                     console.log(`Response: ${response}`);
+                    console.dir(response.videos);
                     //console.dir(response);
                     const videos = response.videos || [];
     
-                    return videos.map(video => ({
+                    const video_map = videos.map(video => ({
                         userName: video.userName || '',
                         likes: video.likes || '0',
                         comments: video.comments || '0',
@@ -34,6 +35,8 @@ export class DataService {
                         showcase_url: video.showcase_url || '',
                         id: video.id || '',
                     }));
+		    console.dir(video_map);
+		    return video_map;
                 })
             );
         } else {
