@@ -160,7 +160,7 @@
 <div class="page">
     <div class="demo">
         <div class="font-container" style="font-family: 'TikTok Display'; font-weight: bold; text-align: center; font-style: normal;">
-          <span style="font-size: 18px;">Search results
+          <span style="font-size: 18px;">Bookmarks
 	<br>
           <span style="font-size: 11px;">Click on an image to jump to that project
         </div>
@@ -168,7 +168,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     // Retrieve the value from sessionStorage
-    var json = window.sessionStorage.getItem("videoResults");
+    var json = window.localStorage.getItem("bookmarks");  
     
     // Check if there is any stored data
     if (json) {
@@ -229,7 +229,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 		// Add an onclick event to post a message to the parent iframe
 		img.onclick = function() {
-		    window.parent.postMessage({ location: index, view: "searchResults" }, "*");
+		    window.parent.postMessage({ location: video.id, view: "bookmark" }, "*");
 		};
 
                 // Create a paragraph element for userPic

@@ -69,6 +69,9 @@ export class HomePage implements OnInit {
   }
 
   updateVideoList(results: any[]) {
+    console.log("updateVideoList called");
+    console.dir(results);
+
     if (results.length > 0) {
       const insertIndex = 1;
       console.log(`Inserting ${results.length} results at index: ${insertIndex}`);
@@ -179,7 +182,9 @@ export class HomePage implements OnInit {
 
   ngOnInit() {
     window.sessionStorage.setItem("next","");
+    window.sessionStorage.setItem('viewbookmarks',"false");
     window.sessionStorage.removeItem("videoResults");
+    //window.localStorage.removeItem("bookmarks");
     console.log('Get video list');
     //this.videoList = this.data.getVideoList();
     const chainId = window.sessionStorage.getItem('chain');
@@ -191,9 +196,10 @@ export class HomePage implements OnInit {
 
   loadVideos() {
     console.log("!! load mode videos")
+
     this.data.getVideoList(this.currentPage, this.limit).subscribe((videos) => {
-        console.log("videos sent from server: ");
-        //console.dir(videos);
+        console.log("DEBUG: videos sent from server: ");
+        console.dir(videos);
         this.videoList = this.videoList || [];
         this.videoList = [...this.videoList, ...videos];
         console.log(`Got ${this.videoList.length} videos`)
@@ -257,6 +263,23 @@ export class HomePage implements OnInit {
     const data = event.data;
     console.log('Message received from iframe:', data);
 
+    if (data.view == 'bookmark') {
+      this.data.getVideo(data.location).subscribe(
+        (response: any) => {
+          console.log("DEBUG: Got results from getVideo:");
+          console.dir(response);
+	  this.searchResults = Array.isArray(response) ? response : [response];
+
+          // Call updateVideoList to insert the search results
+          this.updateVideoList(this.searchResults);
+          this.slides.slideTo(1);  
+        },
+        (error) => {
+          console.error('Search failed:', error);
+        }
+      );
+    }
+
     if (data.view === 'login') {
       console.log(`Login box with status [${data.status}]`);
       if (data.status === "ready") {
@@ -265,6 +288,11 @@ export class HomePage implements OnInit {
         document.getElementById("web3auth").style.top = '-150px';
         document.getElementById("web3auth").style.height = '170%';
       }
+    }
+
+    if (data.view === 'searchResults') {
+      //this.data.getVideo("3").subscribe((videos) => { console.log("videos sent from server: "); console.dir(videos) } );
+      this.slides.slideTo(data.location + 1);  
     }
 
     if (data.view == 'logout') {
@@ -344,8 +372,8 @@ export class HomePage implements OnInit {
 
       slides.forEach((slide, index) => {
         const videos = slide.querySelectorAll('video');
-        console.log(`Slide index : ${index} of ${slides.length}`);
-        console.log(`# of Videos : ${videos.length}`);
+        //console.log(`Slide index : ${index} of ${slides.length}`);
+        //console.log(`# of Videos : ${videos.length}`);
         // Create a new element (e.g., a div with some text or an icon)
         const newElement = document.createElement("div");
         if (index != 0) {
@@ -355,10 +383,11 @@ export class HomePage implements OnInit {
         }
         else {
          newElement.id = "intro-box";
-	 if (window.sessionStorage.getItem('videoResults')) {
+	 if (window.sessionStorage.getItem('videoResults') || window.localStorage.getItem('bookmarks')) {
            const floating_vid = document.getElementById('float');
 	   //floating_vid.style.display = "block"
-           newElement.innerHTML = `<iframe src="assets/fonts/search_results.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="z-index: 10000; border-radius: 10px; overflow: hidden; opacity: 0.90; background-color: transparent; width: 90%; height: 100%;" allowTransparency="true"></iframe>`;
+	   const page = window.sessionStorage.getItem('viewbookmarks') === "true" ? "bookmarks" : "search_results";
+           newElement.innerHTML = `<iframe src="assets/fonts/${page}.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="z-index: 10000; border-radius: 10px; overflow: hidden; opacity: 0.90; background-color: transparent; width: 90%; height: 100%;" allowTransparency="true"></iframe>`;
            newElement.style.height = '90%';
            newElement.style.zIndex = '10000';
            newElement.style.left = '5px';
@@ -400,9 +429,9 @@ export class HomePage implements OnInit {
         const project = document.getElementById(`title-${index}`);
         const description = document.getElementById(`description-${index}`);
         const current_video = videos[0];
-        console.log("Current videos: ");
+        //console.log("Current videos: ");
         //console.dir(videos);
-        console.log("Current video: ");
+        //console.log("Current video: ");
         //console.dir(current_video);
         if (index > 0 && current_video !== null) {
            project.innerText = current_video.getAttribute('title') === null ? "" : current_video.getAttribute('title');
@@ -412,7 +441,7 @@ export class HomePage implements OnInit {
         }
         if (index !== activeIndex) {
           videos.forEach(video => video.pause());
-          console.log('Paused videos on slide index:', index);
+          //console.log('Paused videos on slide index:', index);
         }
         else {
           videos.forEach(video=> {
@@ -435,7 +464,7 @@ export class HomePage implements OnInit {
           //videos.forEach(video => video.muted = !video.muted);
           //videos.forEach(video => video.play());
         }
-        console.log(`Active index ${activeIndex}`);
+        //console.log(`Active index ${activeIndex}`);
     });
   }
 

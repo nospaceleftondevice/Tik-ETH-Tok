@@ -1,5 +1,6 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { AnimationOptions } from 'ngx-lottie';
+import { DataService } from "../../services/data.service";
 import { HttpClient } from '@angular/common/http'; // Import HttpClient
 
 @Component({
@@ -18,7 +19,7 @@ export class FeedComponent implements OnInit {
   heartStyle: string = '';  // To dynamically change the heart icon color
   bookmarkStyle: string = '';  // To dynamically change the bookmark icon color
 
-  constructor(private http: HttpClient) {} // Inject HttpClient into the constructor
+  constructor(private data: DataService, private http: HttpClient) {} // Inject HttpClient into the constructor
 
   ngOnInit() {}
 
@@ -46,16 +47,26 @@ export class FeedComponent implements OnInit {
     console.log("Button clicked: " + button);
     console.log("Video id: " + video_id);
 
+    if (button === "bookmarks") {
+      window.sessionStorage.removeItem('videoResults');
+      window.sessionStorage.setItem('viewbookmarks',"true");
+      if (window.localStorage.getItem('bookmarks') !== null)
+        document.querySelector('ion-slides').slideTo(0); 
+      return;
+    }
+
     if (button === 'likes') {
       // Toggle the heart color (red when clicked)
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
     } else if (button === 'comments') {
       // Toggle the bookmark color (black when clicked)
       this.bookmarkStyle = this.bookmarkStyle === 'color: black;' ? '' : 'color: black;';
+      console.log(`[[[[[[[[[[ get id: ${video_id} ]]]]]]]]]]`);
+      this.data.getVideo(`${video_id}`).subscribe((videos) => { console.log("videos sent from server: "); console.dir(videos) } );
     }
 
     // Get the account number from session storage
-    const accountNumber = window.sessionStorage.getItem("account");
+    const accountNumber = window.sessionStorage.getItem("account") || "000000"
     console.log("Account number: " + accountNumber);
 
     // Dynamically get the host and protocol, but use a different port (e.g., 7000)
@@ -63,6 +74,7 @@ export class FeedComponent implements OnInit {
     const apiUrl = `${window.location.protocol}//${window.location.hostname}/videos/${video_id}/${button}`;
     
     const payload = { account_number: accountNumber };
+
 
     // Send the POST request to the backend
     this.http.post(apiUrl, payload, {

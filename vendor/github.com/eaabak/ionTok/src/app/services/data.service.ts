@@ -74,8 +74,8 @@ export class DataService {
 
         return this.http.get<any>(apiUrl).pipe(
             map((response: any) => {
-                console.log(`Search Response: ${response}`);
-                console.log(`Number of Response(s): ${response.length}`);
+                console.log(`searchVideos: Response: ${response}`);
+                console.log(`searchVideos: Number of Response(s): ${response.length}`);
                 console.dir(response);
             
                 const videos = response.videos || [];
@@ -105,6 +105,104 @@ export class DataService {
             })
         );
     }
+/*
+    getVideo(id: string): Observable<any> {
+        console.log("********************************************************************");
+        console.log(id);
+        console.log("********************************************************************");
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/video/${id}`;
+        console.log("********************************************************************");
+        console.log(apiUrl);
+        console.log("********************************************************************");
+
+        return this.http.get<any>(apiUrl).pipe(
+            map((response: any) => {
+                console.log(`getVideo: Video Response: ${response}`);
+                console.dir(response); 
+                console.log(`getVideo: Number of Response(s): ${response.length}`);
+                const video = {
+                    userName: response.userName || '',
+                    likes: response.likes || '0',
+                    comments: response.comments || '0',
+                    url: response.url || '',
+                    userPic: response.userPic || '',
+                    showcase_url: response.showcase_url || '',
+                    id: response.id || ''
+                };
+
+                // Retrieve existing bookmarks from localStorage
+                const bookmarks = JSON.parse(window.localStorage.getItem('bookmarks') || '[]');
+
+                // Check if the video is already bookmarked
+                const isAlreadyBookmarked = bookmarks.some(bookmarkedVideo => bookmarkedVideo.id === video.id);
+
+                if (!isAlreadyBookmarked) {
+                    // Add the new video to bookmarks
+                    bookmarks.push(video);
+                    // Store updated bookmarks in localStorage
+                    window.localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                    console.log('Video stored in localStorage as a bookmark');
+                } else {
+                    console.log('Video is already bookmarked');
+                }
+
+                return video;
+            })
+        );
+    }
+*/
+
+  getVideo(id: string): Observable<any> {
+      console.log("********************************************************************");
+      console.log(id);
+      console.log("********************************************************************");
+      const protocol = window.location.protocol;
+      const host = window.location.hostname;
+      const apiUrl = `${protocol}//${host}/video/${id}`;
+      console.log("********************************************************************");
+      console.log(apiUrl);
+      console.log("********************************************************************");
+
+      return this.http.get<any>(apiUrl).pipe(
+          map((response: any) => {
+              console.log(`getVideo: Video Response: ${response}`);
+              console.dir(response);
+
+              // Construct the video object similar to how it's done in searchVideos
+              const video = {
+                  userName: response.userName || '',
+                  likes: response.likes || '0',
+                  comments: response.comments || '0',
+                  url: response.url || '',
+                  userPic: response.userPic || '',
+                  showcase_url: response.showcase_url || '',
+                  id: response.id || ''
+              };
+
+              // Retrieve existing bookmarks from localStorage
+              const bookmarks = JSON.parse(window.localStorage.getItem('bookmarks') || '[]');
+
+              // Check if the video is already bookmarked
+              const isAlreadyBookmarked = bookmarks.some(bookmarkedVideo => bookmarkedVideo.id === video.id);
+
+              if (!isAlreadyBookmarked) {
+                  // Add the new video to bookmarks
+                  bookmarks.push(video);
+                  // Store updated bookmarks in localStorage
+                  window.localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                  console.log('Video stored in localStorage as a bookmark');
+              } else {
+                  console.log('Video is already bookmarked');
+              }
+
+              // Return the video wrapped in an array to match the structure of searchVideos
+              return [video];
+          })
+      );
+  }
+
 
 
     // Method to get trending videos
