@@ -70,21 +70,30 @@ export class HomePage implements OnInit {
 
   updateVideoList(results: any[]) {
     if (results.length > 0) {
-      //const insertIndex = this.videoList.length; // Insert at the end of the current list
-      const insertIndex = 1
+      const insertIndex = 1;
       console.log(`Inserting ${results.length} results at index: ${insertIndex}`);
-      this.presentToast(`Adding search results to your feed`);
+      this.presentToast("Adding search results to your feed");
 
-      // Insert the results at the current index in the videoList
-      this.videoList.splice(insertIndex, 0, ...results);
+      // Remove duplicates within the results array
+      const uniqueResultsFromResults = results.filter(
+        (newVideo, index, self) =>
+          index === self.findIndex((video) => video.userName === newVideo.userName)
+      );
+
+      // Remove duplicates that already exist in the videoList
+      const uniqueResults = uniqueResultsFromResults.filter(
+        (newVideo) => !this.videoList.some((existingVideo) => existingVideo.userName === newVideo.userName)
+      );
+
+      // Insert the unique results at the current index in the videoList
+      this.videoList.splice(insertIndex, 0, ...uniqueResults);
+
       // Programmatically navigate the slides
       this.slides.slideTo(0);  // Go to the first slide
       document.querySelector('ion-slides').slideTo(0);
-      //this.slides.slideTo(1);  // Then go to the second slide
       this.slides.update();  // This refreshes the slides component
-      this.presentToast(`Search results added.`);
-      //document.querySelector('ion-slides').slideTo(1);
-      setTimeout(document.querySelector('ion-slides').slideNext, 1000);
+      this.presentToast("Search results have neem added to feed.");
+      //setTimeout(() => document.querySelector('ion-slides').slideNext(), 1000);
     }
   }
 
