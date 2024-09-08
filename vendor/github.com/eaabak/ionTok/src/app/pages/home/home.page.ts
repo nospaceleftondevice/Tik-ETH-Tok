@@ -1,24 +1,119 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { IonSlides } from '@ionic/angular';
 import { DataService } from "../../services/data.service";
+import { ToastController } from '@ionic/angular';
+import { IonSearchbar } from '@ionic/angular';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
 })
-export class HomePage implements OnInit {
-  @ViewChild(IonSlides, { static: false }) slides: IonSlides;
 
-  slideOpts = {
-    direction: 'vertical'
-  };
+export class HomePage implements OnInit {
+  //@ViewChild(IonSlides, { static: false }) slides: IonSlides;
+  @ViewChild('slides', { static: false }) slides: IonSlides;  // Reference the IonSlides component
+  //@ViewChild('searchbar', { static: false }) searchbar: ElementRef;
+  @ViewChild('searchbar', { static: false }) searchbar: IonSearchbar; // Use IonSearchbar instead of ElementRef
+
+  showSearchBar: boolean = false; // Initially hidden
+
   videoList: any = [];
+  searchResults: any[] = [];  // Add searchResults property
   count = 0;
   currentPage: number = 1;
   limit: number = 10;
 
   chainName: string;
+
+  onSearch(event: any) {
+    const searchTerm = event.target.value;
+    if (searchTerm.trim() !== '') {
+      this.performSearch(searchTerm);
+    }
+  }
+
+  onSearchKeyup(event: KeyboardEvent) {
+    const searchTerm = (event.target as HTMLInputElement).value;
+  
+    // Check if the Enter key was pressed
+    if (event.key === 'Enter' || event.key === 'Return') {
+      if (searchTerm.trim() !== '') {
+        this.performSearch(searchTerm);  // Trigger the search only when Enter is pressed
+        setTimeout(() => {
+          this.searchbar.getInputElement().then((input) => {
+            input.blur();
+          });
+        }, 10);
+      }
+    }
+  }
+
+  performSearch(searchTerm: string) {
+    // Reset the current page to 1 for search
+    const payload = { search: searchTerm, page: 1, limit: this.limit };
+
+    this.data.searchVideos(payload).subscribe(
+      (response: any) => {
+        console.log("Got results from searchVideos:");
+        console.dir(response);
+        this.searchResults = response || [];
+
+        // Call updateVideoList to insert the search results
+        this.updateVideoList(this.searchResults);
+      },
+      (error) => {
+        console.error('Search failed:', error);
+      }
+    );
+  }
+
+  updateVideoList(results: any[]) {
+    console.log("updateVideoList called");
+    console.dir(results);
+
+    if (results.length > 0) {
+      const insertIndex = 1;
+      console.log(`Inserting ${results.length} results at index: ${insertIndex}`);
+      this.presentToast("Adding search results to your feed");
+
+      // Remove duplicates within the results array
+      const uniqueResultsFromResults = results.filter(
+        (newVideo, index, self) =>
+          index === self.findIndex((video) => video.userName === newVideo.userName)
+      );
+
+      // Remove duplicates that already exist in the videoList
+      const uniqueResults = uniqueResultsFromResults.filter(
+        (newVideo) => !this.videoList.some((existingVideo) => existingVideo.userName === newVideo.userName)
+      );
+
+      // Insert the unique results at the current index in the videoList
+      this.videoList.splice(insertIndex, 0, ...uniqueResults);
+
+      // Programmatically navigate the slides
+      this.slides.slideTo(0);  // Go to the first slide
+      document.querySelector('ion-slides').slideTo(0);
+      this.slides.update();  // This refreshes the slides component
+      this.presentToast("Search results have neem added to feed.");
+      //setTimeout(() => document.querySelector('ion-slides').slideNext(), 1000);
+    }
+  }
+
+
+  // Method to show the searchbar
+  showSearchbar() {
+    this.showSearchBar = true;
+  }
+
+  // Method to hide the searchbar
+  hideSearchbar() {
+    this.showSearchBar = false;
+  }
+
+  slideOpts = {
+    direction: 'vertical'
+  };
 
   // Map of Chain IDs to Chain Names
   chainMap = {
@@ -73,10 +168,23 @@ export class HomePage implements OnInit {
     '11155111': 'Ethereum Sepolia',
   };
 
-  constructor(private data: DataService) { }
+  constructor(private data: DataService, private toastController: ToastController) { }
+
+  // Method to present a toast
+  async presentToast(message: string) {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 2000,  // Toast will be shown for 2 seconds
+      position: 'bottom',  // You can set position as 'top', 'middle', or 'bottom'
+    });
+    toast.present();
+  }
 
   ngOnInit() {
     window.sessionStorage.setItem("next","");
+    window.sessionStorage.setItem('viewbookmarks',"false");
+    window.sessionStorage.removeItem("videoResults");
+    //window.localStorage.removeItem("bookmarks");
     console.log('Get video list');
     //this.videoList = this.data.getVideoList();
     const chainId = window.sessionStorage.getItem('chain');
@@ -88,9 +196,10 @@ export class HomePage implements OnInit {
 
   loadVideos() {
     console.log("!! load mode videos")
+
     this.data.getVideoList(this.currentPage, this.limit).subscribe((videos) => {
-        console.log("videos sent from server: ");
-        //console.dir(videos);
+        console.log("DEBUG: videos sent from server: ");
+        console.dir(videos);
         this.videoList = this.videoList || [];
         this.videoList = [...this.videoList, ...videos];
         console.log(`Got ${this.videoList.length} videos`)
@@ -154,6 +263,23 @@ export class HomePage implements OnInit {
     const data = event.data;
     console.log('Message received from iframe:', data);
 
+    if (data.view == 'bookmark') {
+      this.data.getVideo(data.location).subscribe(
+        (response: any) => {
+          console.log("DEBUG: Got results from getVideo:");
+          console.dir(response);
+	  this.searchResults = Array.isArray(response) ? response : [response];
+
+          // Call updateVideoList to insert the search results
+          this.updateVideoList(this.searchResults);
+          this.slides.slideTo(1);  
+        },
+        (error) => {
+          console.error('Search failed:', error);
+        }
+      );
+    }
+
     if (data.view === 'login') {
       console.log(`Login box with status [${data.status}]`);
       if (data.status === "ready") {
@@ -162,6 +288,11 @@ export class HomePage implements OnInit {
         document.getElementById("web3auth").style.top = '-150px';
         document.getElementById("web3auth").style.height = '170%';
       }
+    }
+
+    if (data.view === 'searchResults') {
+      //this.data.getVideo("3").subscribe((videos) => { console.log("videos sent from server: "); console.dir(videos) } );
+      this.slides.slideTo(data.location + 1);  
     }
 
     if (data.view == 'logout') {
@@ -233,28 +364,46 @@ export class HomePage implements OnInit {
       // Get all ion-slide elements
       const slides = document.querySelectorAll('ion-slide');
 
+	 
+      if (activeIndex == 0 )
+	this.hideSearchbar();
+      else
+	this.showSearchbar();
+
       slides.forEach((slide, index) => {
         const videos = slide.querySelectorAll('video');
-        console.log(`Slide index : ${index} of ${slides.length}`);
-        console.log(`# of Videos : ${videos.length}`);
+        //console.log(`Slide index : ${index} of ${slides.length}`);
+        //console.log(`# of Videos : ${videos.length}`);
         // Create a new element (e.g., a div with some text or an icon)
         const newElement = document.createElement("div");
         if (index != 0) {
           newElement.id = `project-${index}`; 
+          newElement.style.top = '50%';
           newElement.innerHTML = `<h1 id="title-${index}" style="font-color: #000;font-family: \'TikTok Display\'; font-weight: bold; font-style: normal;">TikΞTok</h1><br><p id="description-${index}">Browse and discover ETHGlobal hackathon projects.</p>` 
         }
         else {
          newElement.id = "intro-box";
-         newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+	 if (window.sessionStorage.getItem('videoResults') || window.localStorage.getItem('bookmarks')) {
+           const floating_vid = document.getElementById('float');
+	   //floating_vid.style.display = "block"
+	   const page = window.sessionStorage.getItem('viewbookmarks') === "true" ? "bookmarks" : "search_results";
+           newElement.innerHTML = `<iframe src="assets/fonts/${page}.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="z-index: 10000; border-radius: 10px; overflow: hidden; opacity: 0.90; background-color: transparent; width: 90%; height: 100%;" allowTransparency="true"></iframe>`;
+           newElement.style.height = '90%';
+           newElement.style.zIndex = '10000';
+           newElement.style.left = '5px';
+	 }
+	 else {
+           newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+           newElement.style.height = '50%';
+           newElement.style.left = '10px';
+	  }
         }
         const userAgent = navigator.userAgent;
         const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;  // Check if user agent is iOS
 
         newElement.style.position = 'absolute';
         newElement.style.bottom = '10px';
-        newElement.style.left = '10px';
         newElement.style.right = '10px';
-        newElement.style.height = '50%';
         //index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)' : /* transparent box */
         !isIOS && index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)' : /* transparent box */
          newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)'
@@ -280,9 +429,9 @@ export class HomePage implements OnInit {
         const project = document.getElementById(`title-${index}`);
         const description = document.getElementById(`description-${index}`);
         const current_video = videos[0];
-        console.log("Current videos: ");
+        //console.log("Current videos: ");
         //console.dir(videos);
-        console.log("Current video: ");
+        //console.log("Current video: ");
         //console.dir(current_video);
         if (index > 0 && current_video !== null) {
            project.innerText = current_video.getAttribute('title') === null ? "" : current_video.getAttribute('title');
@@ -292,7 +441,7 @@ export class HomePage implements OnInit {
         }
         if (index !== activeIndex) {
           videos.forEach(video => video.pause());
-          console.log('Paused videos on slide index:', index);
+          //console.log('Paused videos on slide index:', index);
         }
         else {
           videos.forEach(video=> {
@@ -315,7 +464,7 @@ export class HomePage implements OnInit {
           //videos.forEach(video => video.muted = !video.muted);
           //videos.forEach(video => video.play());
         }
-        console.log(`Active index ${activeIndex}`);
+        //console.log(`Active index ${activeIndex}`);
     });
   }
 
@@ -327,12 +476,16 @@ export class HomePage implements OnInit {
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     const floating_vid = document.getElementById('float');
-    floating_vid.style.display = "block"; 
+    floating_vid.style.display = "block"
     floating_vid.setAttribute("muted","false");
     console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]")
     var index = 0;
     try {
       index = await this.slides.getActiveIndex();
+      if (index == 0)
+	  floating_vid.style.display = "none"
+      else
+	  floating_vid.style.display = "block"
     }
     catch (error) {
       console.log("Got onSlideDidChange error: " + error)

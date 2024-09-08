@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, noarchive">
+    <meta name="format-detection" content="telephone=no">
+    <title>Transfonter demo</title>
+    <link href="stylesheet.css" rel="stylesheet">
+    <style>
+        /*
+        http://meyerweb.com/eric/tools/css/reset/
+        v2.0 | 20110126
+        License: none (public domain)
+        */
+        html, body, div, span, applet, object, iframe,
+        h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+        a, abbr, acronym, address, big, cite, code,
+        del, dfn, em, img, ins, kbd, q, s, samp,
+        small, strike, strong, sub, sup, tt, var,
+        b, u, i, center,
+        dl, dt, dd, ol, ul, li,
+        fieldset, form, label, legend,
+        table, caption, tbody, tfoot, thead, tr, th, td,
+        article, aside, canvas, details, embed,
+        figure, figcaption, footer, header, hgroup,
+        menu, nav, output, ruby, section, summary,
+        time, mark, audio, video {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            font-size: 100%;
+            font: inherit;
+            vertical-align: baseline;
+        }
+        /* HTML5 display-role reset for older browsers */
+        article, aside, details, figcaption, figure,
+        footer, header, hgroup, menu, nav, section {
+            display: block;
+        }
+        body {
+            background-color: #ccc1c5;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+        }
+        ol, ul {
+            list-style: none;
+        }
+        blockquote, q {
+            quotes: none;
+        }
+        blockquote:before, blockquote:after,
+        q:before, q:after {
+            content: '';
+            content: none;
+        }
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+        /* demo styles */
+        body {
+        }
+        .page {
+            width: 920px;
+            margin: 0 auto;
+            padding: 20px 20px 0 20px;
+            overflow: hidden;
+        }
+        .font-container {
+            overflow-x: auto;
+            overflow-y: hidden;
+            margin-bottom: 40px;
+            line-height: 1.3;
+            white-space: nowrap;
+            padding-bottom: 5px;
+        }
+        h1 {
+            position: relative;
+            /*background: #444;*/
+            font-size: 32px;
+            /*color: #fff;*/
+            padding: 10px 20px;
+            margin: 0 -20px 12px -20px;
+        }
+        .letters {
+            font-size: 25px;
+            margin-bottom: 20px;
+        }
+        .s10:before {
+            content: '10px';
+        }
+        .s11:before {
+            content: '11px';
+        }
+        .s12:before {
+            content: '12px';
+        }
+        .s14:before {
+            content: '14px';
+        }
+        .s18:before {
+            content: '18px';
+        }
+        .s24:before {
+            content: '24px';
+        }
+        .s30:before {
+            content: '30px';
+        }
+        .s36:before {
+            content: '36px';
+        }
+        .s48:before {
+            content: '48px';
+        }
+        .s60:before {
+            content: '60px';
+        }
+        .s72:before {
+            content: '72px';
+        }
+        .s10:before, .s11:before, .s12:before, .s14:before,
+        .s18:before, .s24:before, .s30:before, .s36:before,
+        .s48:before, .s60:before, .s72:before {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            font-weight: normal;
+            font-style: normal;
+            color: #999; 
+            padding-right: 6px;
+        }
+        pre {
+            display: block;
+            padding: 9px;
+            margin: 0 0 12px;
+            font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.428571429;
+            color: #333;
+            font-weight: normal;
+            font-style: normal;
+            background-color: #f5f5f5;
+            border: 1px solid #ccc;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+        /* responsive */
+        @media (max-width: 959px) {
+            .page {
+                width: auto;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="demo">
+        <div class="font-container" style="font-family: 'TikTok Display'; font-weight: bold; text-align: center; font-style: normal;">
+          <span style="font-size: 18px;">Bookmarks
+	<br>
+          <span style="font-size: 11px;">Click on an image to jump to that project
+        </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Retrieve the value from sessionStorage
+    var json = window.localStorage.getItem("bookmarks");  
+    
+    // Check if there is any stored data
+    if (json) {
+        // Parse the JSON string back into an object
+        var videos = JSON.parse(json);
+        
+        // Remove duplicates based on the userName field
+        var uniqueVideos = [];
+        var seenUserNames = new Set(); // Use a Set to keep track of unique userNames
+
+        videos.forEach(function(video, index) {
+            if (!seenUserNames.has(video.userName)) {
+                seenUserNames.add(video.userName); // Add the userName to the Set
+                uniqueVideos.push(video); // Add the unique video to the array
+            }
+        });
+
+        // Loop through each unique video object and create an image with a header and userPic text
+        uniqueVideos.forEach(function(video, index) {
+            if (video.showcase_url) {
+                // Parse the showcase URL to get the project ID
+                var showcaseUrlParts = video.showcase_url.split('/');
+                var lastPart = showcaseUrlParts[showcaseUrlParts.length - 1]; // Get the last part of the URL path
+                var projectId = lastPart.split('-').pop(); // Get the project ID (last value after splitting by hyphen)
+
+                // Construct the new img src URL
+                var imgSrc = `https://ethglobal.b-cdn.net/projects/${projectId}/banner/default.jpg`;
+
+                // Create a wrapper div to hold the entire content (header, img, userPic)
+                var wrapperDiv = document.createElement('div');
+                wrapperDiv.style.padding = '20px';
+                wrapperDiv.style.marginBottom = '10px';
+
+                // Apply alternating background colors
+                if (index % 2 === 0) {
+                    wrapperDiv.style.backgroundColor = '#f0f0f0';  // Light gray for even entries
+                } else {
+                    wrapperDiv.style.backgroundColor = '#e0e0e0';  // Darker gray for odd entries
+                }
+
+                // Create a header element for the userName
+                var header = document.createElement('h3');
+                header.innerText = video.userName; // Set the userName as the header text
+
+                // Apply styles to center the header and make it bold
+                header.style.textAlign = 'center'; // Center the header text
+                header.style.fontWeight = 'bold';  // Make the text bold
+
+                // Create a new img element
+                var img = document.createElement('img');
+	
+                img.src = imgSrc;          // Set the constructed img src
+                img.alt = video.userName;  // Optionally set alt text as the user's name
+                img.style.width = '200px'; // Set a default width for the images
+                img.style.height = 'auto'; // Keep the aspect ratio of the images
+                img.style.display = 'block'; // Display the image as a block element
+                img.style.margin = '0 auto'; // Center the image
+
+		// Add an onclick event to post a message to the parent iframe
+		img.onclick = function() {
+		    window.parent.postMessage({ location: video.id, view: "bookmark" }, "*");
+		};
+
+                // Create a paragraph element for userPic
+                var userPicText = document.createElement('div');
+                userPicText.innerHTML = `<div class='font-container' style="font-family: 'TikTok Display'; font-weight: bold; font-style: normal; text-align: center;">
+                                          <p style='font-size: 10px;'>${video.userPic}</p></div>`; // Set the userPic text
+                
+                // Apply styles to center the text and add margin
+                userPicText.style.textAlign = 'center';    // Center the userPic text
+                userPicText.style.marginTop = '10px';      // Add margin at the top for spacing
+
+                // Append the header, img, and userPic elements to the wrapper div
+                wrapperDiv.appendChild(header);
+                wrapperDiv.appendChild(img);
+                wrapperDiv.appendChild(userPicText);
+
+                // Append the wrapper div to the body or a specific container
+                document.body.appendChild(wrapperDiv);
+            }
+        });
+    } else {
+        console.log('No video results found in sessionStorage.');
+    }
+});
+
+</script>
+
+
+</body>
+</html>

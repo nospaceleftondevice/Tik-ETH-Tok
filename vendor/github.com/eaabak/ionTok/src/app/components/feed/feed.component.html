@@ -1,16 +1,18 @@
+
+
 <div class="actions" style="z-index: 9999;right: 30px;bottom: 30px;">
-  <div style="display: none;">
-    <ion-icon size="large" src="../assets/svg/comment.svg"></ion-icon>
-    <p>{{video.comments}}</p>
+
+  <div (click)="buttonClicked('bookmarks',0)" style="display: block;">
+    <ion-icon size="large" name="bookmarks" [style]="bookmarkStyle"></ion-icon>
   </div>
 
-  <div onclick="buttonClicked('test')" style="margin-bottom: 48px;">
+  <div (click)="buttonClicked('search',0)" style="visibility: hidden; margin-bottom: 48px;">
     <ion-icon size="large" name="search"></ion-icon>
   </div>
 
- <div (click)="buttonClicked('like')" 
+ <div (click)="buttonClicked('likes',video.id)" 
      [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
-  <ion-icon size="large" name="heart"></ion-icon>
+  <ion-icon size="large" name="heart" [style]="heartStyle"></ion-icon>
   
   <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
   <p [ngStyle]="{'visibility': getFirstLike(video.likes) === 0 ? 'hidden' : 'visible'}">
@@ -31,9 +33,9 @@
 </p>
 </div>
  
-  <div (click)="buttonClicked('bookmarks')"
+  <div (click)="buttonClicked('comments',video.id)"
      [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
-    <ion-icon size="large" name="bookmark"></ion-icon>
+    <ion-icon size="large" name="bookmark" [style]="bookmarkStyle"></ion-icon>
     <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
     <p [ngStyle]="{'visibility': getFirstLike(video.comments) === 0 ? 'hidden' : 'visible'}">
       {{formatNumber(getFirstLike(video.comments))}}
@@ -48,7 +50,8 @@
     </p>
   </div>
    
-  <div (click)="buttonClicked('info')" style="margin-bottom: 36px;">
+  <div (click)="buttonClicked('info',video.id)" style="margin-bottom: 36px;">
     <ion-icon size="large" name="information-circle-outline"></ion-icon>
   </div>
 </div>
+
