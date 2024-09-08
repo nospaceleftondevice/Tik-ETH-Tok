@@ -10,13 +10,14 @@
 ## Preview
 
 <div align="center">
- <img alt="home"  title="home" src="https://res.cloudinary.com/alan4747/image/upload/v1632941770/samples/localhost_8100_tabs_home_iPhone_6_7_8_ri3wsx.png" style=" width: 25%;"/>
- <img alt="home"  title="home" src="https://res.cloudinary.com/alan4747/image/upload/v1632941774/samples/localhost_8100_tabs_home_iPhone_6_7_8_1_edaivz.png" style=" width: 25%;"/>
- <img alt="dicsover"  title="dicsover" src="https://res.cloudinary.com/alan4747/image/upload/v1632941749/samples/localhost_8100_tabs_home_iPhone_6_7_8_3_h9xz2v.png" style=" width: 25%;"/>
- <img alt="activity"  title="activity" src="https://res.cloudinary.com/alan4747/image/upload/v1632941740/samples/localhost_8100_tabs_home_iPhone_6_7_8_4_vcbhmo.png" style=" width: 25%;"/>
- <img alt="profile"  title="profile" src="https://res.cloudinary.com/alan4747/image/upload/v1632941740/samples/localhost_8100_tabs_home_iPhone_6_7_8_5_cporbl.png" style=" width: 25%;"/>
- <img alt="setting"  title="setting" src="https://res.cloudinary.com/alan4747/image/upload/v1632941740/samples/localhost_8100_tabs_home_iPhone_6_7_8_6_sbn1u4.png" style=" width: 25%;"/>
+ <img alt="home"  title="home" src="img/image_1.png" style=" width: 25%;"/>
+ <img alt="home"  title="home" src="img/image_2.png" style=" width: 25%;"/>
+ <img alt="dicsover"  title="dicsover" src="img/image_3.png" style=" width: 25%;"/>
+ <img alt="activity"  title="activity" src="img/image_4.png" style=" width: 25%;"/>
+ <img alt="profile"  title="profile" src="img/image_5.png" style=" width: 25%;"/>
+ <img alt="setting"  title="setting" src="img/image_6.png" style=" width: 25%;"/>
 </div>
+
 
 
 ## Running the application locally
