@@ -1,24 +1,107 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { IonSlides } from '@ionic/angular';
 import { DataService } from "../../services/data.service";
+import { ToastController } from '@ionic/angular';
+import { IonSearchbar } from '@ionic/angular';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
 })
-export class HomePage implements OnInit {
-  @ViewChild(IonSlides, { static: false }) slides: IonSlides;
 
-  slideOpts = {
-    direction: 'vertical'
-  };
+export class HomePage implements OnInit {
+  //@ViewChild(IonSlides, { static: false }) slides: IonSlides;
+  @ViewChild('slides', { static: false }) slides: IonSlides;  // Reference the IonSlides component
+  //@ViewChild('searchbar', { static: false }) searchbar: ElementRef;
+  @ViewChild('searchbar', { static: false }) searchbar: IonSearchbar; // Use IonSearchbar instead of ElementRef
+
+  showSearchBar: boolean = false; // Initially hidden
+
   videoList: any = [];
+  searchResults: any[] = [];  // Add searchResults property
   count = 0;
   currentPage: number = 1;
   limit: number = 10;
 
   chainName: string;
+
+  onSearch(event: any) {
+    const searchTerm = event.target.value;
+    if (searchTerm.trim() !== '') {
+      this.performSearch(searchTerm);
+    }
+  }
+
+  onSearchKeyup(event: KeyboardEvent) {
+    const searchTerm = (event.target as HTMLInputElement).value;
+  
+    // Check if the Enter key was pressed
+    if (event.key === 'Enter' || event.key === 'Return') {
+      if (searchTerm.trim() !== '') {
+        this.performSearch(searchTerm);  // Trigger the search only when Enter is pressed
+        setTimeout(() => {
+          this.searchbar.getInputElement().then((input) => {
+            input.blur();
+          });
+        }, 10);
+      }
+    }
+  }
+
+  performSearch(searchTerm: string) {
+    // Reset the current page to 1 for search
+    const payload = { search: searchTerm, page: 1, limit: this.limit };
+
+    this.data.searchVideos(payload).subscribe(
+      (response: any) => {
+        console.log("Got results from searchVideos:");
+        console.dir(response);
+        this.searchResults = response || [];
+
+        // Call updateVideoList to insert the search results
+        this.updateVideoList(this.searchResults);
+      },
+      (error) => {
+        console.error('Search failed:', error);
+      }
+    );
+  }
+
+  updateVideoList(results: any[]) {
+    if (results.length > 0) {
+      //const insertIndex = this.videoList.length; // Insert at the end of the current list
+      const insertIndex = 1
+      console.log(`Inserting ${results.length} results at index: ${insertIndex}`);
+      this.presentToast(`Adding search results to your feed`);
+
+      // Insert the results at the current index in the videoList
+      this.videoList.splice(insertIndex, 0, ...results);
+      // Programmatically navigate the slides
+      this.slides.slideTo(0);  // Go to the first slide
+      document.querySelector('ion-slides').slideTo(0);
+      //this.slides.slideTo(1);  // Then go to the second slide
+      this.slides.update();  // This refreshes the slides component
+      this.presentToast(`Search results added.`);
+      //document.querySelector('ion-slides').slideTo(1);
+      setTimeout(document.querySelector('ion-slides').slideNext, 1000);
+    }
+  }
+
+
+  // Method to show the searchbar
+  showSearchbar() {
+    this.showSearchBar = true;
+  }
+
+  // Method to hide the searchbar
+  hideSearchbar() {
+    this.showSearchBar = false;
+  }
+
+  slideOpts = {
+    direction: 'vertical'
+  };
 
   // Map of Chain IDs to Chain Names
   chainMap = {
@@ -73,10 +156,21 @@ export class HomePage implements OnInit {
     '11155111': 'Ethereum Sepolia',
   };
 
-  constructor(private data: DataService) { }
+  constructor(private data: DataService, private toastController: ToastController) { }
+
+  // Method to present a toast
+  async presentToast(message: string) {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 2000,  // Toast will be shown for 2 seconds
+      position: 'bottom',  // You can set position as 'top', 'middle', or 'bottom'
+    });
+    toast.present();
+  }
 
   ngOnInit() {
     window.sessionStorage.setItem("next","");
+    window.sessionStorage.removeItem("videoResults");
     console.log('Get video list');
     //this.videoList = this.data.getVideoList();
     const chainId = window.sessionStorage.getItem('chain');
@@ -233,6 +327,12 @@ export class HomePage implements OnInit {
       // Get all ion-slide elements
       const slides = document.querySelectorAll('ion-slide');
 
+	 
+      if (activeIndex == 0 )
+	this.hideSearchbar();
+      else
+	this.showSearchbar();
+
       slides.forEach((slide, index) => {
         const videos = slide.querySelectorAll('video');
         console.log(`Slide index : ${index} of ${slides.length}`);
@@ -241,20 +341,31 @@ export class HomePage implements OnInit {
         const newElement = document.createElement("div");
         if (index != 0) {
           newElement.id = `project-${index}`; 
+          newElement.style.top = '50%';
           newElement.innerHTML = `<h1 id="title-${index}" style="font-color: #000;font-family: \'TikTok Display\'; font-weight: bold; font-style: normal;">TikΞTok</h1><br><p id="description-${index}">Browse and discover ETHGlobal hackathon projects.</p>` 
         }
         else {
          newElement.id = "intro-box";
-         newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+	 if (window.sessionStorage.getItem('videoResults')) {
+           const floating_vid = document.getElementById('float');
+	   //floating_vid.style.display = "block"
+           newElement.innerHTML = `<iframe src="assets/fonts/search_results.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="z-index: 10000; border-radius: 10px; overflow: hidden; opacity: 0.90; background-color: transparent; width: 90%; height: 100%;" allowTransparency="true"></iframe>`;
+           newElement.style.height = '90%';
+           newElement.style.zIndex = '10000';
+           newElement.style.left = '5px';
+	 }
+	 else {
+           newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+           newElement.style.height = '50%';
+           newElement.style.left = '10px';
+	  }
         }
         const userAgent = navigator.userAgent;
         const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;  // Check if user agent is iOS
 
         newElement.style.position = 'absolute';
         newElement.style.bottom = '10px';
-        newElement.style.left = '10px';
         newElement.style.right = '10px';
-        newElement.style.height = '50%';
         //index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)' : /* transparent box */
         !isIOS && index != 0 ? newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)' : /* transparent box */
          newElement.style.backgroundColor = 'rgba(0, 0, 0, 0.0)'
@@ -327,12 +438,16 @@ export class HomePage implements OnInit {
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     const floating_vid = document.getElementById('float');
-    floating_vid.style.display = "block"; 
+    floating_vid.style.display = "block"
     floating_vid.setAttribute("muted","false");
     console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]")
     var index = 0;
     try {
       index = await this.slides.getActiveIndex();
+      if (index == 0)
+	  floating_vid.style.display = "none"
+      else
+	  floating_vid.style.display = "block"
     }
     catch (error) {
       console.log("Got onSlideDidChange error: " + error)
