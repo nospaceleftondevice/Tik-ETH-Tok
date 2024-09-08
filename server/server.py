@@ -22,6 +22,10 @@ def load_video_data():
     conn = get_db_connection()
     cur = conn.cursor()
 
+    cur.execute('''
+	DROP TABLE videos ''')
+    conn.commit()
+
     # Create the videos table if it doesn't exist
     cur.execute('''
         CREATE TABLE IF NOT EXISTS videos (
@@ -34,6 +38,11 @@ def load_video_data():
             comments TEXT DEFAULT '0:0'
         )
     ''')
+    conn.commit()
+
+    # Create consraints
+    cur.execute('''
+	ALTER TABLE videos ADD CONSTRAINT unique_showcase_url UNIQUE (showcase_url) ''')
     conn.commit()
 
     # Insert the video data into the database
@@ -130,7 +139,7 @@ def update_likes(video_id):
 
     if result:
         likes = result[0]
-        valid_likes, invalid_likes = map(int, likes.split(':'))
+        invalid_likes, valid_likes = map(int, likes.split(':'))
 
         # Increment likes based on account validity
         if is_valid:
@@ -168,7 +177,7 @@ def update_comments(video_id):
 
     if result:
         comments = result[0]
-        valid_comments, invalid_comments = map(int, comments.split(':'))
+        invalid_comments, valid_comments = map(int, comments.split(':'))
 
         # Increment comments based on account validity
         if is_valid:
