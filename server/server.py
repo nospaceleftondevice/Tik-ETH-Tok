@@ -22,11 +22,15 @@ def load_video_data():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute('''
-	DROP TABLE videos ''')
+    # Drop the user_interactions table first due to foreign key dependency
+    cur.execute('DROP TABLE IF EXISTS user_interactions')
     conn.commit()
 
-    # Create the videos table if it doesn't exist
+    # Drop and recreate the videos table to ensure fresh data
+    cur.execute('DROP TABLE IF EXISTS videos')
+    conn.commit()
+
+    # Create the videos table
     cur.execute('''
         CREATE TABLE IF NOT EXISTS videos (
             id SERIAL PRIMARY KEY,
@@ -40,24 +44,30 @@ def load_video_data():
     ''')
     conn.commit()
 
-    # Create consraints
+    # Create a table to track user interactions (for likes and comments)
     cur.execute('''
-	ALTER TABLE videos ADD CONSTRAINT unique_showcase_url UNIQUE (showcase_url) ''')
+        CREATE TABLE IF NOT EXISTS user_interactions (
+            id SERIAL PRIMARY KEY,
+            account_number TEXT NOT NULL,
+            video_id INTEGER REFERENCES videos(id) ON DELETE CASCADE,
+            has_liked BOOLEAN DEFAULT FALSE,
+            has_commented BOOLEAN DEFAULT FALSE,
+            UNIQUE(account_number, video_id)
+        )
+    ''')
     conn.commit()
 
-    # Insert the video data into the database
+    # Insert video data into the database
     for video in video_data:
         try:
-            userName = video.get('userName', None)  # Retrieve the userName
-            userPic = video.get('userPic', '')      # Retrieve the userPic (description-like field)
-            url = video.get('url', None)             # Retrieve the video URL
-            showcase_url = video.get('showcase_url', '')  # Retrieve the showcase URL
+            userName = video.get('userName', None)
+            userPic = video.get('userPic', '')
+            url = video.get('url', None)
+            showcase_url = video.get('showcase_url', '')
 
-            # If userName or url is missing, raise an error
             if userName is None or url is None:
                 raise KeyError("Missing required 'userName' or 'url' field")
 
-            # Insert the data into the database
             cur.execute('''
                 INSERT INTO videos (userName, userPic, url, showcase_url, likes, comments)
                 VALUES (%s, %s, %s, %s, %s, %s)
@@ -133,7 +143,7 @@ def update_likes(video_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Fetch current likes
+    # Fetch current likes for the video
     cur.execute('SELECT likes FROM videos WHERE id = %s', (video_id,))
     result = cur.fetchone()
 
@@ -141,17 +151,33 @@ def update_likes(video_id):
         likes = result[0]
         invalid_likes, valid_likes = map(int, likes.split(':'))
 
-        # Increment likes based on account validity
+        # If the user is valid, check if they have already liked the video
         if is_valid:
+            cur.execute('SELECT has_liked FROM user_interactions WHERE account_number = %s AND video_id = %s', (account_number, video_id))
+            interaction = cur.fetchone()
+
+            if interaction and interaction[0]:  # User has already liked the video
+                return jsonify({"message": "User has already liked this video"}), 400
+
+            # Increment valid likes
             valid_likes += 1
+
+            # Insert or update user interaction
+            cur.execute('''
+                INSERT INTO user_interactions (account_number, video_id, has_liked)
+                VALUES (%s, %s, TRUE)
+                ON CONFLICT (account_number, video_id) 
+                DO UPDATE SET has_liked = TRUE
+            ''', (account_number, video_id))
         else:
+            # For '000000' users, we allow unlimited likes
             invalid_likes += 1
 
+        # Update the likes count in the database
         new_likes = f"{invalid_likes}:{valid_likes}"
-
-        # Update the likes in the database
         cur.execute('UPDATE videos SET likes = %s WHERE id = %s', (new_likes, video_id))
         conn.commit()
+
         cur.close()
         conn.close()
 
@@ -161,7 +187,6 @@ def update_likes(video_id):
         conn.close()
         return jsonify({"error": "Video not found"}), 404
 
-# Endpoint to update comments
 @app.route('/videos/<int:video_id>/comments', methods=['POST'])
 def update_comments(video_id):
     data = request.get_json()
@@ -171,7 +196,7 @@ def update_comments(video_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Fetch current comments
+    # Fetch current comments for the video
     cur.execute('SELECT comments FROM videos WHERE id = %s', (video_id,))
     result = cur.fetchone()
 
@@ -179,17 +204,33 @@ def update_comments(video_id):
         comments = result[0]
         invalid_comments, valid_comments = map(int, comments.split(':'))
 
-        # Increment comments based on account validity
+        # If the user is valid, check if they have already commented on the video
         if is_valid:
+            cur.execute('SELECT has_commented FROM user_interactions WHERE account_number = %s AND video_id = %s', (account_number, video_id))
+            interaction = cur.fetchone()
+
+            if interaction and interaction[0]:  # User has already commented on the video
+                return jsonify({"message": "User has already commented on this video"}), 400
+
+            # Increment valid comments
             valid_comments += 1
+
+            # Insert or update user interaction
+            cur.execute('''
+                INSERT INTO user_interactions (account_number, video_id, has_commented)
+                VALUES (%s, %s, TRUE)
+                ON CONFLICT (account_number, video_id)
+                DO UPDATE SET has_commented = TRUE
+            ''', (account_number, video_id))
         else:
+            # For '000000' users, we allow unlimited comments
             invalid_comments += 1
 
+        # Update the comments count in the database
         new_comments = f"{invalid_comments}:{valid_comments}"
-
-        # Update the comments in the database
         cur.execute('UPDATE videos SET comments = %s WHERE id = %s', (new_comments, video_id))
         conn.commit()
+
         cur.close()
         conn.close()
 
@@ -198,6 +239,7 @@ def update_comments(video_id):
         cur.close()
         conn.close()
         return jsonify({"error": "Video not found"}), 404
+
 
 if __name__ == '__main__':
     load_video_data()  # Load data into PostgreSQL when the app starts
