@@ -71,7 +71,7 @@ export class HomePage implements OnInit {
   updateVideoList(results: any[]) {
     if (results.length > 0) {
       //const insertIndex = this.videoList.length; // Insert at the end of the current list
-      const insertIndex = 0
+      const insertIndex = 1
       console.log(`Inserting ${results.length} results at index: ${insertIndex}`);
       this.presentToast(`Adding search results to your feed`);
 
@@ -170,6 +170,7 @@ export class HomePage implements OnInit {
 
   ngOnInit() {
     window.sessionStorage.setItem("next","");
+    window.sessionStorage.removeItem("videoResults");
     console.log('Get video list');
     //this.videoList = this.data.getVideoList();
     const chainId = window.sessionStorage.getItem('chain');
@@ -340,13 +341,17 @@ export class HomePage implements OnInit {
         const newElement = document.createElement("div");
         if (index != 0) {
           newElement.id = `project-${index}`; 
+          newElement.style.top = '50%';
           newElement.innerHTML = `<h1 id="title-${index}" style="font-color: #000;font-family: \'TikTok Display\'; font-weight: bold; font-style: normal;">TikΞTok</h1><br><p id="description-${index}">Browse and discover ETHGlobal hackathon projects.</p>` 
         }
         else {
          newElement.id = "intro-box";
 	 if (window.sessionStorage.getItem('videoResults')) {
-           newElement.innerHTML = `<iframe src="assets/fonts/search_results.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%%; height: 100%;" allowTransparency="true"></iframe>`;
+           const floating_vid = document.getElementById('float');
+	   //floating_vid.style.display = "block"
+           newElement.innerHTML = `<iframe src="assets/fonts/search_results.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="z-index: 10000; border-radius: 10px; overflow: hidden; opacity: 0.90; background-color: transparent; width: 90%; height: 100%;" allowTransparency="true"></iframe>`;
            newElement.style.height = '90%';
+           newElement.style.zIndex = '10000';
            newElement.style.left = '5px';
 	 }
 	 else {
@@ -433,12 +438,16 @@ export class HomePage implements OnInit {
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     const floating_vid = document.getElementById('float');
-    floating_vid.style.display = "block"; 
+    floating_vid.style.display = "block"
     floating_vid.setAttribute("muted","false");
     console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]")
     var index = 0;
     try {
       index = await this.slides.getActiveIndex();
+      if (index == 0)
+	  floating_vid.style.display = "none"
+      else
+	  floating_vid.style.display = "block"
     }
     catch (error) {
       console.log("Got onSlideDidChange error: " + error)

@@ -164,74 +164,89 @@
         </div>
 </div>
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function() {
     // Retrieve the value from sessionStorage
     var json = window.sessionStorage.getItem("videoResults");
     
     // Check if there is any stored data
     if (json) {
-      // Parse the JSON string back into an object
-      var videos = JSON.parse(json);
-      
-      // Remove duplicates based on the userName field
-      var uniqueVideos = [];
-      var seenUserNames = new Set(); // Use a Set to keep track of unique userNames
+        // Parse the JSON string back into an object
+        var videos = JSON.parse(json);
+        
+        // Remove duplicates based on the userName field
+        var uniqueVideos = [];
+        var seenUserNames = new Set(); // Use a Set to keep track of unique userNames
 
-      videos.forEach(function(video) {
-        if (!seenUserNames.has(video.userName)) {
-          seenUserNames.add(video.userName); // Add the userName to the Set
-          uniqueVideos.push(video); // Add the unique video to the array
-        }
-      });
+        videos.forEach(function(video, index) {
+            if (!seenUserNames.has(video.userName)) {
+                seenUserNames.add(video.userName); // Add the userName to the Set
+                uniqueVideos.push(video); // Add the unique video to the array
+            }
+        });
 
-      // Loop through each unique video object and create an image with a header and userPic text
-      uniqueVideos.forEach(function(video) {
-        if (video.showcase_url) {
-          // Parse the showcase URL to get the project ID
-          var showcaseUrlParts = video.showcase_url.split('/');
-          var lastPart = showcaseUrlParts[showcaseUrlParts.length - 1]; // Get the last part of the URL path
-          var projectId = lastPart.split('-').pop(); // Get the project ID (last value after splitting by hyphen)
+        // Loop through each unique video object and create an image with a header and userPic text
+        uniqueVideos.forEach(function(video, index) {
+            if (video.showcase_url) {
+                // Parse the showcase URL to get the project ID
+                var showcaseUrlParts = video.showcase_url.split('/');
+                var lastPart = showcaseUrlParts[showcaseUrlParts.length - 1]; // Get the last part of the URL path
+                var projectId = lastPart.split('-').pop(); // Get the project ID (last value after splitting by hyphen)
 
-          // Construct the new img src URL
-          var imgSrc = `https://ethglobal.b-cdn.net/projects/${projectId}/banner/default.jpg`;
+                // Construct the new img src URL
+                var imgSrc = `https://ethglobal.b-cdn.net/projects/${projectId}/banner/default.jpg`;
 
-          // Create a header element for the userName
-          var header = document.createElement('h3');
-          header.innerText = video.userName; // Set the userName as the header text
+                // Create a wrapper div to hold the entire content (header, img, userPic)
+                var wrapperDiv = document.createElement('div');
+                wrapperDiv.style.padding = '20px';
+                wrapperDiv.style.marginBottom = '10px';
 
-          // Apply styles to center the header and make it bold
-          header.style.textAlign = 'center'; // Center the header text
-          header.style.fontWeight = 'bold';  // Make the text bold
+                // Apply alternating background colors
+                if (index % 2 === 0) {
+                    wrapperDiv.style.backgroundColor = '#f0f0f0';  // Light gray for even entries
+                } else {
+                    wrapperDiv.style.backgroundColor = '#e0e0e0';  // Darker gray for odd entries
+                }
 
-          // Create a new img element
-          var img = document.createElement('img');
-          img.src = imgSrc;          // Set the constructed img src
-          img.alt = video.userName;  // Optionally set alt text as the user's name
-          img.style.width = '200px'; // Set a default width for the images
-          img.style.height = 'auto'; // Keep the aspect ratio of the images
-          img.style.display = 'block'; // Display the image as a block element
-          img.style.margin = '0 auto'; // Center the image
+                // Create a header element for the userName
+                var header = document.createElement('h3');
+                header.innerText = video.userName; // Set the userName as the header text
 
-          // Create a paragraph element for userPic
-          var userPicText = document.createElement('div');
-          userPicText.innerHTML = `<div class='font-container' style="font-family: 'TikTok Display'; font-weight: bold; font-style: normal; text-align: center;"><p style='left: 25px; text-wrap: pretty; font-size: 10px;'>` + 
-		video.userPic + "</p></div>"; // Set the userPic text
-          
-          // Apply styles to center the text and add a bottom border
-          userPicText.style.textAlign = 'center';    // Center the userPic text
-          //userPicText.style.borderBottom = '50px solid transparent';  // Add 50px bottom border
-          userPicText.style.marginTop = '10px';  // Add margin at the top for spacing
+                // Apply styles to center the header and make it bold
+                header.style.textAlign = 'center'; // Center the header text
+                header.style.fontWeight = 'bold';  // Make the text bold
 
-          // Append the header, img, and userPic elements to the body or a specific container
-          document.body.appendChild(header);
-          document.body.appendChild(img);
-          document.body.appendChild(userPicText);
-        }
-      });
+                // Create a new img element
+                var img = document.createElement('img');
+                img.src = imgSrc;          // Set the constructed img src
+                img.alt = video.userName;  // Optionally set alt text as the user's name
+                img.style.width = '200px'; // Set a default width for the images
+                img.style.height = 'auto'; // Keep the aspect ratio of the images
+                img.style.display = 'block'; // Display the image as a block element
+                img.style.margin = '0 auto'; // Center the image
+
+                // Create a paragraph element for userPic
+                var userPicText = document.createElement('div');
+                userPicText.innerHTML = `<div class='font-container' style="font-family: 'TikTok Display'; font-weight: bold; font-style: normal; text-align: center;">
+                                          <p style='font-size: 10px;'>${video.userPic}</p></div>`; // Set the userPic text
+                
+                // Apply styles to center the text and add margin
+                userPicText.style.textAlign = 'center';    // Center the userPic text
+                userPicText.style.marginTop = '10px';      // Add margin at the top for spacing
+
+                // Append the header, img, and userPic elements to the wrapper div
+                wrapperDiv.appendChild(header);
+                wrapperDiv.appendChild(img);
+                wrapperDiv.appendChild(userPicText);
+
+                // Append the wrapper div to the body or a specific container
+                document.body.appendChild(wrapperDiv);
+            }
+        });
     } else {
-      console.log('No video results found in sessionStorage.');
+        console.log('No video results found in sessionStorage.');
     }
-  });
+});
+
 </script>
 
 
