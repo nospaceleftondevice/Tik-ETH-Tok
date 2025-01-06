@@ -194,6 +194,8 @@ export class HomePage implements OnInit {
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
     console.log('Page loaded');
+    console.log('Page host: [' + window.location.host + ']');
+    console.log('Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
   }
 
   loadVideos() {
