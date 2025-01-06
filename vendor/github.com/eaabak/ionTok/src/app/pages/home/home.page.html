@@ -1,69 +1,54 @@
-<ion-content fullscreen>
-  <div
-    *ngIf="window.location.hostname !== 'tikethtok.app'"
-    style="position: fixed; height: 30px; top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
-    (click)="handleWeb3Auth()"
-  >
-    <ng-container *ngIf="chainName !== 'Unknown Chain'; else notConnected">
-      Connected to {{ chainName }}
-      <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-out-outline"></ion-icon>
-    </ng-container>
-    <ng-template #notConnected>
-      You may not be connected!
-      <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-in-outline"></ion-icon>
-    </ng-template>
-  </div>
+<!--ion-header class="ion-no-border ion-text-center">
+  <ion-toolbar>
+    <ion-title>
+      <ion-text>Following | </ion-text>
+      <strong>For You</strong></ion-title>
+  </ion-toolbar>
+</ion-header-->
+
+<div 
+  *ngIf="showHeaderDiv"
+  style="position: fixed; height: 30px; top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
+  (click)="handleWeb3Auth()">
+  <ng-container *ngIf="chainName !== 'Unknown Chain'; else notConnected">
+    Connected to {{ chainName }}
+    <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-out-outline"></ion-icon>
+  </ng-container>
+  <ng-template #notConnected>
+    You may not be connected
+    <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-in-outline"></ion-icon>
+  </ng-template>
+</div>
 
   <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index">
-      <video
-        loop
-        playsinline
-        muted
-        preload="metadata"
-        style="background-color: #ccc1c5;"
-        [src]="video.url"
-        [title]="video.userName"
-        [class]="video.userPic"
-      ></video>
+      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
+      title="{{video.userName}}" class="{{video.userPic}}"></video>
+      <!--button (click)="loadMoreVideos()" style="position: absolute; top: 20px; left: 10px">Load More</button-->
       <app-feed *ngIf="i !== 0" [video]="video"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
 
-    <audio id="background-audio" autoplay muted>
-      <source src="https://your.cmptr.cloud:2017/2-seconds-of-silence.mp3" type="audio/mp3" />
-      Your browser does not support the audio element.
-    </audio>
+  <audio id="background-audio" autoplay muted>
+    <source src="https://your.cmptr.cloud:2017/2-seconds-of-silence.mp3" type="audio/mp3">
+    Your browser does not support the audio element.
+  </audio>
 
-    <ion-button
-      *ngIf="window.location.hostname !== 'tikethtok.app'"
-      (click)="handleWeb3Auth()"
-      style="position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%);"
-    >
-      web3auth
-    </ion-button>
-  </ion-slides>
+  <!--  overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe-->
+  <!-- Button to unmute audio -->
+  <ion-button (click)="handleWeb3Auth()"
+  style="position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%);">
+    web3auth
+  </ion-button>
+</ion-slides>
 
-  <video
-    class="floating-video"
-    id="float"
-    autoplay
-    loop
-    playsinline
-    muted
-    controls
-    src=""
-    style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9998; pointer-events: auto;"
-  ></video>
 
-  <div>
-    <ion-searchbar
-      *ngIf="showSearchBar"
-      #searchbar
-      (keyup)="onSearchKeyup($event)"
-      id="search"
-      style="z-index: 9999; position: absolute; top: 45%; left: 0px;"
-      placeholder="Search..."
-    ></ion-searchbar>
-  </div>
+
+<video class="floating-video" id="float" autoplay loop playsinline muted controls src=""
+    style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9998; pointer-events: auto;"></video>
+
+<div>
+  <ion-searchbar *ngIf="showSearchBar" #searchbar (keyup)="onSearchKeyup($event)" id="search" style="z-index: 9999;position: absolute; top: 45%; left: 0px;" placeholder="Search..."></ion-searchbar>
+</div>
 </ion-content>
+
