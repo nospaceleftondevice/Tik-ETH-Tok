@@ -23,7 +23,9 @@
   <!-- Dynamic Title Change -->
   <ng-container *ngIf="!showHeaderDiv">
     <script>
-      document.title =  window.location.host
+      console.log("Document title: " + document.title)
+      document.title = window.location.host;
+      console.log("Document title: " + document.title)
     </script>
   </ng-container>
     
