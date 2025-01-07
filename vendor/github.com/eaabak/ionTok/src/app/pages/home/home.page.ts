@@ -196,8 +196,15 @@ export class HomePage implements OnInit {
     console.log('Page loaded');
     console.log('Page host: [' + window.location.host + ']');
     console.log('Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
+    this.updateTitle();
   }
 
+  private updateTitle() {
+    if (!this.showHeaderDiv) {
+      document.title = window.location.host;
+    }
+  }
+  
   loadVideos() {
     console.log("!! load mode videos")
 

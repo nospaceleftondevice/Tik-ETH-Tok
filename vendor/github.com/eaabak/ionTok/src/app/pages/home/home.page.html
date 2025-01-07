@@ -20,15 +20,6 @@
     </ng-template>
   </div>
 
-  <!-- Dynamic Title Change -->
-  <ng-container *ngIf="!showHeaderDiv">
-    <script>
-      console.log("Document title: " + document.title)
-      document.title = window.location.host;
-      console.log("Document title: " + document.title)
-    </script>
-  </ng-container>
-    
   <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index">
       <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
