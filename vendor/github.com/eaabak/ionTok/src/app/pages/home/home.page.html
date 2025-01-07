@@ -20,6 +20,13 @@
     </ng-template>
   </div>
 
+  <!-- Dynamic Title Change -->
+  <ng-container *ngIf="!showHeaderDiv">
+    <script>
+      document.title =  window.location.host
+    </script>
+  </ng-container>
+    
   <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index">
       <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
@@ -36,7 +43,7 @@
 
   <!--  overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe-->
   <!-- Button to unmute audio -->
-  <ion-button (click)="handleWeb3Auth()"
+  <ion-button *ngIf="showHeaderDiv" (click)="handleWeb3Auth()"
   style="position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%);">
     web3auth
   </ion-button>
