@@ -192,7 +192,7 @@ export class HomePage implements OnInit {
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
     if (!this.showHeaderDiv)
-      window.sessionStorage.setItem('account',window.location.search);
+      window.sessionStorage.setItem('account',prompt("Enter show name"));
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
     console.log('Page loaded');
