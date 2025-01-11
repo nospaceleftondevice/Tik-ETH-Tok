@@ -359,7 +359,7 @@ def get_commented_videos_route(account_number):
             for video in results
         ]
 
-        return jsonify({"liked_videos": liked_videos}), 200
+        return jsonify({"liked_videos": commented_videos}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
