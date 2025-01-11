@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import psycopg2
 import json
+import sys
 
 app = Flask(__name__)
 
@@ -318,6 +319,12 @@ def get_liked_videos_route(account_number):
 
 
 if __name__ == '__main__':
-    load_video_data()  # Load data into PostgreSQL when the app starts
-    app.run(host="0.0.0.0", port=7000, debug=True)
+    # Check if the first command-line argument is "wipe"
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "wipe":
+        print("Wiping database and loading video data...")
+        load_video_data()
+    else:
+        print("Skipping database initialization.")
 
+    # Start the Flask application
+    app.run(host="0.0.0.0", port=7000, debug=True)
