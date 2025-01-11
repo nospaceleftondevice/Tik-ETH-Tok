@@ -346,7 +346,7 @@ def get_commented_videos_route(account_number):
         conn.close()
 
         # Prepare the response in JSON format
-        liked_videos = [
+        commented_videos = [
             {
                 "id": video[0],
                 "userName": video[1],
