@@ -317,6 +317,52 @@ def get_liked_videos_route(account_number):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/videos/by-user/<account_number>/comments', methods=['GET'])
+def get_commented_videos_route(account_number):
+    try:
+        # Establish database connection
+        conn = psycopg2.connect(
+            host="localhost",
+            database="video_db",
+            user="user",
+            password="password"
+        )
+        cur = conn.cursor()
+
+        # Query to get videos liked by the specific user
+        query = '''
+            SELECT v.id, v.userName, v.userPic, v.url, v.showcase_url, v.likes, v.comments
+            FROM videos v
+            JOIN user_interactions ui ON v.id = ui.video_id
+            WHERE ui.account_number = %s AND ui.has_commented = TRUE
+        '''
+        cur.execute(query, (account_number,))
+
+        # Fetch all results
+        results = cur.fetchall()
+
+        # Close cursor and connection
+        cur.close()
+        conn.close()
+
+        # Prepare the response in JSON format
+        liked_videos = [
+            {
+                "id": video[0],
+                "userName": video[1],
+                "userPic": video[2],
+                "url": video[3],
+                "showcase_url": video[4],
+                "likes": video[5],
+                "comments": video[6]
+            }
+            for video in results
+        ]
+
+        return jsonify({"liked_videos": liked_videos}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     # Check if the first command-line argument is "wipe"
