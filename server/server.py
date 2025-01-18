@@ -81,6 +81,35 @@ def load_video_data():
     cur.close()
     conn.close()
 
+@app.route('/video/<int:video_id>', methods=['GET'])
+def get_video_by_id(video_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Fetch video by ID
+    cur.execute('SELECT * FROM videos WHERE id = %s', (video_id,))
+    video = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    # If video is not found, return a 404 error
+    if not video:
+        return jsonify({"error": "Video not found"}), 404
+
+    # Construct response for the video
+    response = {
+        "id": video[0],
+        "userName": video[1],
+        "userPic": video[2],
+        "url": video[3],
+        "showcase_url": video[4],
+        "likes": video[5],
+        "comments": video[6]
+    }
+
+    return jsonify(response)
+
 # Route to get paginated video data with optional search
 @app.route('/videos', methods=['GET'])
 def get_videos():

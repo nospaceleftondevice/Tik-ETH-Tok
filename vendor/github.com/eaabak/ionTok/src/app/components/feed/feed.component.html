@@ -2,9 +2,8 @@
 
 <div class="actions" style="z-index: 9999;right: 30px;bottom: 30px;">
 
-  <div style="display: none;">
-    <ion-icon size="large" src="../assets/svg/comment.svg"></ion-icon>
-    <p>{{video.comments}}</p>
+  <div (click)="buttonClicked('bookmarks',0)" style="display: block;">
+    <ion-icon size="large" name="bookmarks" [style]="bookmarkStyle"></ion-icon>
   </div>
 
   <div (click)="buttonClicked('search',0)" style="visibility: hidden; margin-bottom: 48px;">

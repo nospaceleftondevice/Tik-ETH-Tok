@@ -1,0 +1,23 @@
+***************
+*** 10,17 ****
+  })
+  export class HomePage implements OnInit {
+    @ViewChild(IonSlides, { static: false }) slides: IonSlides;
+  
+    videoList: any[] = [];
+    currentPage: number = 1;
+    limit: number = 10;
+    chainName: string;
+--- 10,21 ----
+  })
+  export class HomePage implements OnInit {
+    @ViewChild(IonSlides, { static: false }) slides: IonSlides;
++   @ViewChild('searchbar', { static: false }) searchbar: ElementRef;
+  
++   showSearchBar: boolean = false;
+    videoList: any[] = [];
++   searchResults: any[] = [];
++   searchTerm: string = '';
+    currentPage: number = 1;
+    limit: number = 10;
+    chainName: string;
