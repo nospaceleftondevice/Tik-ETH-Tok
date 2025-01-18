@@ -199,19 +199,24 @@ def update_likes(video_id):
                 ON CONFLICT (account_number, video_id) 
                 DO UPDATE SET has_liked = TRUE
             ''', (account_number, video_id))
+            conn.commit()
+
         else:
             # For '000000' users, we allow unlimited likes
             invalid_likes += 1
 
         # Update the likes count in the database
         new_likes = f"{invalid_likes}:{valid_likes}"
+        print("Update likes")
         cur.execute('UPDATE videos SET likes = %s WHERE id = %s', (new_likes, video_id))
-
-        # Update the userPic field to "Heart"
-        cur.execute('UPDATE videos SET userPic = %s WHERE id = %s', ('Heart', video_id))
-        
         conn.commit()
 
+        # Update the userPic field to "Heart"
+        print("Update userPic")
+        cur.execute('UPDATE videos SET userPic = %s WHERE id = %s', ('Heart', video_id))
+        conn.commit()
+        
+ 
         cur.close()
         conn.close()
 
