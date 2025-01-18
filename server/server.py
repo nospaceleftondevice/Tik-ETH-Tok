@@ -206,6 +206,10 @@ def update_likes(video_id):
         # Update the likes count in the database
         new_likes = f"{invalid_likes}:{valid_likes}"
         cur.execute('UPDATE videos SET likes = %s WHERE id = %s', (new_likes, video_id))
+
+        # Update the userPic field to "Heart"
+        cur.execute('UPDATE videos SET userPic = %s WHERE id = %s', ('Heart', video_id))
+        
         conn.commit()
 
         cur.close()
@@ -216,6 +220,7 @@ def update_likes(video_id):
         cur.close()
         conn.close()
         return jsonify({"error": "Video not found"}), 404
+
 
 @app.route('/videos/<int:video_id>/comments', methods=['POST'])
 def update_comments(video_id):
