@@ -199,6 +199,7 @@ export class HomePage implements OnInit {
     console.log('Page host: [' + window.location.host + ']');
     console.log('Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
     console.log('Page search: [' + window.location.search + ']');
+    window.addEventListener('keydown', this.handleArrowKeys.bind(this));
     this.updateTitle();
   }
 
@@ -344,9 +345,19 @@ export class HomePage implements OnInit {
     }
   }
  
+  // Method to handle arrow key navigation
+  handleArrowKeys(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight') {
+      this.slides.slideNext(); // Move to the next slide
+    } else if (event.key === 'ArrowLeft') {
+      this.slides.slidePrev(); // Move to the previous slide
+    }
+  }
+
   ngOnDestroy() {
     // Remove the event listener when the component is destroyed
     window.removeEventListener('message', this.receiveMessage.bind(this), false);
+    window.removeEventListener('keydown', this.handleArrowKeys.bind(this));
   }
 
   ionViewDidEnter() {
