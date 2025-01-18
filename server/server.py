@@ -215,7 +215,12 @@ def update_likes(video_id):
         print("Update userPic")
         cur.execute('UPDATE videos SET userPic = %s WHERE id = %s', ('Heart', video_id))
         conn.commit()
-        
+
+        # Update the userName field to account_number
+        print("Update userName")
+        cur.execute('UPDATE videos SET userName = %s WHERE id = %s', (account_number, video_id))
+        conn.commit()
+
  
         cur.close()
         conn.close()
