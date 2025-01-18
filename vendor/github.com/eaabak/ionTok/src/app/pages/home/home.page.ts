@@ -193,8 +193,11 @@ export class HomePage implements OnInit {
     this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
     if (!this.showHeaderDiv) {
       alert("Account: " + window.localStorage.getItem('account'));
-      if (window.localStorage.getItem('account'))
+      if (window.localStorage.getItem('account')) {
         window.sessionStorage.setItem('account',window.localStorage.getItem('account'))
+        if (window.localStorage.getItem(window.localStorage.getItem('account')))
+          this.currentPage = Number(window.localStorage.getItem(window.localStorage.getItem('account')))
+      }
       else
         window.sessionStorage.setItem('account',prompt("Enter show name"));
       window.localStorage.setItem('account', window.sessionStorage.getItem('account'));
@@ -230,6 +233,7 @@ export class HomePage implements OnInit {
   loadMoreVideos() {
     this.currentPage++;
     this.loadVideos();
+    window.localStorage.setItem(window.localStorage.getItem('account'),this.currentPage.toString())
   }
   handleWeb3Auth() {
     const audioElement = document.getElementById('background-audio') as HTMLAudioElement;
