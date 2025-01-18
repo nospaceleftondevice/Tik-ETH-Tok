@@ -25,6 +25,7 @@ export class HomePage implements OnInit {
   limit: number = 10;
 
   chainName: string;
+  showHeaderDiv: boolean;
 
   onSearch(event: any) {
     const searchTerm = event.target.value;
@@ -189,11 +190,24 @@ export class HomePage implements OnInit {
     //this.videoList = this.data.getVideoList();
     const chainId = window.sessionStorage.getItem('chain');
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
+    this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+    if (!this.showHeaderDiv)
+      window.sessionStorage.setItem('account',prompt("Enter show name"));
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
     console.log('Page loaded');
+    console.log('Page host: [' + window.location.host + ']');
+    console.log('Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
+    console.log('Page search: [' + window.location.search + ']');
+    this.updateTitle();
   }
 
+  private updateTitle() {
+    if (!this.showHeaderDiv) {
+      document.title = window.location.host;
+    }
+  }
+  
   loadVideos() {
     console.log("!! load mode videos")
 
@@ -341,6 +355,8 @@ export class HomePage implements OnInit {
     console.log(`Chain Id: ${chainId}`);
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
+    this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+
     // Call this when the page is loaded and visible
     this.checkActiveSlide();
   }
@@ -475,6 +491,8 @@ export class HomePage implements OnInit {
     console.log(`Chain Id: ${chainId}`);
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
+    this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+
     const floating_vid = document.getElementById('float');
     floating_vid.style.display = "block"
     floating_vid.setAttribute("muted","false");

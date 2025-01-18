@@ -5,19 +5,20 @@
       <strong>For You</strong></ion-title>
   </ion-toolbar>
 </ion-header-->
-
 <ion-content fullscreen>
-  <div style="position: fixed; height: 30px;top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
-  (click)="handleWeb3Auth()">
-<ng-container *ngIf="chainName !== 'Unknown Chain'; else notConnected">
- Connected to {{ chainName }} 
- <ion-icon style="position: absolute; top: 12px; color: #3880ff; " name="log-out-outline"></ion-icon>
-</ng-container>
-<ng-template #notConnected>
- You may not be connected 
- <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-in-outline"></ion-icon>
-</ng-template>
-</div>
+  <div 
+    *ngIf="showHeaderDiv"
+    style="position: fixed; height: 30px; top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
+    (click)="handleWeb3Auth()">
+    <ng-container *ngIf="chainName !== 'Unknown Chain'; else notConnected">
+      Connected to {{ chainName }}
+      <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-out-outline"></ion-icon>
+    </ng-container>
+    <ng-template #notConnected>
+      You may not be connected
+      <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-in-outline"></ion-icon>
+    </ng-template>
+  </div>
 
   <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index">
@@ -35,7 +36,7 @@
 
   <!--  overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe-->
   <!-- Button to unmute audio -->
-  <ion-button (click)="handleWeb3Auth()"
+  <ion-button *ngIf="showHeaderDiv" (click)="handleWeb3Auth()"
   style="position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%);">
     web3auth
   </ion-button>
