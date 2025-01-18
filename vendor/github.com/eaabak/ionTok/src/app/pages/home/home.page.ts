@@ -194,7 +194,7 @@ export class HomePage implements OnInit {
     if (!this.showHeaderDiv) {
       alert("Account: " + window.localStorage.getItem('account'));
       if (window.localStorage.getItem('account'))
-        window.sessionStorage.setItem(window.localStorage.getItem('account'))
+        window.sessionStorage.setItem('account',window.localStorage.getItem('account'))
       else
         window.sessionStorage.setItem('account',prompt("Enter show name"));
       window.localStorage.setItem('account', window.sessionStorage.getItem('account'));
