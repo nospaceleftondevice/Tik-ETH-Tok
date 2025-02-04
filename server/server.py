@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import psycopg2
 import json
+import sys
 
 app = Flask(__name__)
 
@@ -198,15 +199,29 @@ def update_likes(video_id):
                 ON CONFLICT (account_number, video_id) 
                 DO UPDATE SET has_liked = TRUE
             ''', (account_number, video_id))
+            conn.commit()
+
         else:
             # For '000000' users, we allow unlimited likes
             invalid_likes += 1
 
         # Update the likes count in the database
         new_likes = f"{invalid_likes}:{valid_likes}"
+        print("Update likes")
         cur.execute('UPDATE videos SET likes = %s WHERE id = %s', (new_likes, video_id))
         conn.commit()
 
+        # Update the userPic field to "Heart"
+        print("Update userPic")
+        cur.execute('UPDATE videos SET userPic = %s WHERE id = %s', ('Heart', video_id))
+        conn.commit()
+
+        # Update the userName field to account_number
+        print("Update userName")
+        cur.execute('UPDATE videos SET userName = %s WHERE id = %s', (account_number, video_id))
+        conn.commit()
+
+ 
         cur.close()
         conn.close()
 
@@ -215,6 +230,7 @@ def update_likes(video_id):
         cur.close()
         conn.close()
         return jsonify({"error": "Video not found"}), 404
+
 
 @app.route('/videos/<int:video_id>/comments', methods=['POST'])
 def update_comments(video_id):
@@ -269,8 +285,107 @@ def update_comments(video_id):
         conn.close()
         return jsonify({"error": "Video not found"}), 404
 
+@app.route('/videos/by-user/<account_number>/likes', methods=['GET'])
+def get_liked_videos_route(account_number):
+    try:
+        # Establish database connection
+        conn = psycopg2.connect(
+            host="localhost",
+            database="video_db",
+            user="user",
+            password="password"
+        )
+        cur = conn.cursor()
+
+        # Query to get videos liked by the specific user
+        query = '''
+            SELECT v.id, v.userName, v.userPic, v.url, v.showcase_url, v.likes, v.comments
+            FROM videos v
+            JOIN user_interactions ui ON v.id = ui.video_id
+            WHERE ui.account_number = %s AND ui.has_liked = TRUE
+        '''
+        cur.execute(query, (account_number,))
+
+        # Fetch all results
+        results = cur.fetchall()
+
+        # Close cursor and connection
+        cur.close()
+        conn.close()
+
+        # Prepare the response in JSON format
+        liked_videos = [
+            {
+                "id": video[0],
+                "userName": video[1],
+                "userPic": video[2],
+                "url": video[3],
+                "showcase_url": video[4],
+                "likes": video[5],
+                "comments": video[6]
+            }
+            for video in results
+        ]
+
+        return jsonify({"liked_videos": liked_videos}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/videos/by-user/<account_number>/comments', methods=['GET'])
+def get_commented_videos_route(account_number):
+    try:
+        # Establish database connection
+        conn = psycopg2.connect(
+            host="localhost",
+            database="video_db",
+            user="user",
+            password="password"
+        )
+        cur = conn.cursor()
+
+        # Query to get videos liked by the specific user
+        query = '''
+            SELECT v.id, v.userName, v.userPic, v.url, v.showcase_url, v.likes, v.comments
+            FROM videos v
+            JOIN user_interactions ui ON v.id = ui.video_id
+            WHERE ui.account_number = %s AND ui.has_commented = TRUE
+        '''
+        cur.execute(query, (account_number,))
+
+        # Fetch all results
+        results = cur.fetchall()
+
+        # Close cursor and connection
+        cur.close()
+        conn.close()
+
+        # Prepare the response in JSON format
+        commented_videos = [
+            {
+                "id": video[0],
+                "userName": video[1],
+                "userPic": video[2],
+                "url": video[3],
+                "showcase_url": video[4],
+                "likes": video[5],
+                "comments": video[6]
+            }
+            for video in results
+        ]
+
+        return jsonify({"liked_videos": commented_videos}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    load_video_data()  # Load data into PostgreSQL when the app starts
-    app.run(host="0.0.0.0", port=7000, debug=True)
+    # Check if the first command-line argument is "wipe"
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "wipe":
+        print("Wiping database and loading video data...")
+        load_video_data()
+    else:
+        print("Skipping database initialization.")
 
+    # Start the Flask application
+    app.run(host="0.0.0.0", port=7000, debug=True)

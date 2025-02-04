@@ -25,6 +25,7 @@ export class HomePage implements OnInit {
   limit: number = 10;
 
   chainName: string;
+  showHeaderDiv: boolean;
 
   onSearch(event: any) {
     const searchTerm = event.target.value;
@@ -189,11 +190,34 @@ export class HomePage implements OnInit {
     //this.videoList = this.data.getVideoList();
     const chainId = window.sessionStorage.getItem('chain');
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
+    this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+    if (!this.showHeaderDiv) {
+      alert("Account: " + window.localStorage.getItem('account'));
+      if (window.localStorage.getItem('account')) {
+        window.sessionStorage.setItem('account',window.localStorage.getItem('account'))
+        if (window.localStorage.getItem(window.localStorage.getItem('account')))
+          this.currentPage = Number(window.localStorage.getItem(window.localStorage.getItem('account')))
+      }
+      else
+        window.sessionStorage.setItem('account',prompt("Enter show name"));
+      window.localStorage.setItem('account', window.sessionStorage.getItem('account'));
+    }
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
     console.log('Page loaded');
+    console.log('Page host: [' + window.location.host + ']');
+    console.log('Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
+    console.log('Page search: [' + window.location.search + ']');
+    window.addEventListener('keydown', this.handleArrowKeys.bind(this));
+    this.updateTitle();
   }
 
+  private updateTitle() {
+    if (!this.showHeaderDiv) {
+      document.title = window.location.host;
+    }
+  }
+  
   loadVideos() {
     console.log("!! load mode videos")
 
@@ -209,6 +233,7 @@ export class HomePage implements OnInit {
   loadMoreVideos() {
     this.currentPage++;
     this.loadVideos();
+    window.localStorage.setItem(window.localStorage.getItem('account'),this.currentPage.toString())
   }
   handleWeb3Auth() {
     const audioElement = document.getElementById('background-audio') as HTMLAudioElement;
@@ -330,9 +355,19 @@ export class HomePage implements OnInit {
     }
   }
  
+  // Method to handle arrow key navigation
+  handleArrowKeys(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight') {
+      this.slides.slideNext(); // Move to the next slide
+    } else if (event.key === 'ArrowLeft') {
+      this.slides.slidePrev(); // Move to the previous slide
+    }
+  }
+
   ngOnDestroy() {
     // Remove the event listener when the component is destroyed
     window.removeEventListener('message', this.receiveMessage.bind(this), false);
+    window.removeEventListener('keydown', this.handleArrowKeys.bind(this));
   }
 
   ionViewDidEnter() {
@@ -341,6 +376,8 @@ export class HomePage implements OnInit {
     console.log(`Chain Id: ${chainId}`);
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
+    this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+
     // Call this when the page is loaded and visible
     this.checkActiveSlide();
   }
@@ -475,6 +512,8 @@ export class HomePage implements OnInit {
     console.log(`Chain Id: ${chainId}`);
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
+    this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+
     const floating_vid = document.getElementById('float');
     floating_vid.style.display = "block"
     floating_vid.setAttribute("muted","false");
