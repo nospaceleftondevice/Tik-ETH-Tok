@@ -192,13 +192,8 @@ export class HomePage implements OnInit {
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
     if (!this.showHeaderDiv) {
-      console.log("!!! search: " + window.location.search)
-      if (window.location.search.endsWith('qwiky')) {
-        window.localStorage.setItem('account','qwiky')
-      }
-      else {
-        alert("Account: " + window.localStorage.getItem('account'));
-      }
+      console.log("Browser User Agent: ", navigator.userAgent);
+      alert("Account: " + window.localStorage.getItem('account'));
       if (window.localStorage.getItem('account')) {
         window.sessionStorage.setItem('account',window.localStorage.getItem('account'))
         if (window.localStorage.getItem(window.localStorage.getItem('account')))
