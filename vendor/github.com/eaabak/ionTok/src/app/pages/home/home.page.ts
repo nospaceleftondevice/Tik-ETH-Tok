@@ -193,7 +193,7 @@ export class HomePage implements OnInit {
     this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
     if (!this.showHeaderDiv) {
       console.log("Browser User Agent: ", navigator.userAgent);
-      if (navigator.userAgent.includes("Linux; Android")) {
+      if (window.location.host.startsWith('audio.')) {
         window.localStorage.setItem('account','droid')
       }
       else {
