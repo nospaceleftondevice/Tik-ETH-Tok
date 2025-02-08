@@ -1,14 +1,14 @@
-import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { AnimationOptions } from 'ngx-lottie';
 import { DataService } from "../../services/data.service";
-import { HttpClient } from '@angular/common/http'; // Import HttpClient
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-feed',
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.scss'],
 })
-export class FeedComponent implements OnInit {
+export class FeedComponent implements OnInit, OnDestroy {
   @Input() video: any;
 
   option: AnimationOptions = {
@@ -19,27 +19,52 @@ export class FeedComponent implements OnInit {
   heartStyle: string = '';  // To dynamically change the heart icon color
   bookmarkStyle: string = '';  // To dynamically change the bookmark icon color
 
-  constructor(private data: DataService, private http: HttpClient) {} // Inject HttpClient into the constructor
+  private ws: WebSocket | null = null; // WebSocket instance
 
-  ngOnInit() {}
+  constructor(private data: DataService, private http: HttpClient) {}
 
-  getFirstLike(likes: string): number {
-    return parseInt(likes.split(':')[0], 10) || 0;  // Get the first integer, or 0 if empty
+  ngOnInit() {
+    this.initializeWebSocket();
   }
 
-  getSecondLike(likes: string): number {
-    return parseInt(likes.split(':')[1], 10) || 0;  // Get the second integer, or 0 if empty
+  ngOnDestroy() {
+    this.closeWebSocket();
   }
 
-  formatNumber(value: number): string {
-    if (value < 1000) {
-      return value.toString(); // Print as is for numbers less than 1000
-    } else if (value >= 1000 && value < 10000) {
-      return (value / 1000).toFixed(1) + 'k'; // Print in the form of 1.0k
-    } else if (value >= 10000 && value < 1000000) {
-      return Math.floor(value / 1000) + 'k'; // Print in units of thousands (40k)
-    } else {
-      return (value / 1000000).toFixed(1) + 'm'; // Print in millions (1.2m)
+  private initializeWebSocket(): void {
+    const websocketUrl = 'wss://dastream.cloud/ws'; // WebSocket endpoint
+    this.ws = new WebSocket(websocketUrl);
+
+    this.ws.onopen = () => {
+      console.log('WebSocket connection established.');
+    };
+
+    this.ws.onmessage = (event) => {
+      this.handleWebSocketMessage(event.data);
+    };
+
+    this.ws.onclose = () => {
+      console.warn('WebSocket connection closed.');
+    };
+
+    this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+  }
+
+  private closeWebSocket(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+
+  private handleWebSocketMessage(message: string): void {
+    console.log('WebSocket message received:', message);
+
+    if (message === 'like') {
+      // Invoke the buttonClicked function with the 'likes' action and the video ID
+      this.buttonClicked('likes', this.video.id);
     }
   }
 
@@ -49,9 +74,10 @@ export class FeedComponent implements OnInit {
 
     if (button === "bookmarks") {
       window.sessionStorage.removeItem('videoResults');
-      window.sessionStorage.setItem('viewbookmarks',"true");
-      if (window.localStorage.getItem('bookmarks') !== null)
-        document.querySelector('ion-slides').slideTo(0); 
+      window.sessionStorage.setItem('viewbookmarks', "true");
+      if (window.localStorage.getItem('bookmarks') !== null) {
+        document.querySelector('ion-slides').slideTo(0);
+      }
       return;
     }
 
@@ -62,21 +88,19 @@ export class FeedComponent implements OnInit {
       // Toggle the bookmark color (black when clicked)
       this.bookmarkStyle = this.bookmarkStyle === 'color: black;' ? '' : 'color: black;';
       console.log(`[[[[[[[[[[ get id: ${video_id} ]]]]]]]]]]`);
-      this.data.getVideo(`${video_id}`).subscribe((videos) => { console.log("videos sent from server: "); console.dir(videos) } );
+      this.data.getVideo(`${video_id}`).subscribe((videos) => {
+        console.log("videos sent from server: ");
+        console.dir(videos);
+      });
     }
 
-    // Get the account number from session storage
-    const accountNumber = window.sessionStorage.getItem("account") || "000000"
+    const accountNumber = window.sessionStorage.getItem("account") || "000000";
     console.log("Account number: " + accountNumber);
 
-    // Dynamically get the host and protocol, but use a different port (e.g., 7000)
-    //const apiUrl = `${window.location.protocol}//${window.location.hostname}:7000/videos/${video_id}/${button}`;
     const apiUrl = `${window.location.protocol}//${window.location.hostname}/videos/${video_id}/${button}`;
-    
+
     const payload = { account_number: accountNumber };
 
-
-    // Send the POST request to the backend
     this.http.post(apiUrl, payload, {
       headers: { 'Content-Type': 'application/json' }
     }).subscribe(
@@ -87,6 +111,26 @@ export class FeedComponent implements OnInit {
         console.error('Request failed:', error);
       }
     );
+  }
+
+  getFirstLike(likes: string): number {
+    return parseInt(likes.split(':')[0], 10) || 0;
+  }
+
+  getSecondLike(likes: string): number {
+    return parseInt(likes.split(':')[1], 10) || 0;
+  }
+
+  formatNumber(value: number): string {
+    if (value < 1000) {
+      return value.toString();
+    } else if (value >= 1000 && value < 10000) {
+      return (value / 1000).toFixed(1) + 'k';
+    } else if (value >= 10000 && value < 1000000) {
+      return Math.floor(value / 1000) + 'k';
+    } else {
+      return (value / 1000000).toFixed(1) + 'm';
+    }
   }
 
   calculateRightOffset(value: number): string {
@@ -100,14 +144,13 @@ export class FeedComponent implements OnInit {
       return '-22px';
     }
 
-    return '-22px'; // Default to -22px if for some reason it's 0 or undefined
+    return '-22px';
   }
 
   onSearch(event: any) {
     const searchTerm = event.target.value;
     console.log('Searching for:', searchTerm);
-  // Implement your search logic here
+    // Implement your search logic here
   }
-
 }
 
