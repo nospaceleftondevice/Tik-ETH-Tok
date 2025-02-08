@@ -16,6 +16,8 @@ export class HomePage implements OnInit {
   //@ViewChild('searchbar', { static: false }) searchbar: ElementRef;
   @ViewChild('searchbar', { static: false }) searchbar: IonSearchbar; // Use IonSearchbar instead of ElementRef
 
+  private ws: WebSocket | null = null; // WebSocket instance
+
   showSearchBar: boolean = false; // Initially hidden
 
   videoList: any = [];
@@ -26,6 +28,8 @@ export class HomePage implements OnInit {
 
   chainName: string;
   showHeaderDiv: boolean;
+
+  
 
   onSearch(event: any) {
     const searchTerm = event.target.value;
@@ -181,7 +185,55 @@ export class HomePage implements OnInit {
     toast.present();
   }
 
+  /**
+   * Initializes the WebSocket connection to the server.
+   */
+  private initializeWebSocket() {
+    const websocketUrl = 'wss://dastream.cloud/ws'; // WebSocket endpoint
+    this.ws = new WebSocket(websocketUrl);
+
+    this.ws.onopen = () => {
+      console.log('WebSocket connection established.');
+    };
+
+    this.ws.onmessage = (event) => {
+      this.handleWebSocketMessage(event.data);
+    };
+
+    this.ws.onclose = () => {
+      console.warn('WebSocket connection closed. Attempting to reconnect...');
+      setTimeout(() => this.initializeWebSocket(), 5000); // Retry connection after 5 seconds
+    };
+
+    this.ws.onerror = (error) => {
+      console.error('WebSocket encountered an error:', error);
+    };
+  }
+
+  /**
+   * Handles incoming WebSocket messages.
+   * @param message The received message
+   */
+  private handleWebSocketMessage(message: string) {
+    console.log('Message received from WebSocket:', message);
+
+    if (message === 'next_slide') {
+      this.slideNext();
+    }
+  }
+
+  /**
+   * Navigates to the next slide.
+   */
+  private async slideNext() {
+    if (this.slides) {
+      console.log('Navigating to the next slide...');
+      await this.slides.slideNext();
+    }
+  }
+
   ngOnInit() {
+    this.initializeWebSocket();
     window.sessionStorage.setItem("next","");
     window.sessionStorage.setItem('viewbookmarks',"false");
     window.sessionStorage.removeItem("videoResults");
@@ -371,6 +423,9 @@ export class HomePage implements OnInit {
   }
 
   ngOnDestroy() {
+    if (this.ws) {
+      this.ws.close();
+    } 
     // Remove the event listener when the component is destroyed
     window.removeEventListener('message', this.receiveMessage.bind(this), false);
     window.removeEventListener('keydown', this.handleArrowKeys.bind(this));
