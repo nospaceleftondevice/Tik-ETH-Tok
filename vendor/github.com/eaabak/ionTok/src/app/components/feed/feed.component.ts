@@ -58,6 +58,8 @@ export class FeedComponent implements OnInit {
     if (button === 'likes') {
       // Toggle the heart color (red when clicked)
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
+      const audio = new Audio('https://your.cmptr.cloud/pageflip.mp3'); // Replace with your audio file URL
+      audio.play().catch((error) => console.error('Audio playback failed:', error));
     } else if (button === 'comments') {
       // Toggle the bookmark color (black when clicked)
       this.bookmarkStyle = this.bookmarkStyle === 'color: black;' ? '' : 'color: black;';
