@@ -46,6 +46,7 @@ export class FeedComponent implements OnInit, OnDestroy {
 
       if (message === 'like') {
         const activeIndex = await this.getActiveSlideIndex();
+        alert("activeIndex: " + activeIndex + "video.id: " + this.video.id)
         if (activeIndex === this.video.id) {
           // Invoke the buttonClicked function for the current slide
           this.buttonClicked('likes', this.video.id);
