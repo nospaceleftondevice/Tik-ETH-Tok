@@ -605,29 +605,52 @@ export class HomePage implements OnInit {
   }
 
   // Trigger this function on slide change
-  async onSlideDidChange() { 
-    const chainId = window.sessionStorage.getItem('chain');
-    //alert(this.chainMap[chainId]);
-    console.log(`Chain Id: ${chainId}`);
-    console.dir(chainId);
-    this.chainName = this.chainMap[chainId] || 'Unknown Chain';
-    this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+  // Trigger this function on slide change
+async onSlideDidChange() { 
+  const chainId = window.sessionStorage.getItem('chain');
+  console.log(`Chain Id: ${chainId}`);
+  console.dir(chainId);
+  this.chainName = this.chainMap[chainId] || 'Unknown Chain';
+  this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
 
-    const floating_vid = document.getElementById('float');
-    floating_vid.style.display = "block"
-    floating_vid.setAttribute("muted","false");
-    console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]")
-    var index = 0;
-    try {
-      index = await this.slides.getActiveIndex();
-      if (index == 0)
-	  floating_vid.style.display = "none"
-      else
-	  floating_vid.style.display = "block"
+  const floating_vid = document.getElementById('float');
+  floating_vid.style.display = "block";
+  floating_vid.setAttribute("muted", "false");
+  console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]");
+
+  let index = 0;
+  try {
+    // Get the current active slide index
+    index = await this.slides.getActiveIndex();
+
+    // Show or hide the floating video element based on the slide index
+    if (index === 0) {
+      floating_vid.style.display = "none";
+    } else {
+      floating_vid.style.display = "block";
     }
-    catch (error) {
-      console.log("Got onSlideDidChange error: " + error)
+
+    // Check for the paragraph element with id "description-x"
+    const paragraph = document.getElementById(`description-${index}`);
+    if (paragraph) {
+      const paragraphText = paragraph.textContent || paragraph.innerText || '';
+      console.log(`Paragraph text for slide ${index}: ${paragraphText}`);
+
+      // If the paragraph text starts with "Heart", advance to the next slide
+      if (paragraphText.trim().startsWith('Heart')) {
+        console.log(`Paragraph starts with "Heart", advancing to the next slide...`);
+        await this.slides.slideNext();
+        return; // Exit early to avoid further processing for this slide
+      }
+    } else {
+      console.log(`No paragraph element found with id "description-${index}".`);
     }
-    this.checkActiveSlide();
+  } catch (error) {
+    console.log("Got onSlideDidChange error: " + error);
   }
+
+  // Perform any additional slide checks
+  this.checkActiveSlide();
+}
+
 }
