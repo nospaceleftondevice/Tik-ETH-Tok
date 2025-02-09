@@ -645,7 +645,9 @@ async onSlideDidChange() {
           await this.slides.slideNext(); // Advance to the next slide
           console.log("Slide advanced successfully.");
         } else {
-          console.log("Already on the last slide. Cannot advance further.");
+          this.loadMoreVideos();
+          console.log("Already on the last slide. Loading more");
+          await this.slides.slideNext(); // Advance to the next slide
         }
         return; // Exit early to avoid further processing for this slide
       }
