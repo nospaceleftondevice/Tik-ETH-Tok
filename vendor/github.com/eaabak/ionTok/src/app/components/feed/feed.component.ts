@@ -30,12 +30,12 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.ws = new WebSocket(websocketUrl);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connection established.');
+      console.log('feed.component.ts: WebSocket connection established.');
     };
 
     this.ws.onmessage = (event) => {
       const message = event.data;
-      console.log('WebSocket message received:', message);
+      console.log('feed.component.ts: WebSocket message received:', message);
 
       if (message === 'like' && this.currentVideo) {
         this.buttonClicked('likes', this.currentVideo.id);
