@@ -12,7 +12,7 @@
 
  <div (click)="buttonClicked('likes',video.id)" 
      [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
-  <ion-icon size="large" name="heart" [style]="heartStyle"></ion-icon>
+  <ion-icon id="likes_(video.id)"size="large" name="heart" [style]="heartStyle"></ion-icon>
   
   <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
   <p [ngStyle]="{'visibility': getFirstLike(video.likes) === 0 ? 'hidden' : 'visible'}">
