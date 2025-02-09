@@ -10,8 +10,9 @@
     <ion-icon size="large" name="search"></ion-icon>
   </div>
 
- <div (click)="buttonClicked('likes',video.id)" (id)="likes_(video.id)"
+ <div (click)="buttonClicked('likes',video.id)" 
      [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
+     [id]="'video-' + video.id">
   <ion-icon size="large" name="heart" [style]="heartStyle"></ion-icon>
   
   <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
