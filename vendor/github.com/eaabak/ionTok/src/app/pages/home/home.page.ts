@@ -604,9 +604,8 @@ export class HomePage implements OnInit {
     });
   }
 
-  // Trigger this function on slide change
-  // Trigger this function on slide change
-async onSlideDidChange() { 
+// Trigger this function on slide change
+async onSlideDidChange() {
   const chainId = window.sessionStorage.getItem('chain');
   console.log(`Chain Id: ${chainId}`);
   console.dir(chainId);
@@ -639,7 +638,15 @@ async onSlideDidChange() {
       // If the paragraph text starts with "Heart", advance to the next slide
       if (paragraphText.trim().startsWith('Heart')) {
         console.log(`Paragraph starts with "Heart", advancing to the next slide...`);
-        await this.slides.slideNext();
+
+        // Ensure slide navigation works correctly
+        const slideCount = await this.slides.length(); // Total number of slides
+        if (index < slideCount - 1) {
+          await this.slides.slideNext(); // Advance to the next slide
+          console.log("Slide advanced successfully.");
+        } else {
+          console.log("Already on the last slide. Cannot advance further.");
+        }
         return; // Exit early to avoid further processing for this slide
       }
     } else {
