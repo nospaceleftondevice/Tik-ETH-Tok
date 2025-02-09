@@ -125,14 +125,18 @@ def get_videos():
     offset = (page - 1) * limit
 
     if search:
-        search_query = f"%{search}%"
         cur.execute('''
             SELECT * FROM videos 
-            WHERE userName ILIKE %s OR userPic ILIKE %s
+            WHERE (userName ILIKE %s OR userPic ILIKE %s)
+            AND userPic NOT ILIKE %s
             LIMIT %s OFFSET %s
-        ''', (search_query, search_query, limit, offset))
+        ''', (search_query, search_query, 'Heart%', limit, offset))
     else:
-        cur.execute('SELECT * FROM videos LIMIT %s OFFSET %s', (limit, offset))
+        cur.execute('''
+            SELECT * FROM videos 
+            WHERE userPic NOT ILIKE %s
+            LIMIT %s OFFSET %s
+        ''', ('Heart%', limit, offset))
 
     videos = cur.fetchall()
 
