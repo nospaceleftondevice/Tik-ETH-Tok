@@ -60,6 +60,14 @@ export class FeedComponent implements OnInit {
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
       const audio = new Audio('https://your.cmptr.cloud/pageflip.mp3'); // Replace with your audio file URL
       audio.play().catch((error) => console.error('Audio playback failed:', error));
+
+      // Modify the <video> element
+      const videoElement = document.getElementById('float') as HTMLVideoElement;
+      if (videoElement) {
+        videoElement.src = 'https://your.cmptr.cloud/pageflip.mp3'; // Update the video source
+        videoElement.style.display = 'block'; // Make the video visible
+        videoElement.play().catch((error) => console.error('Video playback failed:', error)); // Start playing the video
+      }
     } else if (button === 'comments') {
       // Toggle the bookmark color (black when clicked)
       this.bookmarkStyle = this.bookmarkStyle === 'color: black;' ? '' : 'color: black;';
