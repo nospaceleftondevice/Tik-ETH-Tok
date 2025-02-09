@@ -1,4 +1,5 @@
-import { Component, ElementRef, Input, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { IonSlides } from '@ionic/angular'; // Import IonSlides
 import { AnimationOptions } from 'ngx-lottie';
 import { DataService } from "../../services/data.service";
 import { HttpClient } from '@angular/common/http';
@@ -10,16 +11,16 @@ import { HttpClient } from '@angular/common/http';
 })
 export class FeedComponent implements OnInit, OnDestroy {
   @Input() video: any;
+  @ViewChild('slides', { static: false }) slides: IonSlides; // Reference to the IonSlides
 
   option: AnimationOptions = {
     path: './assets/animations/music.json'
   };
 
-  showSearchBar: boolean = false; // Variable to track the visibility of the search bar
-  heartStyle: string = '';  // To dynamically change the heart icon color
-  bookmarkStyle: string = '';  // To dynamically change the bookmark icon color
-
-  private ws: WebSocket | null = null; // WebSocket instance
+  showSearchBar: boolean = false;
+  heartStyle: string = '';
+  bookmarkStyle: string = '';
+  private ws: WebSocket | null = null;
 
   constructor(private data: DataService, private http: HttpClient) {}
 
@@ -39,8 +40,17 @@ export class FeedComponent implements OnInit, OnDestroy {
       console.log('WebSocket connection established.');
     };
 
-    this.ws.onmessage = (event) => {
-      this.handleWebSocketMessage(event.data);
+    this.ws.onmessage = async (event) => {
+      const message = event.data;
+      console.log('WebSocket message received:', message);
+
+      if (message === 'like') {
+        const activeIndex = await this.getActiveSlideIndex();
+        if (activeIndex === this.video.id) {
+          // Invoke the buttonClicked function for the current slide
+          this.buttonClicked('likes', this.video.id);
+        }
+      }
     };
 
     this.ws.onclose = () => {
@@ -59,12 +69,12 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
   }
 
-  private handleWebSocketMessage(message: string): void {
-    console.log('WebSocket message received:', message);
-
-    if (message === 'like') {
-      // Invoke the buttonClicked function with the 'likes' action and the video ID
-      this.buttonClicked('likes', this.video.id);
+  private async getActiveSlideIndex(): Promise<number> {
+    try {
+      return await this.slides.getActiveIndex();
+    } catch (error) {
+      console.error('Error getting active slide index:', error);
+      return -1; // Default to an invalid index if something goes wrong
     }
   }
 
@@ -82,10 +92,8 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
 
     if (button === 'likes') {
-      // Toggle the heart color (red when clicked)
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
     } else if (button === 'comments') {
-      // Toggle the bookmark color (black when clicked)
       this.bookmarkStyle = this.bookmarkStyle === 'color: black;' ? '' : 'color: black;';
       console.log(`[[[[[[[[[[ get id: ${video_id} ]]]]]]]]]]`);
       this.data.getVideo(`${video_id}`).subscribe((videos) => {
@@ -98,7 +106,6 @@ export class FeedComponent implements OnInit, OnDestroy {
     console.log("Account number: " + accountNumber);
 
     const apiUrl = `${window.location.protocol}//${window.location.hostname}/videos/${video_id}/${button}`;
-
     const payload = { account_number: accountNumber };
 
     this.http.post(apiUrl, payload, {
@@ -153,4 +160,3 @@ export class FeedComponent implements OnInit, OnDestroy {
     // Implement your search logic here
   }
 }
-
