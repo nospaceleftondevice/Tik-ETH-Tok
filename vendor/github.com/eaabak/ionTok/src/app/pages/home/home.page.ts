@@ -214,13 +214,51 @@ export class HomePage implements OnInit {
    * Handles incoming WebSocket messages.
    * @param message The received message
    */
-  private handleWebSocketMessage(message: string) {
+  private async handleWebSocketMessage(message: string) {
     console.log('Message received from WebSocket:', message);
-
+  
     if (message === 'next_slide') {
       this.slideNext();
     }
+  
+    if (message === 'like') {
+      let index = 0;
+  
+      try {
+        // Get the active slide index
+        index = await this.slides.getActiveIndex();
+      } catch (error) {
+        console.error('Error getting active slide index:', error);
+        return;
+      }
+  
+      console.log('Active slide index:', index);
+  
+      // Get the active ion-slide
+      const ionSlides = document.querySelectorAll('ion-slide');
+      const activeSlide = ionSlides[index];
+  
+      if (!activeSlide) {
+        console.warn('Active slide not found.');
+        return;
+      }
+  
+      // Find the first div with an id attribute within the active slide
+      const targetDiv = activeSlide.querySelector('div[id]');
+  
+      if (!targetDiv) {
+        console.warn('No div with an id attribute found in the active slide.');
+        return;
+      }
+  
+      console.log('Found target div:', targetDiv);
+  
+      // Simulate a click event on the div
+      targetDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      console.log('Click event dispatched to the target div.');
+    }
   }
+
 
   /**
    * Navigates to the next slide.
