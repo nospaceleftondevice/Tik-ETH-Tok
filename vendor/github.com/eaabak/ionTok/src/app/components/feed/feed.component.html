@@ -1,57 +1,51 @@
+<ion-slides #slides (ionSlideDidChange)="onSlideDidChange()">
+  <ion-slide *ngFor="let video of videos">
+    <div class="actions" style="z-index: 9999; right: 30px; bottom: 30px;">
 
+      <div (click)="buttonClicked('bookmarks', video.id)" style="display: block;">
+        <ion-icon size="large" name="bookmarks" [style]="bookmarkStyle"></ion-icon>
+      </div>
 
-<div class="actions" style="z-index: 9999;right: 30px;bottom: 30px;">
+      <div (click)="buttonClicked('search', video.id)" style="visibility: hidden; margin-bottom: 48px;">
+        <ion-icon size="large" name="search"></ion-icon>
+      </div>
 
-  <div (click)="buttonClicked('bookmarks',0)" style="display: block;">
-    <ion-icon size="large" name="bookmarks" [style]="bookmarkStyle"></ion-icon>
-  </div>
+      <div (click)="buttonClicked('likes', video.id)"
+           [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
+        <ion-icon size="large" name="heart" [style]="heartStyle"></ion-icon>
+        <p [ngStyle]="{'visibility': getFirstLike(video.likes) === 0 ? 'hidden' : 'visible'}">
+          {{formatNumber(getFirstLike(video.likes))}}
+        </p>
+        <p class="count" 
+           [ngStyle]="{
+             'position': 'absolute',
+             'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible',
+             'right': calculateRightOffset(getSecondLike(video.likes))
+           }">
+          {{formatNumber(getSecondLike(video.likes))}}
+        </p>
+      </div>
 
-  <div (click)="buttonClicked('search',0)" style="visibility: hidden; margin-bottom: 48px;">
-    <ion-icon size="large" name="search"></ion-icon>
-  </div>
+      <div (click)="buttonClicked('comments', video.id)"
+           [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
+        <ion-icon size="large" name="bookmark" [style]="bookmarkStyle"></ion-icon>
+        <p [ngStyle]="{'visibility': getFirstLike(video.comments) === 0 ? 'hidden' : 'visible'}">
+          {{formatNumber(getFirstLike(video.comments))}}
+        </p>
+        <p class="count" 
+           [ngStyle]="{
+             'position': 'absolute',
+             'visibility': getSecondLike(video.comments) === 0 ? 'hidden' : 'visible',
+             'right': calculateRightOffset(getSecondLike(video.comments))
+           }">
+          {{formatNumber(getSecondLike(video.comments))}}
+        </p>
+      </div>
 
- <div (click)="buttonClicked('likes',video.id)" 
-     [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
-  <ion-icon size="large" name="heart" [style]="heartStyle"></ion-icon>
-  
-  <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
-  <p [ngStyle]="{'visibility': getFirstLike(video.likes) === 0 ? 'hidden' : 'visible'}">
-    {{formatNumber(getFirstLike(video.likes))}}
-  </p>
-  
-  <!--p class="count" style="position: absolute; right: -22px;"
-     [ngStyle]="{'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible'}">
-    {{formatNumber(getSecondLike(video.likes))}}
-  </p-->
-  <p class="count" 
-  [ngStyle]="{
-    'position': 'absolute',
-    'visibility': getSecondLike(video.likes) === 0 ? 'hidden' : 'visible',
-    'right': calculateRightOffset(getSecondLike(video.likes))
-  }">
- {{formatNumber(getSecondLike(video.likes))}}
-</p>
-</div>
- 
-  <div (click)="buttonClicked('comments',video.id)"
-     [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
-    <ion-icon size="large" name="bookmark" [style]="bookmarkStyle"></ion-icon>
-    <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
-    <p [ngStyle]="{'visibility': getFirstLike(video.comments) === 0 ? 'hidden' : 'visible'}">
-      {{formatNumber(getFirstLike(video.comments))}}
-    </p>
-    <p class="count" 
-  [ngStyle]="{
-    'position': 'absolute',
-    'visibility': getSecondLike(video.comments) === 0 ? 'hidden' : 'visible',
-    'right': calculateRightOffset(getSecondLike(video.comments))
-  }">
-      {{formatNumber(getSecondLike(video.comments))}}
-    </p>
-  </div>
-   
-  <div (click)="buttonClicked('info',video.id)" style="margin-bottom: 36px;">
-    <ion-icon size="large" name="information-circle-outline"></ion-icon>
-  </div>
-</div>
+      <div (click)="buttonClicked('info', video.id)" style="margin-bottom: 36px;">
+        <ion-icon size="large" name="information-circle-outline"></ion-icon>
+      </div>
 
+    </div>
+  </ion-slide>
+</ion-slides>

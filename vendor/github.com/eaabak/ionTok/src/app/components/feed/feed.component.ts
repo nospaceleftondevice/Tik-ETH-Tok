@@ -1,7 +1,6 @@
 import { Component, Input, OnInit, OnDestroy, ViewChild } from '@angular/core';
-import { IonSlides } from '@ionic/angular'; // Import IonSlides
-import { AnimationOptions } from 'ngx-lottie';
-import { DataService } from "../../services/data.service";
+import { IonSlides } from '@ionic/angular';
+import { DataService } from '../../services/data.service';
 import { HttpClient } from '@angular/common/http';
 
 @Component({
@@ -10,16 +9,10 @@ import { HttpClient } from '@angular/common/http';
   styleUrls: ['./feed.component.scss'],
 })
 export class FeedComponent implements OnInit, OnDestroy {
-  @Input() video: any;
-  @ViewChild('slides', { static: false }) slides: IonSlides; // Reference to the IonSlides
+  @Input() videos: any[] = []; // List of videos
+  @ViewChild('slides', { static: false }) slides: IonSlides;
 
-  option: AnimationOptions = {
-    path: './assets/animations/music.json'
-  };
-
-  showSearchBar: boolean = false;
-  heartStyle: string = '';
-  bookmarkStyle: string = '';
+  currentVideo: any = null; // Track the currently active video
   private ws: WebSocket | null = null;
 
   constructor(private data: DataService, private http: HttpClient) {}
@@ -33,24 +26,19 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   private initializeWebSocket(): void {
-    const websocketUrl = 'wss://dastream.cloud/ws'; // WebSocket endpoint
+    const websocketUrl = 'wss://dastream.cloud/ws';
     this.ws = new WebSocket(websocketUrl);
 
     this.ws.onopen = () => {
       console.log('WebSocket connection established.');
     };
 
-    this.ws.onmessage = async (event) => {
+    this.ws.onmessage = (event) => {
       const message = event.data;
       console.log('WebSocket message received:', message);
 
-      if (message === 'like') {
-        const activeIndex = await this.getActiveSlideIndex();
-        alert("activeIndex: " + activeIndex + "video.id: " + this.video.id)
-        if (activeIndex === this.video.id) {
-          // Invoke the buttonClicked function for the current slide
-          this.buttonClicked('likes', this.video.id);
-        }
+      if (message === 'like' && this.currentVideo) {
+        this.buttonClicked('likes', this.currentVideo.id);
       }
     };
 
@@ -70,95 +58,29 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async getActiveSlideIndex(): Promise<number> {
-    try {
-      return await this.slides.getActiveIndex();
-    } catch (error) {
-      alert("Error getting active slide index:" + error)
-      console.error('Error getting active slide index:', error);
-      return -1; // Default to an invalid index if something goes wrong
-    }
-  }
-
-  buttonClicked(button: string, video_id: number) {
-    console.log("Button clicked: " + button);
-    console.log("Video id: " + video_id);
-
-    if (button === "bookmarks") {
-      window.sessionStorage.removeItem('videoResults');
-      window.sessionStorage.setItem('viewbookmarks', "true");
-      if (window.localStorage.getItem('bookmarks') !== null) {
-        document.querySelector('ion-slides').slideTo(0);
-      }
+  async onSlideDidChange(): Promise<void> {
+    if (!this.slides) {
+      console.error('IonSlides reference is not available.');
       return;
     }
 
+    try {
+      const activeIndex = await this.slides.getActiveIndex();
+      this.currentVideo = this.videos[activeIndex]; // Update the current video
+      console.log('Active slide changed. Current video:', this.currentVideo);
+    } catch (error) {
+      console.error('Error getting active slide index:', error);
+    }
+  }
+
+  buttonClicked(button: string, video_id: number): void {
+    console.log('Button clicked:', button);
+    console.log('Video id:', video_id);
+
     if (button === 'likes') {
-      this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
-    } else if (button === 'comments') {
-      this.bookmarkStyle = this.bookmarkStyle === 'color: black;' ? '' : 'color: black;';
-      console.log(`[[[[[[[[[[ get id: ${video_id} ]]]]]]]]]]`);
-      this.data.getVideo(`${video_id}`).subscribe((videos) => {
-        console.log("videos sent from server: ");
-        console.dir(videos);
-      });
+      console.log('Performing like action for video:', video_id);
     }
 
-    const accountNumber = window.sessionStorage.getItem("account") || "000000";
-    console.log("Account number: " + accountNumber);
-
-    const apiUrl = `${window.location.protocol}//${window.location.hostname}/videos/${video_id}/${button}`;
-    const payload = { account_number: accountNumber };
-
-    this.http.post(apiUrl, payload, {
-      headers: { 'Content-Type': 'application/json' }
-    }).subscribe(
-      response => {
-        console.log('Request successful:', response);
-      },
-      error => {
-        console.error('Request failed:', error);
-      }
-    );
-  }
-
-  getFirstLike(likes: string): number {
-    return parseInt(likes.split(':')[0], 10) || 0;
-  }
-
-  getSecondLike(likes: string): number {
-    return parseInt(likes.split(':')[1], 10) || 0;
-  }
-
-  formatNumber(value: number): string {
-    if (value < 1000) {
-      return value.toString();
-    } else if (value >= 1000 && value < 10000) {
-      return (value / 1000).toFixed(1) + 'k';
-    } else if (value >= 10000 && value < 1000000) {
-      return Math.floor(value / 1000) + 'k';
-    } else {
-      return (value / 1000000).toFixed(1) + 'm';
-    }
-  }
-
-  calculateRightOffset(value: number): string {
-    const length = value.toString().length;
-
-    if (length === 1) {
-      return '-13px';
-    } else if (length === 2) {
-      return '-18px';
-    } else if (length >= 3) {
-      return '-22px';
-    }
-
-    return '-22px';
-  }
-
-  onSearch(event: any) {
-    const searchTerm = event.target.value;
-    console.log('Searching for:', searchTerm);
-    // Implement your search logic here
+    // Handle other button actions here...
   }
 }
