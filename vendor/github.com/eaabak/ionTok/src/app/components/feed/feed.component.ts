@@ -74,6 +74,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     try {
       return await this.slides.getActiveIndex();
     } catch (error) {
+      alert("Error getting active slide index:" + error)
       console.error('Error getting active slide index:', error);
       return -1; // Default to an invalid index if something goes wrong
     }
