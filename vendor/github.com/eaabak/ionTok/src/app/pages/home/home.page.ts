@@ -389,6 +389,7 @@ export class HomePage implements OnInit {
     const host = window.location.hostname;
     //iframe.src = `${protocol}//${host}:5173${window.sessionStorage.getItem('next')}`;
     iframe.src = `https://your.cmptr.cloud/3d/camera.html`;
+    iframe.allow = 'camera *;microphone *'
     iframe.style.overflow = 'hidden';
     iframe.style.opacity = '0.99';
     iframe.style.backgroundColor = 'transparent';
