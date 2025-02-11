@@ -384,37 +384,22 @@ export class HomePage implements OnInit {
   
     // Create and append iframe
     const iframe = document.createElement('iframe');
-    iframe.id = 'web3auth';
+    iframe.id = 'camera';
     const protocol = window.location.protocol; // 'http:' or 'https:'
     const host = window.location.hostname;
     //iframe.src = `${protocol}//${host}:5173${window.sessionStorage.getItem('next')}`;
-    iframe.src = `https://codepen.io/ichalle/pen/QWLgeRO`;
+    iframe.src = `https://your.cmptr.cloud/3d/camera.html`;
     iframe.style.overflow = 'hidden';
     iframe.style.opacity = '0.99';
     iframe.style.backgroundColor = 'transparent';
     iframe.style.position = 'absolute';
     iframe.style.borderRadius = '10px';
-    iframe.style.top = '10px';
+    iframe.style.top = '310px';
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.transform = 'scale(.80)';
     iframe.style.zIndex = '9999';
   
-    // Create and add the blur overlay
-    const overlay = document.createElement('div');
-    overlay.id = 'blur-overlay';
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'; /* Semi-transparent overlay */
-    overlay.style.zIndex = '9995'; /* Ensure it covers everything but the iframe */
-  
-    // Set the backdropFilter property using setProperty
-    overlay.style.setProperty('backdrop-filter', 'blur(10px) brightness(1.2)');
-  
-    document.body.appendChild(overlay);
     document.body.appendChild(iframe);
   }
   receiveMessage(event: MessageEvent) {
