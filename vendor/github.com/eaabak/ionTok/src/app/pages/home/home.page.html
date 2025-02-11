@@ -20,6 +20,16 @@
     </ng-template>
   </div>
 
+  <div 
+    *ngIf="!showHeaderDiv"
+    style="position: fixed; height: 30px; top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
+    (click)="handleCamera()">
+    <ng-container>
+      Camera
+      <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-out-outline"></ion-icon>
+    </ng-container>
+  </div>
+
   <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index">
       <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
