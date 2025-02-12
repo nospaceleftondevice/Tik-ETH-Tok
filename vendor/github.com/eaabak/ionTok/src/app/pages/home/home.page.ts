@@ -659,9 +659,6 @@ async onSlideDidChange() {
     // Hit the URL endpoint
     const response = await fetch('https://dastream.cloud/next_slide', {
       method: 'GET', // or 'POST' depending on what the endpoint expects
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
