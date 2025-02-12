@@ -653,6 +653,24 @@ async onSlideDidChange() {
   this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
   if (remote == 'true')
     this.remoteMode = true;
+  try {
+    // Hit the URL endpoint
+    const response = await fetch('https://dastream.cloud/next_slide', {
+      method: 'GET', // or 'POST' depending on what the endpoint expects
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json(); // Assuming the response is JSON
+    console.log('Next slide data:', data);
+  } catch (error) {
+    console.error('Error hitting the next_slide endpoint:', error);
+  }
 
   const floating_vid = document.getElementById('float');
   floating_vid.style.display = "block";
