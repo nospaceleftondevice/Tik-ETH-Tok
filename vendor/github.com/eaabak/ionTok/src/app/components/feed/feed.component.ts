@@ -46,23 +46,18 @@ export class FeedComponent implements OnInit {
 
   async remoteLike()
   {
-        try {
-          // Hit the URL endpoint
-          const response =  fetch('https://dastream.cloud/like', {
-            method: 'GET', // or 'POST' depending on what the endpoint expects
-          });
-      
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-      
-          const data =  response.json(); // Assuming the response is JSON
-          console.log('like data:', data);
-        } catch (error) {
-          console.error('Error hitting the like endpoint:', error);
+      // Send the POST request to the backend
+      this.http.get("https://dastream.cloud/like" 
+      ).subscribe(
+        response => {
+          console.log('Request successful:', response);
+        },
+        error => {
+          console.error('Request failed:', error);
         }
-
+      );
   }
+
   buttonClicked(button: string, video_id: number) {
     console.log("Button clicked: " + button);
     console.log("Video id: " + video_id);
