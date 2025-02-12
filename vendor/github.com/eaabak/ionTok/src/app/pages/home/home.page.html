@@ -6,6 +6,39 @@
   </ion-toolbar>
 </ion-header-->
 <ion-content fullscreen>
+    <!-- Shield overlay -->
+    <div 
+      *ngIf="showShield" 
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;">
+      <div style="text-align: center; color: white;">
+        <p>Slide to disable shield</p>
+        <ion-range
+          (ionChange)="disableShield()"
+          min="0"
+          max="100"
+          step="1"
+          value="0"
+          style="
+            width: 80%;
+            --bar-background-active: #3880ff;
+            --bar-background: #999;
+            --knob-background: #fff;
+          ">
+        </ion-range>
+      </div>
+    </div>
+
   <div 
     *ngIf="showHeaderDiv"
     style="position: fixed; height: 30px; top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"

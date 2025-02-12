@@ -19,6 +19,7 @@ export class HomePage implements OnInit {
   private ws: WebSocket | null = null; // WebSocket instance
 
   showSearchBar: boolean = false; // Initially hidden
+  showShield: boolean = true;
 
   videoList: any = [];
   searchResults: any[] = [];  // Add searchResults property
@@ -30,6 +31,15 @@ export class HomePage implements OnInit {
   showHeaderDiv: boolean;
   remoteMode: boolean = false;
   
+  disableShield() {
+    // Logic to disable the shield
+    this.showShield = false;
+  }
+
+  enableShield() {
+    // Logic to disable the shield
+    this.showShield = true;
+  }
 
   onSearch(event: any) {
     const searchTerm = event.target.value;
