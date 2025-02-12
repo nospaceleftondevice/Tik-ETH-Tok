@@ -19,7 +19,7 @@ export class HomePage implements OnInit {
   private ws: WebSocket | null = null; // WebSocket instance
 
   showSearchBar: boolean = false; // Initially hidden
-  showShield: boolean = false;
+  showShield: boolean = true;
 
   videoList: any = [];
   searchResults: any[] = [];  // Add searchResults property
@@ -34,11 +34,6 @@ export class HomePage implements OnInit {
   disableShield() {
     // Logic to disable the shield
     this.showShield = false;
-  }
-
-  enableShield() {
-    // Logic to disable the shield
-    this.showShield = true;
   }
 
   onSearch(event: any) {
@@ -690,10 +685,6 @@ async onSlideDidChange() {
   try {
     // Get the current active slide index
     index = await this.slides.getActiveIndex();
-
-    if (index == 1) {
-      this.showShield = true;
-    }
 
     // Show or hide the floating video element based on the slide index
     if (index === 0) {

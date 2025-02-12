@@ -11,7 +11,7 @@
       *ngIf="showShield" 
       style="
         position: fixed;
-        top: 0;
+        top: 30;
         left: 0;
         width: 100vw;
         height: 100vh;
@@ -21,7 +21,7 @@
         align-items: center;
         justify-content: center;
         pointer-events: auto;">
-      <div style="text-align: center; color: white;">
+      <div style="text-align: center; color: white; top: 100px;">
         <p>Slide to disable shield</p>
         <ion-range
           (ionChange)="disableShield()"
