@@ -29,6 +29,7 @@ export class HomePage implements OnInit {
 
   chainName: string;
   showHeaderDiv: boolean;
+  showControls: boolean = true; // Controls the visibility of the slider and button
   remoteMode: boolean = false;
   
   disableShield() {
@@ -382,6 +383,8 @@ export class HomePage implements OnInit {
   }
   
   handleCamera() {
+    this.showControls = false; // Hide the slider and button
+
     const audioElement = document.getElementById('background-audio') as HTMLAudioElement;
     const floatingVideo = document.getElementById('float') as HTMLVideoElement;
   
