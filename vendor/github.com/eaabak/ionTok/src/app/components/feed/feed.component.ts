@@ -79,8 +79,8 @@ export class FeedComponent implements OnInit {
       // Toggle the heart color (red when clicked)
       const remote = window.sessionStorage.getItem('remote');
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
-      if (remote == 'true') {}
-        await this.remoteLike()
+      if (remote == 'true') {
+        this.remoteLike()
         return;
       }
       const audio = new Audio('https://your.cmptr.cloud/pageflip.mp3'); // Replace with your audio file URL
