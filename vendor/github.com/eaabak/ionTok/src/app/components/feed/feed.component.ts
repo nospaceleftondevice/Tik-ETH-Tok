@@ -65,7 +65,7 @@ export class FeedComponent implements OnInit {
         this.remoteMode = true;
         try {
           // Hit the URL endpoint
-          const response = await fetch('https://dastream.cloud/like', {
+          const response =  fetch('https://dastream.cloud/like', {
             method: 'GET', // or 'POST' depending on what the endpoint expects
           });
       
@@ -73,7 +73,7 @@ export class FeedComponent implements OnInit {
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
       
-          const data = await response.json(); // Assuming the response is JSON
+          const data =  response.json(); // Assuming the response is JSON
           console.log('like data:', data);
         } catch (error) {
           console.error('Error hitting the like endpoint:', error);
