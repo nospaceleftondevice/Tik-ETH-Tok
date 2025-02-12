@@ -561,7 +561,11 @@ export class HomePage implements OnInit {
            newElement.style.left = '5px';
 	 }
 	 else {
+    if (!this.showHeaderDiv) {
+           newElement.innerHTML = `<iframe src="assets/fonts/dastream.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+    } else {
            newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+    }
            newElement.style.height = '50%';
            newElement.style.left = '10px';
 	  }
