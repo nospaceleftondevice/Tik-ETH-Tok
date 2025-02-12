@@ -216,7 +216,9 @@ export class HomePage implements OnInit {
    */
   private async handleWebSocketMessage(message: string) {
     console.log('Message received from WebSocket:', message);
-  
+    if (this.remoteMode)
+      return
+
     if (message === 'next_slide') {
       this.slideNext();
     }
