@@ -397,7 +397,7 @@ export class HomePage implements OnInit {
     iframe.style.backgroundColor = 'transparent';
     iframe.style.position = 'absolute';
     iframe.style.borderRadius = '1px';
-    iframe.style.top = '192px';
+    iframe.style.top = '204px';
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.transform = 'scale(1)';
