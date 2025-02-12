@@ -19,7 +19,7 @@ export class HomePage implements OnInit {
   private ws: WebSocket | null = null; // WebSocket instance
 
   showSearchBar: boolean = false; // Initially hidden
-  showShield: boolean = false;
+  showShield: boolean = true;
 
   videoList: any = [];
   searchResults: any[] = [];  // Add searchResults property
@@ -693,9 +693,9 @@ async onSlideDidChange() {
       floating_vid.style.display = "block";
     }
 
-    if (index === 1) {
-      this.showShield = true;
-    }
+    //if (index === 1) {
+    //  this.showShield = true;
+    //}
     // Check for the paragraph element with id "description-x"
     const paragraph = document.getElementById(`description-${index}`);
     if (paragraph) {
