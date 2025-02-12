@@ -44,6 +44,25 @@ export class FeedComponent implements OnInit {
     }
   }
 
+  async remoteLike()
+  {
+        try {
+          // Hit the URL endpoint
+          const response =  fetch('https://dastream.cloud/like', {
+            method: 'GET', // or 'POST' depending on what the endpoint expects
+          });
+      
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+      
+          const data =  response.json(); // Assuming the response is JSON
+          console.log('like data:', data);
+        } catch (error) {
+          console.error('Error hitting the like endpoint:', error);
+        }
+
+  }
   buttonClicked(button: string, video_id: number) {
     console.log("Button clicked: " + button);
     console.log("Video id: " + video_id);
@@ -60,24 +79,8 @@ export class FeedComponent implements OnInit {
       // Toggle the heart color (red when clicked)
       const remote = window.sessionStorage.getItem('remote');
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
-      if (remote == 'true')
-      {
-        this.remoteMode = true;
-        try {
-          // Hit the URL endpoint
-          const response =  fetch('https://dastream.cloud/like', {
-            method: 'GET', // or 'POST' depending on what the endpoint expects
-          });
-      
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-      
-          const data =  response.json(); // Assuming the response is JSON
-          console.log('like data:', data);
-        } catch (error) {
-          console.error('Error hitting the like endpoint:', error);
-        }
+      if (remote == 'true') {}
+        await this.remoteLike()
         return;
       }
       const audio = new Audio('https://your.cmptr.cloud/pageflip.mp3'); // Replace with your audio file URL
