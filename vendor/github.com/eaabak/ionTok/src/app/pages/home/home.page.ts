@@ -28,7 +28,7 @@ export class HomePage implements OnInit {
 
   chainName: string;
   showHeaderDiv: boolean;
-
+  remoteMode: boolean = false;
   
 
   onSearch(event: any) {
@@ -629,8 +629,11 @@ export class HomePage implements OnInit {
              video.play();
            }
            else {
-             floating_vid.setAttribute('src',video.src); 
-             console.log('Play this video:', this.videoList[index].url );
+             if (!this.remoteMode) {
+              floating_vid.setAttribute('src',video.src); 
+              console.log('Play this video:', this.videoList[index].url );
+             }
+             else { floating_vid.style.visibility = 'hidden' }
            }
           });
           //videos.forEach(video => video.muted = !video.muted);
@@ -643,10 +646,13 @@ export class HomePage implements OnInit {
 // Trigger this function on slide change
 async onSlideDidChange() {
   const chainId = window.sessionStorage.getItem('chain');
+  const remote = window.sessionStorage.getItem('remote');
   console.log(`Chain Id: ${chainId}`);
   console.dir(chainId);
   this.chainName = this.chainMap[chainId] || 'Unknown Chain';
   this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+  if (remote == 'true')
+    this.remoteMode = true;
 
   const floating_vid = document.getElementById('float');
   floating_vid.style.display = "block";
