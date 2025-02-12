@@ -18,6 +18,7 @@ export class FeedComponent implements OnInit {
   showSearchBar: boolean = false; // Variable to track the visibility of the search bar
   heartStyle: string = '';  // To dynamically change the heart icon color
   bookmarkStyle: string = '';  // To dynamically change the bookmark icon color
+  remoteMode: boolean = false;
 
   constructor(private data: DataService, private http: HttpClient) {} // Inject HttpClient into the constructor
 
@@ -57,7 +58,28 @@ export class FeedComponent implements OnInit {
 
     if (button === 'likes') {
       // Toggle the heart color (red when clicked)
+      const remote = window.sessionStorage.getItem('remote');
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
+      if (remote == 'true')
+      {
+        this.remoteMode = true;
+        try {
+          // Hit the URL endpoint
+          const response = await fetch('https://dastream.cloud/like', {
+            method: 'GET', // or 'POST' depending on what the endpoint expects
+          });
+      
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+      
+          const data = await response.json(); // Assuming the response is JSON
+          console.log('like data:', data);
+        } catch (error) {
+          console.error('Error hitting the like endpoint:', error);
+        }
+        return;
+      }
       const audio = new Audio('https://your.cmptr.cloud/pageflip.mp3'); // Replace with your audio file URL
       audio.play().catch((error) => console.error('Audio playback failed:', error));
 
