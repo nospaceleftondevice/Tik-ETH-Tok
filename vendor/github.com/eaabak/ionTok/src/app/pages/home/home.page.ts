@@ -400,7 +400,7 @@ export class HomePage implements OnInit {
     iframe.style.top = '171px';
     iframe.style.width = '100%';
     iframe.style.height = '100%';
-    iframe.style.transform = 'scale(.80)';
+    iframe.style.transform = 'scale(1)';
     iframe.style.zIndex = '9999';
     iframe.setAttribute('allowTransparency', 'true'); // Ensure transparency is allowed
     iframe.style.border = 'none'; // Optional, removes the border around the iframe
