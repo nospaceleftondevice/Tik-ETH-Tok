@@ -225,10 +225,23 @@ export class HomePage implements OnInit {
     console.log('Message received from WebSocket:', message);
     if (this.remoteMode)
       return
-    alert("got message: " + message + "skip mode: " + this.skipMode)
+    alert("got message: " + message + " skip mode: " + this.skipMode)
 
     if (message === 'next_slide') {
+      let index = 0;
+  
+      try {
+        // Get the active slide index
+        index = await this.slides.getActiveIndex();
+      } catch (error) {
+        console.error('Error getting active slide index:', error);
+        return;
+      }
       if (this.skipMode) {
+        if (index == 0) {
+          this.slideNext();
+          return
+        }
         window.localStorage.setItem('account','99999');
         setTimeout(this.slideNext,10000)
       }
