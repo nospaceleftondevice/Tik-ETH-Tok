@@ -243,7 +243,7 @@ export class HomePage implements OnInit {
           return
         }
         window.localStorage.setItem('account','99999');
-        setTimeout(this.slideNext,10000)
+        setTimeout(this.slideNext,5000)
       }
       else {
         this.slideNext();
