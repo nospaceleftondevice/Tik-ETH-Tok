@@ -61,6 +61,7 @@ export class FeedComponent implements OnInit {
   buttonClicked(button: string, video_id: number) {
     console.log("Button clicked: " + button);
     console.log("Video id: " + video_id);
+    const skipped = window.sessionStorage.getItem('skipped');
 
     if (button === "bookmarks") {
       window.sessionStorage.removeItem('videoResults');
@@ -73,6 +74,7 @@ export class FeedComponent implements OnInit {
     if (button === 'likes') {
       // Toggle the heart color (red when clicked)
       const remote = window.sessionStorage.getItem('remote');
+
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
       if (remote == 'true') {
         this.remoteLike()
@@ -104,7 +106,6 @@ export class FeedComponent implements OnInit {
     const apiUrl = `${window.location.protocol}//${window.location.hostname}/videos/${video_id}/${button}`;
     
     const payload = { account_number: accountNumber };
-
 
     // Send the POST request to the backend
     this.http.post(apiUrl, payload, {

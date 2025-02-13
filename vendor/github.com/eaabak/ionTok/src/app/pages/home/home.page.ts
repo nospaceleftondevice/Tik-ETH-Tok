@@ -275,6 +275,25 @@ export class HomePage implements OnInit {
   private async slideNext() {
     if (this.slides) {
       console.log('Navigating to the next slide...');
+      if (this.skipMode) {
+        try {
+          // Hit the URL endpoint
+          const apiUrl = `${window.location.protocol}//${window.location.hostname}/videos/${video_id}/${button}`;
+          const response = await fetch('https://dastream.cloud/next_slide', {
+            method: 'GET', // or 'POST' depending on what the endpoint expects
+          });
+      
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+      
+          const data = await response.json(); // Assuming the response is JSON
+          console.log('Next slide data:', data);
+        } catch (error) {
+          console.error('Error hitting the next_slide endpoint:', error);
+        }
+        console.log('Mark the current video as skipped');
+      }
       await this.slides.slideNext();
     }
   }
