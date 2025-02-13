@@ -242,8 +242,8 @@ export class HomePage implements OnInit {
           return
         }
         window.sessionStorage.setItem('account','99999');
-        alert("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.localStorage.getItem('account'))
-        setTimeout(this.slideNext,5000)
+        //alert("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.localStorage.getItem('account'))
+        //setTimeout(this.slideNext,5000)
       }
       else {
         this.slideNext();
@@ -285,6 +285,10 @@ export class HomePage implements OnInit {
       // Simulate a click event on the div
       targetDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       console.log('Click event dispatched to the target div.');
+    }
+
+    if (this.skipMode) {
+        this.slideNext();
     }
   }
 
