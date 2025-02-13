@@ -225,7 +225,6 @@ export class HomePage implements OnInit {
     console.log('Message received from WebSocket:', message);
     if (this.remoteMode)
       return
-    alert("got message: " + message + " skip mode: " + this.skipMode)
 
     if (message === 'next_slide') {
       let index = 0;
@@ -243,6 +242,7 @@ export class HomePage implements OnInit {
           return
         }
         window.localStorage.setItem('account','99999');
+        alert("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.localStorage.getItem('account'))
         setTimeout(this.slideNext,5000)
       }
       else {
