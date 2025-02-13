@@ -227,7 +227,7 @@ export class HomePage implements OnInit {
       return
 
     if (message === 'next_slide') {
-      if (this.skipMode) {
+      if (this.skipMode && !this.remoteMode) {
         window.localStorage.setItem('account','99999');
         message = 'like'
       }
