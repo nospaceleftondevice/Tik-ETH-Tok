@@ -709,6 +709,8 @@ async onSlideDidChange() {
     this.remoteMode = true;
   if (skipped == 'true')
     this.skipMode = true;
+  else
+    this.skipMode = false;
   try {
     // Hit the URL endpoint
     const response = await fetch('https://dastream.cloud/next_slide', {
