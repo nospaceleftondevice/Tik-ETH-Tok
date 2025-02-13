@@ -223,6 +223,7 @@ export class HomePage implements OnInit {
    */
   private async handleWebSocketMessage(message: string) {
     console.log('Message received from WebSocket:', message);
+    alert("got message: " + message)
     if (this.remoteMode)
       return
 
