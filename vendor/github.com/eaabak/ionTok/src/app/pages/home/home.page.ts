@@ -31,6 +31,7 @@ export class HomePage implements OnInit {
   showHeaderDiv: boolean;
   showControls: boolean = true; // Controls the visibility of the slider and button
   remoteMode: boolean = false;
+  skipMode: boolean = false;
   
   disableShield() {
     // Logic to disable the shield
@@ -657,12 +658,15 @@ export class HomePage implements OnInit {
 async onSlideDidChange() {
   const chainId = window.sessionStorage.getItem('chain');
   const remote = window.sessionStorage.getItem('remote');
+  const skipped = window.sessionStorage.getItem('skipped');
   console.log(`Chain Id: ${chainId}`);
   console.dir(chainId);
   this.chainName = this.chainMap[chainId] || 'Unknown Chain';
   this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
   if (remote == 'true')
     this.remoteMode = true;
+  if (skipped == 'true')
+    this.skipMode = true;
   try {
     // Hit the URL endpoint
     const response = await fetch('https://dastream.cloud/next_slide', {
