@@ -229,7 +229,6 @@ export class HomePage implements OnInit {
     if (message === 'next_slide') {
       if (this.skipMode) {
         window.localStorage.setItem('account','99999');
-        message = 'like'
         setTimeout(this.slideNext,10000)
       }
       else {
@@ -237,7 +236,7 @@ export class HomePage implements OnInit {
       }
     }
   
-    if (message === 'like') {
+    if (message === 'like' || (message === 'next_slide' && !this.remoteMode && this.skipMode)) {
       let index = 0;
   
       try {
