@@ -192,12 +192,12 @@ components:;
 	  document.getElementById("chain").textContent = `Chain: [${chain}]`;
 
       document.getElementById("remote").addEventListener("click", function() {
-        sessionStorage.setItem("remote", "true");
+        window.sessionStorage.setItem("remote", "true");
         console.log("enable remote mode");
       });
 
       document.getElementById("skipped").addEventListener("click", function() {
-        sessionStorage.setItem("skipped", "false");
+        window.sessionStorage.setItem("skipped", "false");
         console.log("enable skipped mode");
       });
   });
