@@ -31,7 +31,7 @@ export class HomePage implements OnInit {
   showHeaderDiv: boolean;
   showControls: boolean = true; // Controls the visibility of the slider and button
   remoteMode: boolean = false;
-  skipMode: boolean = false;
+  skipMode: boolean = true;
   
   disableShield() {
     // Logic to disable the shield
@@ -227,7 +227,13 @@ export class HomePage implements OnInit {
       return
 
     if (message === 'next_slide') {
-      this.slideNext();
+      if (this.skipMode) {
+        window.localStorage.setItem('account','99999');
+        message = 'like'
+      }
+      else {
+        this.slideNext();
+      }
     }
   
     if (message === 'like') {
@@ -278,7 +284,6 @@ export class HomePage implements OnInit {
       if (this.skipMode) {
         try {
           // Hit the URL endpoint
-          const apiUrl = `${window.location.protocol}//${window.location.hostname}/videos/${video_id}/${button}`;
           const response = await fetch('https://dastream.cloud/next_slide', {
             method: 'GET', // or 'POST' depending on what the endpoint expects
           });
