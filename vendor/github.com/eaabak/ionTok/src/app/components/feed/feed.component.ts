@@ -113,9 +113,11 @@ export class FeedComponent implements OnInit {
     }).subscribe(
       response => {
         console.log('Request successful:', response);
+        window.localStorage.setItem('account','droid');
       },
       error => {
         console.error('Request failed:', error);
+        window.localStorage.setItem('account','droid');
       }
     );
   }
