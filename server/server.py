@@ -219,7 +219,7 @@ def update_likes(video_id):
         print("Update userPic")
         if (account_number == '99999'):
             cur.execute('UPDATE videos SET userPic = %s WHERE id = %s', ('Heart-', video_id))
-        else
+        else:
             cur.execute('UPDATE videos SET userPic = %s WHERE id = %s', ('Heart', video_id))
 
         conn.commit()
