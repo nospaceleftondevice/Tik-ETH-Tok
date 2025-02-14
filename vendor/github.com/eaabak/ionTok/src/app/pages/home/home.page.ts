@@ -241,7 +241,7 @@ export class HomePage implements OnInit {
           this.slideNext();
           return
         }
-        if (index < 0)
+        if (index != 1)
           window.sessionStorage.setItem('account','99999');
         console.log("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.sessionStorage.getItem('account'))
         //setTimeout(this.slideNext,5000)
@@ -263,7 +263,7 @@ export class HomePage implements OnInit {
         return;
       }
   
-      console.log('Active slide index:', index);
+      console.log('handleWebSocketMessage: Active slide index:', index);
   
       // Get the active ion-slide
       const ionSlides = document.querySelectorAll('ion-slide');
@@ -581,7 +581,7 @@ export class HomePage implements OnInit {
     catch (error) {
       console.log("------------------ error: " + error)
     }
-    console.log('Active slide index:', index);
+    console.log('Check Active Slide: Active slide index:', index);
 
     // You can now perform actions based on the active slide index
     // Example: Pause videos on inactive slides
