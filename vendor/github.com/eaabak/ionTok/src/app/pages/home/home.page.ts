@@ -305,7 +305,7 @@ export class HomePage implements OnInit {
 
       if (this.slides && marknext) {
       console.log('Navigating to the next slide...');
-      if (this.skipMode && ) {
+      if (this.skipMode && marknext) {
         try {
           // Hit the URL endpoint
           const response = await fetch('https://dastream.cloud/next_slide', {
