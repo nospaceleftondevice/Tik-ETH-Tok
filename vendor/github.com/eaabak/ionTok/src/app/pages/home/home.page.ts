@@ -725,13 +725,6 @@ async onSlideDidChange() {
   try {
     // Get the current active slide index
     index = await this.slides.getActiveIndex();
-
-    // Show or hide the floating video element based on the slide index
-    if (index === 0) {
-      floating_vid.style.display = "none";
-    } else {
-      floating_vid.style.display = "block";
-    }
   } catch { }
 
   if (remote == 'true')
@@ -766,7 +759,7 @@ async onSlideDidChange() {
   floating_vid.setAttribute("muted", "false");
   console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]");
 
-  let index = 0;
+  index = 0;
   try {
     // Get the current active slide index
     index = await this.slides.getActiveIndex();
