@@ -75,11 +75,13 @@ export class FeedComponent implements OnInit {
     if (button === 'likes') {
       // Toggle the heart color (red when clicked)
       const remote = window.sessionStorage.getItem('remote');
+      console.log("Remote: " + remote);
       
       // If the click was not automated, do not mark the video as skipped on the following call to next_slide
-      if (event.isTrusted && remote == 'false') {
+      if (event.isTrusted && remote != 'true') {
         console.log("!! setting Mark As Skipped to false")
         window.sessionStorage.setItem('markasskipped','false')
+        window.sessionStorage.setItem('account','droid')
       }
       else {
         console.log("!! setting Mark As Skipped to true")
