@@ -303,7 +303,13 @@ export class HomePage implements OnInit {
   private async slideNext() {
     const markasskipped = window.sessionStorage.getItem('markasskipped')
     var marknext = false;
-    if (markasskipped === 'true')
+    let index = 0;
+    try {
+      // Get the current active slide index
+      index = await this.slides.getActiveIndex();
+    } catch (error) { }
+
+    if (markasskipped === 'true' && index > 1)
       marknext = true;
 
       if (this.slides && marknext) {
