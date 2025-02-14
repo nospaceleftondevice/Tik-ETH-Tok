@@ -721,6 +721,19 @@ async onSlideDidChange() {
   console.log(`sessionStorage skipped: ${skipped}`);
   this.chainName = this.chainMap[chainId] || 'Unknown Chain';
   this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+  let index = 0;
+  try {
+    // Get the current active slide index
+    index = await this.slides.getActiveIndex();
+
+    // Show or hide the floating video element based on the slide index
+    if (index === 0) {
+      floating_vid.style.display = "none";
+    } else {
+      floating_vid.style.display = "block";
+    }
+  } catch { }
+
   if (remote == 'true')
     this.remoteMode = true;
   if (skipped == 'true' || skipped == null) {
@@ -729,20 +742,23 @@ async onSlideDidChange() {
   }
   else
     this.skipMode = false;
-  try {
-    // Hit the URL endpoint
-    const response = await fetch('https://dastream.cloud/next_slide', {
-      method: 'GET', // or 'POST' depending on what the endpoint expects
-    });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+  if (!remote && index > 1) {
+    try {
+      // Hit the URL endpoint
+      const response = await fetch('https://dastream.cloud/next_slide', {
+        method: 'GET', // or 'POST' depending on what the endpoint expects
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json(); // Assuming the response is JSON
+      console.log('Next slide data:', data);
+    } catch (error) {
+      console.error('Error hitting the next_slide endpoint:', error);
     }
-
-    const data = await response.json(); // Assuming the response is JSON
-    console.log('Next slide data:', data);
-  } catch (error) {
-    console.error('Error hitting the next_slide endpoint:', error);
   }
 
   const floating_vid = document.getElementById('float');
