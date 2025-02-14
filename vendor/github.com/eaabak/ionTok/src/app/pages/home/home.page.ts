@@ -226,6 +226,12 @@ export class HomePage implements OnInit {
     if (this.remoteMode)
       return
 
+    if (this.skipMode && !this.remoteMode && window.sessionStorage.getItem('skipback') == 'yes') {
+          console.log("Sliding back a slide");
+          window.sessionStorage.setItem('skipback','no');
+          this.slides.slidePrev();
+    }
+
     if (message === 'next_slide') {
       let index = 0;
   
@@ -241,6 +247,7 @@ export class HomePage implements OnInit {
           this.slideNext();
           return
         }
+
         if (index != 1) {
           console.log("!! Setting acount to 99999, becuase index is not 1")
           window.sessionStorage.setItem('account','99999');
@@ -736,9 +743,10 @@ async onSlideDidChange() {
   else
     this.skipMode = false;
 
-  if (remote && index > 1) {
+  if (!remote && index > 1 && window.sessionStorage.getItem("skipBack") != "yes") {
     try {
       // Hit the URL endpoint
+      window.sessionStorage.setItem("skipBack",'yes')
       const response = await fetch('https://dastream.cloud/next_slide', {
         method: 'GET', // or 'POST' depending on what the endpoint expects
       });
@@ -753,6 +761,7 @@ async onSlideDidChange() {
       console.error('Error hitting the next_slide endpoint:', error);
     }
   }
+  window.sessionStorage.setItem("skipBack",'no')
 
   const floating_vid = document.getElementById('float');
   floating_vid.style.display = "block";
