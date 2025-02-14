@@ -81,6 +81,7 @@ export class FeedComponent implements OnInit {
       if (event.isTrusted && remote != 'true') {
         console.log("feed.component.ts: buttonClicked !! setting Mark As Skipped to false")
         window.sessionStorage.setItem('markasskipped','false')
+        window.sessionStorage.setItem('skipBack','false')
         window.sessionStorage.setItem('account','droid')
       }
       else {

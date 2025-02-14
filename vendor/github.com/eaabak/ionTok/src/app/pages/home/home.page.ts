@@ -730,10 +730,10 @@ async onSlideDidChange() {
   const chainId = window.sessionStorage.getItem('chain');
   const remote = window.sessionStorage.getItem('remote');
   const skipped = window.sessionStorage.getItem('skipped');
-  console.log(`Chain Id: ${chainId}`);
+  console.log(`home.page.ts onSlideDidChange Chain Id: ${chainId}`);
   console.dir(chainId);
-  console.log(`sessionStorage skipped: ${skipped}`);
-  console.log("skipBack skipped: " + window.sessionStorage.getItem("skipBack"));
+  console.log(`home.page.ts onSlideDidChange sessionStorage skipped: ${skipped}`);
+  console.log("home.page.ts onSlideDidChange skipBack skipped: " + window.sessionStorage.getItem("skipBack"));
   this.chainName = this.chainMap[chainId] || 'Unknown Chain';
   this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
   let index = 0;
