@@ -234,7 +234,11 @@ export class HomePage implements OnInit {
           window.sessionStorage.setItem('skipback','no');
           this.slides.slidePrev();
       }
-  
+ 
+      var skiptIt = false;
+      if (window.sessionStorage.getItem('markasskipped') == "true")
+        skiptIt=true;
+
       try {
         // Get the active slide index
         index = await this.slides.getActiveIndex();
@@ -242,7 +246,7 @@ export class HomePage implements OnInit {
         console.error('Error getting active slide index:', error);
         return;
       }
-      if (this.skipMode) {
+      if (this.skipMode && skiptIt) {
         if (index == 0) {
           this.slideNext();
           return
@@ -259,7 +263,9 @@ export class HomePage implements OnInit {
         this.slideNext();
       }
     }
-  
+
+    window.sessionStorage.setItem('markasskipped','true') 
+
     if (message === 'like' || (message === 'next_slide' && !this.remoteMode && this.skipMode)) {
       let index = 0;
       if (message === 'like')
