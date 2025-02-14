@@ -125,6 +125,7 @@ export class FeedComponent implements OnInit {
       response => {
         console.log('Request successful:', response);
         window.localStorage.setItem('account','droid');
+        document.querySelector('ion-slides').slideNext();
       },
       error => {
         console.error('Request failed:', error);
