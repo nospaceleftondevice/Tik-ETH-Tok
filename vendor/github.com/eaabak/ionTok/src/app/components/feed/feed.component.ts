@@ -133,6 +133,7 @@ export class FeedComponent implements OnInit {
       error => {
         console.error('feed.component.ts: buttonClicked Request failed:', error);
         window.localStorage.setItem('account','droid');
+        document.querySelector('ion-slides').slideNext();
       }
     );
   }
