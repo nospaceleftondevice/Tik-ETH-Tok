@@ -354,6 +354,7 @@ export class HomePage implements OnInit {
     window.sessionStorage.setItem("next","");
     window.sessionStorage.setItem('viewbookmarks',"false");
     window.sessionStorage.removeItem("videoResults");
+    window.sessionStorage.setItem('markasskipped','true') 
     //window.localStorage.removeItem("bookmarks");
     console.log('Get video list');
     //this.videoList = this.data.getVideoList();
