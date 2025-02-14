@@ -226,7 +226,7 @@ export class HomePage implements OnInit {
     if (this.remoteMode)
       return
 
-    if (this.skipMode && !this.remoteMode && window.sessionStorage.getItem('skipback') == 'yes') {
+    if (this.skipMode && !this.remoteMode && window.sessionStorage.getItem('skipBack') == 'yes') {
           console.log("Sliding back a slide");
           window.sessionStorage.setItem('skipback','no');
           this.slides.slidePrev();
