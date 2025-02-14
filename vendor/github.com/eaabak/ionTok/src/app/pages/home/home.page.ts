@@ -248,8 +248,8 @@ export class HomePage implements OnInit {
           return
         }
 
-        if (index != 1) {
-          console.log("!! Setting acount to 99999, becuase index is not 1")
+        if (index > 0) {
+          console.log("!! Setting acount to 99999, becuase index is > 0")
           window.sessionStorage.setItem('account','99999');
         }
         console.log("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.sessionStorage.getItem('account'))
