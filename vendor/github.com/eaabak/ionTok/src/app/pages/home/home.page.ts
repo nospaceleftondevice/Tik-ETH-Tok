@@ -67,7 +67,7 @@ export class HomePage implements OnInit {
 
     this.data.searchVideos(payload).subscribe(
       (response: any) => {
-        console.log("Got results from searchVideos:");
+        console.log("home.page.ts: performSearch Got results from searchVideos:");
         console.dir(response);
         this.searchResults = response || [];
 
@@ -81,12 +81,12 @@ export class HomePage implements OnInit {
   }
 
   updateVideoList(results: any[]) {
-    console.log("updateVideoList called");
+    console.log("home.page.ts: updateVideoList called");
     console.dir(results);
 
     if (results.length > 0) {
       const insertIndex = 1;
-      console.log(`Inserting ${results.length} results at index: ${insertIndex}`);
+      console.log(`home.page.ts: updateVideoList Inserting ${results.length} results at index: ${insertIndex}`);
       this.presentToast("Adding search results to your feed");
 
       // Remove duplicates within the results array
@@ -200,7 +200,7 @@ export class HomePage implements OnInit {
     this.ws = new WebSocket(websocketUrl);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connection established.');
+      console.log('home.page.ts: initializeWebSocket WebSocket connection established.');
     };
 
     this.ws.onmessage = (event) => {
@@ -208,12 +208,12 @@ export class HomePage implements OnInit {
     };
 
     this.ws.onclose = () => {
-      console.warn('WebSocket connection closed. Attempting to reconnect...');
+      console.warn('home.page.ts: initializeWebSocket WebSocket connection closed. Attempting to reconnect...');
       setTimeout(() => this.initializeWebSocket(), 5000); // Retry connection after 5 seconds
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket encountered an error:', error);
+      console.error('home.page.ts: initializeWebSocket WebSocket encountered an error:', error);
     };
   }
 
@@ -222,7 +222,7 @@ export class HomePage implements OnInit {
    * @param message The received message
    */
   private async handleWebSocketMessage(message: string) {
-    console.log('Message received from WebSocket:'+ message + " skipMode: " + this.skipMode );
+    console.log('home.page.ts Message handleWebSocketMessage received from WebSocket:'+ message + " skipMode: " + this.skipMode );
     if (this.remoteMode)
       return
 
@@ -230,7 +230,7 @@ export class HomePage implements OnInit {
     if (message === 'next_slide') {
       let index = 0;
       if (this.skipMode && !this.remoteMode && window.sessionStorage.getItem('skipBack') == 'yes') {
-          console.log("Sliding back a slide");
+          console.log("home.page.ts handleWebSocketMessage Sliding back a slide");
           window.sessionStorage.setItem('skipback','no');
           this.slides.slidePrev();
       }
@@ -243,7 +243,7 @@ export class HomePage implements OnInit {
         // Get the active slide index
         index = await this.slides.getActiveIndex();
       } catch (error) {
-        console.error('Error getting active slide index:', error);
+        console.error('home.page.ts handleWebSocketMessage Error getting active slide index:', error);
         return;
       }
       if (this.skipMode && skiptIt) {
@@ -253,10 +253,10 @@ export class HomePage implements OnInit {
         }
 
         if (index > 0) {
-          console.log("!! Setting acount to 99999, becuase index is > 0")
+          console.log("home.page.ts handleWebSocketMessage Setting acount to 99999, becuase index is > 0")
           window.sessionStorage.setItem('account','99999');
         }
-        console.log("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.sessionStorage.getItem('account'))
+        console.log("home.page.ts handleWebSocketMessage got message: " + message + " skip mode: " + this.skipMode + " account: " + window.sessionStorage.getItem('account'))
         //setTimeout(this.slideNext,5000)
       }
       else {
@@ -274,11 +274,11 @@ export class HomePage implements OnInit {
         // Get the active slide index
         index = await this.slides.getActiveIndex();
       } catch (error) {
-        console.error('Error getting active slide index:', error);
+        console.error('home.page.ts handleWebSocketMessage Error getting active slide index:', error);
         return;
       }
   
-      console.log('handleWebSocketMessage: Active slide index:', index);
+      console.log('home.page.ts handleWebSocketMessage: Active slide index:', index);
   
       // Get the active ion-slide
       const ionSlides = document.querySelectorAll('ion-slide');
@@ -293,15 +293,15 @@ export class HomePage implements OnInit {
       const targetDiv = activeSlide.querySelector('div[id]');
   
       if (!targetDiv) {
-        console.warn('No div with an id attribute found in the active slide.');
+        console.warn('home.page.ts handleWebSocketMessage No div with an id attribute found in the active slide.');
         return;
       }
   
-      console.log('Found target div:', targetDiv);
+      console.log('home.page.ts handleWebSocketMessage Found target div:', targetDiv);
   
       // Simulate a click event on the div
       targetDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      console.log('Click event dispatched to the target div.');
+      console.log('home.page.ts handleWebSocketMessage Click event dispatched to the target div.');
     }
 
     //if (this.skipMode) {
@@ -326,7 +326,7 @@ export class HomePage implements OnInit {
       marknext = true;
 
       if (this.slides && marknext) {
-      console.log('Navigating to the next slide...');
+      console.log('home.page.ts slideNext Navigating to the next slide...');
       if (this.skipMode && marknext) {
         try {
           // Hit the URL endpoint
@@ -343,7 +343,7 @@ export class HomePage implements OnInit {
         } catch (error) {
           console.error('Error hitting the next_slide endpoint:', error);
         }
-        console.log('Mark the current video as skipped');
+        console.log('home.page.ts slideNext Mark the current video as skipped');
       }
       await this.slides.slideNext();
     }
@@ -356,13 +356,13 @@ export class HomePage implements OnInit {
     window.sessionStorage.removeItem("videoResults");
     window.sessionStorage.setItem('markasskipped','true') 
     //window.localStorage.removeItem("bookmarks");
-    console.log('Get video list');
+    console.log('home.page.ts: ngOnInit Get video list');
     //this.videoList = this.data.getVideoList();
     const chainId = window.sessionStorage.getItem('chain');
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
     if (!this.showHeaderDiv) {
-      console.log("Browser User Agent: ", navigator.userAgent);
+      console.log("home.page.ts: ngOnInit Browser User Agent: ", navigator.userAgent);
       if (window.location.host.startsWith('audio.')) {
         window.localStorage.setItem('account','droid')
       }
@@ -380,10 +380,10 @@ export class HomePage implements OnInit {
     }
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
-    console.log('Page loaded');
-    console.log('Page host: [' + window.location.host + ']');
-    console.log('Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
-    console.log('Page search: [' + window.location.search + ']');
+    console.log('home.page.ts ngOnInit Page loaded');
+    console.log('home.page.ts ngOnInit Page host: [' + window.location.host + ']');
+    console.log('home.page.ts ngOnInit Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
+    console.log('home.page.ts ngOnInit Page search: [' + window.location.search + ']');
     window.addEventListener('keydown', this.handleArrowKeys.bind(this));
     this.updateTitle();
   }
@@ -395,14 +395,14 @@ export class HomePage implements OnInit {
   }
   
   loadVideos() {
-    console.log("!! load mode videos")
+    console.log("home.page.ts loadVideos !! load mode videos")
 
     this.data.getVideoList(this.currentPage, this.limit).subscribe((videos) => {
-        console.log("DEBUG: videos sent from server: ");
+        console.log("home.page.ts loadVideos DEBUG: videos sent from server: ");
         console.dir(videos);
         this.videoList = this.videoList || [];
         this.videoList = [...this.videoList, ...videos];
-        console.log(`Got ${this.videoList.length} videos`)
+        console.log(`home.page.ts loadVideos Got ${this.videoList.length} videos`)
     });
   }
 
@@ -496,12 +496,12 @@ export class HomePage implements OnInit {
 
     // Access the data sent from the iframe
     const data = event.data;
-    console.log('Message received from iframe:', data);
+    console.log('home.page.ts receiveMessage Message received from iframe:', data);
 
     if (data.view == 'bookmark') {
       this.data.getVideo(data.location).subscribe(
         (response: any) => {
-          console.log("DEBUG: Got results from getVideo:");
+          console.log("home.page.ts receiveMessage DEBUG: Got results from getVideo:");
           console.dir(response);
 	  this.searchResults = Array.isArray(response) ? response : [response];
 
@@ -516,9 +516,9 @@ export class HomePage implements OnInit {
     }
 
     if (data.view === 'login') {
-      console.log(`Login box with status [${data.status}]`);
+      console.log(`home.page.ts receiveMessage Login box with status [${data.status}]`);
       if (data.status === "ready") {
-        console.log("resize login iframe");
+        console.log("home.page.ts receiveMessage resize login iframe");
         document.getElementById("web3auth").style.transform = 'scale(.70)';
         document.getElementById("web3auth").style.top = '-150px';
         document.getElementById("web3auth").style.height = '170%';
@@ -545,7 +545,7 @@ export class HomePage implements OnInit {
 
     // Handle the received data (e.g., update UI, log data, etc.)
     if (data.view === 'loggedInView' || data.view === "abort" ) {
-      console.log('Iframe is in loggedInView, account:', data.account);
+      console.log('home.page.ts receiveMessage Iframe is in loggedInView, account:', data.account);
       window.sessionStorage.setItem("account",data.account);
       window.sessionStorage.setItem("chain",String(data.chain));
       //const chainId = window.sessionStorage.getItem("chain");
@@ -586,7 +586,7 @@ export class HomePage implements OnInit {
   ionViewDidEnter() {
     const chainId = window.sessionStorage.getItem('chain');
     //alert(this.chainMap[chainId]);
-    console.log(`Chain Id: ${chainId}`);
+    console.log(`home.page.ts ionViewDidEnter Chain Id: ${chainId}`);
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
@@ -601,9 +601,9 @@ export class HomePage implements OnInit {
       index = await this.slides.getActiveIndex();
     }
     catch (error) {
-      console.log("------------------ error: " + error)
+      console.log("home.page.ts checkActiveSlide ------------------ error: " + error)
     }
-    console.log('Check Active Slide: Active slide index:', index);
+    console.log('home.page.ts checkActiveSlide: Active slide index:', index);
 
     // You can now perform actions based on the active slide index
     // Example: Pause videos on inactive slides
@@ -701,10 +701,10 @@ export class HomePage implements OnInit {
           videos.forEach(video=> {
            if ((index + 1) == slides.length) 
             this.loadMoreVideos();
-           console.log('Play videos on slide index:', index);
-           console.log('Play video:', video.src );
+           console.log('home.page.ts pauseInactiveSlides Play videos on slide index:', index);
+           console.log('home.page.ts pauseInactiveSlides Play video:', video.src );
            if (index == 0) {
-             console.log("Count of index at zero: ", ++this.count)
+             console.log("home.page.ts pauseInactiveSlides Count of index at zero: ", ++this.count)
              //floating_vid.setAttribute('src',"https://your.cmptr.cloud:2017/ad" + this.count + ".mp4"); 
              floating_vid.setAttribute('src',"https://your.cmptr.cloud:2017/lft.mp4"); 
              video.src = floating_vid.getAttribute('src');
@@ -713,7 +713,7 @@ export class HomePage implements OnInit {
            else {
              if (!this.remoteMode) {
               floating_vid.setAttribute('src',video.src); 
-              console.log('Play this video:', this.videoList[index].url );
+              console.log('home.page.ts pauseInactiveSlides Play this video:', this.videoList[index].url );
              }
              else { floating_vid.style.visibility = 'hidden' }
            }
@@ -764,9 +764,9 @@ async onSlideDidChange() {
       }
 
       const data = await response.json(); // Assuming the response is JSON
-      console.log('Next slide data:', data);
+      console.log('home.page.ts omSlideDidChange Next slide data:', data);
     } catch (error) {
-      console.error('Error hitting the next_slide endpoint:', error);
+      console.error('home.page.ts omSlideDidChange Error hitting the next_slide endpoint:', error);
     }
   }
   window.sessionStorage.setItem("skipBack",'no')
@@ -774,7 +774,7 @@ async onSlideDidChange() {
   const floating_vid = document.getElementById('float');
   floating_vid.style.display = "block";
   floating_vid.setAttribute("muted", "false");
-  console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]");
+  console.log("home.page.ts omSlideDidChange [[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]");
 
   index = 0;
   try {
@@ -795,27 +795,27 @@ async onSlideDidChange() {
     const paragraph = document.getElementById(`description-${index}`);
     if (paragraph) {
       const paragraphText = paragraph.textContent || paragraph.innerText || '';
-      console.log(`Paragraph text for slide ${index}: ${paragraphText}`);
+      console.log(`home.page.ts omSlideDidChange Paragraph text for slide ${index}: ${paragraphText}`);
 
       // If the paragraph text starts with "Heart", advance to the next slide
       if (paragraphText.trim().startsWith('Heart')) {
-        console.log(`Paragraph starts with "Heart", advancing to the next slide...`);
+        console.log(`home.page.ts omSlideDidChange Paragraph starts with "Heart", advancing to the next slide...`);
 
         // Ensure slide navigation works correctly
         const slideCount = await this.slides.length(); // Total number of slides
         if (index < slideCount - 1) {
           await this.slides.slideNext(); // Advance to the next slide
-          console.log("Slide advanced successfully.");
+          console.log("home.page.ts omSlideDidChange Slide advanced successfully.");
         } else {
-          console.log("Already on the last slide.");
+          console.log("home.page.ts omSlideDidChange Already on the last slide.");
         }
         return; // Exit early to avoid further processing for this slide
       }
     } else {
-      console.log(`No paragraph element found with id "description-${index}".`);
+      console.log(`home.page.ts omSlideDidChange No paragraph element found with id "description-${index}".`);
     }
   } catch (error) {
-    console.log("Got onSlideDidChange error: " + error);
+    console.log("home.page.ts omSlideDidChange Got onSlideDidChange error: " + error);
   }
 
   // Perform any additional slide checks
