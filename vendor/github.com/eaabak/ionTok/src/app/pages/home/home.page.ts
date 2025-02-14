@@ -226,14 +226,14 @@ export class HomePage implements OnInit {
     if (this.remoteMode)
       return
 
-    if (this.skipMode && !this.remoteMode && window.sessionStorage.getItem('skipBack') == 'yes') {
-          console.log("Sliding back a slide");
-          window.sessionStorage.setItem('skipback','no');
-          this.slides.slidePrev();
-    }
 
     if (message === 'next_slide') {
       let index = 0;
+      if (this.skipMode && !this.remoteMode && window.sessionStorage.getItem('skipBack') == 'yes') {
+          console.log("Sliding back a slide");
+          window.sessionStorage.setItem('skipback','no');
+          this.slides.slidePrev();
+      }
   
       try {
         // Get the active slide index
@@ -243,7 +243,7 @@ export class HomePage implements OnInit {
         return;
       }
       if (this.skipMode) {
-        if (index == 0) {
+        if (index > 0) {
           this.slideNext();
           return
         }
