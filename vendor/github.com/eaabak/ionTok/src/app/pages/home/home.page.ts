@@ -726,6 +726,7 @@ async onSlideDidChange() {
   console.log(`Chain Id: ${chainId}`);
   console.dir(chainId);
   console.log(`sessionStorage skipped: ${skipped}`);
+  console.log("skipBack skipped: " + window.sessionStorage.getItem("skipBack"));
   this.chainName = this.chainMap[chainId] || 'Unknown Chain';
   this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
   let index = 0;
