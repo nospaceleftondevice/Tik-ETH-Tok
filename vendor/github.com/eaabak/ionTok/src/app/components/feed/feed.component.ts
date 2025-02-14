@@ -50,18 +50,18 @@ export class FeedComponent implements OnInit {
       this.http.get("https://dastream.cloud/like" 
       ).subscribe(
         response => {
-          console.log('Request successful:', response);
+          console.log('feed.component.ts: remoteLike Request successful:', response);
         },
         error => {
-          console.error('Request failed:', error);
+          console.error('feed.component.ts: remoteLike Request failed:', error);
         }
       );
   }
 
   buttonClicked(event: MouseEvent, button: string, video_id: number) {
-    console.log("Button clicked: " + button);
-    console.log("Video id: " + video_id);
-    console.log("isTrusted: " + event.isTrusted);
+    console.log("feed.component.ts: buttonClicked Button clicked: " + button);
+    console.log("feed.component.ts: buttonClicked remoteLike Video id: " + video_id);
+    console.log("feed.component.ts: buttonClicked isTrusted: " + event.isTrusted);
     const skipped = window.sessionStorage.getItem('skipped');
 
     if (button === "bookmarks") {
@@ -75,16 +75,16 @@ export class FeedComponent implements OnInit {
     if (button === 'likes') {
       // Toggle the heart color (red when clicked)
       const remote = window.sessionStorage.getItem('remote');
-      console.log("Remote: " + remote);
+      console.log("feed.component.ts: buttonClicked Remote: " + remote);
       
       // If the click was not automated, do not mark the video as skipped on the following call to next_slide
       if (event.isTrusted && remote != 'true') {
-        console.log("!! setting Mark As Skipped to false")
+        console.log("feed.component.ts: buttonClicked !! setting Mark As Skipped to false")
         window.sessionStorage.setItem('markasskipped','false')
         window.sessionStorage.setItem('account','droid')
       }
       else {
-        console.log("!! setting Mark As Skipped to true")
+        console.log("feed.component.ts: buttonClicked !! setting Mark As Skipped to true")
         window.sessionStorage.setItem('markasskipped','true')
       }
 
@@ -106,13 +106,13 @@ export class FeedComponent implements OnInit {
     } else if (button === 'comments') {
       // Toggle the bookmark color (black when clicked)
       this.bookmarkStyle = this.bookmarkStyle === 'color: black;' ? '' : 'color: black;';
-      console.log(`[[[[[[[[[[ get id: ${video_id} ]]]]]]]]]]`);
-      this.data.getVideo(`${video_id}`).subscribe((videos) => { console.log("videos sent from server: "); console.dir(videos) } );
+      console.log(`feed.component.ts: buttonClicked [[[[[[[[[[ get id: ${video_id} ]]]]]]]]]]`);
+      this.data.getVideo(`${video_id}`).subscribe((videos) => { console.log("feed.component.ts: buttonClicked videos sent from server: "); console.dir(videos) } );
     }
 
     // Get the account number from session storage
     const accountNumber = window.sessionStorage.getItem("account") || "000000"
-    console.log("Account number: " + accountNumber);
+    console.log("feed.component.ts: buttonClicked Account number: " + accountNumber);
 
     // Dynamically get the host and protocol, but use a different port (e.g., 7000)
     //const apiUrl = `${window.location.protocol}//${window.location.hostname}:7000/videos/${video_id}/${button}`;
@@ -125,12 +125,12 @@ export class FeedComponent implements OnInit {
       headers: { 'Content-Type': 'application/json' }
     }).subscribe(
       response => {
-        console.log('Request successful:', response);
+        console.log('feed.component.ts: buttonClicked Request successful:', response);
         window.localStorage.setItem('account','droid');
         document.querySelector('ion-slides').slideNext();
       },
       error => {
-        console.error('Request failed:', error);
+        console.error('feed.component.ts: buttonClicked Request failed:', error);
         window.localStorage.setItem('account','droid');
       }
     );
@@ -152,7 +152,7 @@ export class FeedComponent implements OnInit {
 
   onSearch(event: any) {
     const searchTerm = event.target.value;
-    console.log('Searching for:', searchTerm);
+    console.log('feed.component.ts: onSearch Searching for:', searchTerm);
   // Implement your search logic here
   }
 
