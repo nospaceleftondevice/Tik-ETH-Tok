@@ -242,7 +242,7 @@ export class HomePage implements OnInit {
           return
         }
         window.sessionStorage.setItem('account','99999');
-        //alert("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.localStorage.getItem('account'))
+        console.log("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.sessionStorage.getItem('account'))
         //setTimeout(this.slideNext,5000)
       }
       else {
@@ -703,6 +703,7 @@ async onSlideDidChange() {
   const skipped = window.sessionStorage.getItem('skipped');
   console.log(`Chain Id: ${chainId}`);
   console.dir(chainId);
+  console.log(`sessionStorage skipped: ${skipped}`);
   this.chainName = this.chainMap[chainId] || 'Unknown Chain';
   this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
   if (remote == 'true')
