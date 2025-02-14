@@ -78,11 +78,11 @@ export class FeedComponent implements OnInit {
       
       // If the click was not automated, do not mark the video as skipped on the following call to next_slide
       if (event.isTrusted && remote == 'false') {
-        console.log("!! setting Mark As Skipped to true")
+        console.log("!! setting Mark As Skipped to false")
         window.sessionStorage.setItem('markasskipped','false')
       }
       else {
-        console.log("!! setting Mark As Skipped to false")
+        console.log("!! setting Mark As Skipped to true")
         window.sessionStorage.setItem('markasskipped','true')
       }
 
