@@ -708,8 +708,10 @@ async onSlideDidChange() {
   this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
   if (remote == 'true')
     this.remoteMode = true;
-  if (skipped == 'true')
+  if (skipped == 'true' || skipped == null) {
     this.skipMode = true;
+    window.sessionStorage.setItem('skipped','true')
+  }
   else
     this.skipMode = false;
   try {
