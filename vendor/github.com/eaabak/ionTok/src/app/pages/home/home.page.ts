@@ -243,7 +243,7 @@ export class HomePage implements OnInit {
         return;
       }
       if (this.skipMode) {
-        if (index > 0) {
+        if (index == 0) {
           this.slideNext();
           return
         }
@@ -298,9 +298,9 @@ export class HomePage implements OnInit {
       console.log('Click event dispatched to the target div.');
     }
 
-    if (this.skipMode) {
-        this.slideNext();
-    }
+    //if (this.skipMode) {
+    //    this.slideNext();
+    //}
   }
 
 
