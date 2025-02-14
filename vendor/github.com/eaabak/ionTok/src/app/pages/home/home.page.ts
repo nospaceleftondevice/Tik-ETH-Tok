@@ -241,7 +241,8 @@ export class HomePage implements OnInit {
           this.slideNext();
           return
         }
-        window.sessionStorage.setItem('account','99999');
+        if (index < 0)
+          window.sessionStorage.setItem('account','99999');
         console.log("got message: " + message + " skip mode: " + this.skipMode + " account: " + window.sessionStorage.getItem('account'))
         //setTimeout(this.slideNext,5000)
       }
