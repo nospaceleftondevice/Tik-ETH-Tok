@@ -2,15 +2,15 @@
 
 <div class="actions" style="z-index: 9999;right: 30px;bottom: 30px;">
 
-  <div (click)="buttonClicked('bookmarks',0)" style="visibility: hidden;">
+  <div (click)="buttonClicked($event,'bookmarks',0)" style="visibility: hidden;">
     <ion-icon size="large" name="bookmarks" [style]="bookmarkStyle"></ion-icon>
   </div>
 
-  <div (click)="buttonClicked('search',0)" style="visibility: hidden; margin-bottom: 48px;">
+  <div (click)="buttonClicked($event,'search',0)" style="visibility: hidden; margin-bottom: 48px;">
     <ion-icon size="large" name="search"></ion-icon>
   </div>
 
- <div (click)="buttonClicked('likes',video.id)" 
+ <div (click)="buttonClicked($event,'likes',video.id)" 
      [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}"
      [id]="'video-' + video.id">
   <ion-icon size="large" name="heart" [style]="heartStyle"></ion-icon>

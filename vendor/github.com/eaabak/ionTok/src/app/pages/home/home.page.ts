@@ -298,9 +298,14 @@ export class HomePage implements OnInit {
    * Navigates to the next slide.
    */
   private async slideNext() {
-    if (this.slides) {
+    const markasskipped = window.sessionStorage.getItem('markasskipped')
+    var marknext = false;
+    if (markasskipped === 'true')
+      marknext = true;
+
+      if (this.slides && marknext) {
       console.log('Navigating to the next slide...');
-      if (this.skipMode) {
+      if (this.skipMode && ) {
         try {
           // Hit the URL endpoint
           const response = await fetch('https://dastream.cloud/next_slide', {

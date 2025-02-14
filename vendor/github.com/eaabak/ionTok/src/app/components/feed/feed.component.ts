@@ -58,9 +58,10 @@ export class FeedComponent implements OnInit {
       );
   }
 
-  buttonClicked(button: string, video_id: number) {
+  buttonClicked(event: MouseEvent, button: string, video_id: number) {
     console.log("Button clicked: " + button);
     console.log("Video id: " + video_id);
+    console.log("isTrusted: " + event.isTrusted);
     const skipped = window.sessionStorage.getItem('skipped');
 
     if (button === "bookmarks") {
@@ -74,6 +75,16 @@ export class FeedComponent implements OnInit {
     if (button === 'likes') {
       // Toggle the heart color (red when clicked)
       const remote = window.sessionStorage.getItem('remote');
+      
+      // If the click was not automated, do not mark the video as skipped on the following call to next_slide
+      if (event.isTrusted && remote == 'false') {
+        console.log("!! setting Mark As Skipped to true")
+        window.sessionStorage.setItem('markasskipped','false')
+      }
+      else {
+        console.log("!! setting Mark As Skipped to false")
+        window.sessionStorage.setItem('markasskipped','true')
+      }
 
       this.heartStyle = this.heartStyle === 'color: red;' ? '' : 'color: red;';
       if (remote == 'true') {
