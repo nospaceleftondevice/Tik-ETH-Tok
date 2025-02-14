@@ -252,7 +252,8 @@ export class HomePage implements OnInit {
   
     if (message === 'like' || (message === 'next_slide' && !this.remoteMode && this.skipMode)) {
       let index = 0;
-  
+      if (message === 'like')
+        window.sessionStorage.setItem('account','droid');
       try {
         // Get the active slide index
         index = await this.slides.getActiveIndex();
