@@ -764,7 +764,7 @@ async onSlideDidChange() {
   else
     this.skipMode = false;
 
-  if (!remote && index > 1 && window.sessionStorage.getItem("skipBack") != "yes") {
+  if (remote || (!remote && index > 1 && window.sessionStorage.getItem("skipBack") != "yes")) {
     try {
       // Hit the URL endpoint
       window.sessionStorage.setItem("skipBack",'yes')
