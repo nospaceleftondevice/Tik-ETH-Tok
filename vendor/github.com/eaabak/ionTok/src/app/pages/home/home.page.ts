@@ -713,6 +713,8 @@ export class HomePage implements OnInit {
            else {
              if (!this.remoteMode) {
               floating_vid.setAttribute('src',video.src); 
+              floating_vid.setAttribute('video-id',this.videoList[index].id); 
+
               console.log('home.page.ts pauseInactiveSlides Play this video:', this.videoList[index].url );
              }
              else { floating_vid.style.visibility = 'hidden' }

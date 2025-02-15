@@ -99,10 +99,13 @@ export class FeedComponent implements OnInit {
 
       // Modify the <video> element
       const videoElement = document.getElementById('float') as HTMLVideoElement;
+      const searchElement = document.getElementById('search')
+
       if (videoElement) {
         videoElement.src = 'https://your.cmptr.cloud/pageflip.mp3'; // Update the video source
         videoElement.style.display = 'block'; // Make the video visible
         videoElement.play().catch((error) => console.error('Video playback failed:', error)); // Start playing the video
+        searchElement.setAttribute("placeholder","${video_id}")
       }
     } else if (button === 'comments') {
       // Toggle the bookmark color (black when clicked)
