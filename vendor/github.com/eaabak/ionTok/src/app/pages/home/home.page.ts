@@ -743,6 +743,7 @@ async onSlideDidChange() {
   const remote = window.sessionStorage.getItem('remote');
   const skipped = window.sessionStorage.getItem('skipped');
   console.log(`home.page.ts onSlideDidChange Chain Id: ${chainId}`);
+  console.log(`home.page.ts remote: ${remote}`);
   console.dir(chainId);
   console.log(`home.page.ts onSlideDidChange sessionStorage skipped: ${skipped}`);
   console.log("home.page.ts onSlideDidChange skipBack skipped: " + window.sessionStorage.getItem("skipBack"));
