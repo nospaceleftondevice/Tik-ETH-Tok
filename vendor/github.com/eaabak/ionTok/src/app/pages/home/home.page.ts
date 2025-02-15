@@ -225,6 +225,7 @@ export class HomePage implements OnInit {
    */
   private async handleWebSocketMessage(message: string) {
     console.log('home.page.ts Message handleWebSocketMessage received from WebSocket:'+ message + " skipMode: " + this.skipMode );
+    console.log('home.page.ts Message handleWebSocketMessage remoteMode:'+ this.remoteMode );
     if (this.remoteMode)
       return
 
