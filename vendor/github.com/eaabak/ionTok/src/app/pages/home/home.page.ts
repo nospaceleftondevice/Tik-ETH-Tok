@@ -14,6 +14,8 @@ export class HomePage implements OnInit {
   //@ViewChild(IonSlides, { static: false }) slides: IonSlides;
   @ViewChild('slides', { static: false }) slides: IonSlides;  // Reference the IonSlides component
   //@ViewChild('searchbar', { static: false }) searchbar: ElementRef;
+  @ViewChild('slidesContainer', { static: true, read: ElementRef }) slidesContainer: ElementRef;
+
   @ViewChild('searchbar', { static: false }) searchbar: IonSearchbar; // Use IonSearchbar instead of ElementRef
 
   private ws: WebSocket | null = null; // WebSocket instance
@@ -605,9 +607,19 @@ export class HomePage implements OnInit {
     }
     console.log('home.page.ts checkActiveSlide: Active slide index:', index);
 
-    // You can now perform actions based on the active slide index
-    // Example: Pause videos on inactive slides
-    this.pauseInactiveSlides(index);
+    const slides = this.slidesContainer.nativeElement.querySelectorAll('ion-slide');
+
+    if (slides[index]) {
+      const activeSlideId = slides[index].id;
+      console.log('home.page.ts: checkActiveSlide Current Slide ID:', activeSlideId);
+      return activeSlideId;
+    } else {
+      console.error('home.page.ts: checkActiveSlide No slide found at the active index.');
+      return null;
+    }
+      // You can now perform actions based on the active slide index
+      // Example: Pause videos on inactive slides
+      this.pauseInactiveSlides(index);
   }
 
   pauseInactiveSlides(activeIndex: number) {
