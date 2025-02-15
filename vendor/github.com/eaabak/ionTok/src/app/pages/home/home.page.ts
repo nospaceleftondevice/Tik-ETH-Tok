@@ -612,10 +612,8 @@ export class HomePage implements OnInit {
     if (slides[index]) {
       const activeSlideId = slides[index].id;
       console.log('home.page.ts: checkActiveSlide Current Slide ID:', activeSlideId);
-      return activeSlideId;
     } else {
       console.error('home.page.ts: checkActiveSlide No slide found at the active index.');
-      return null;
     }
       // You can now perform actions based on the active slide index
       // Example: Pause videos on inactive slides
