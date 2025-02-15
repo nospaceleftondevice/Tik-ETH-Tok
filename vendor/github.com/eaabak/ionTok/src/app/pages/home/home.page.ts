@@ -14,7 +14,7 @@ export class HomePage implements OnInit {
   //@ViewChild(IonSlides, { static: false }) slides: IonSlides;
   @ViewChild('slides', { static: false }) slides: IonSlides;  // Reference the IonSlides component
   //@ViewChild('searchbar', { static: false }) searchbar: ElementRef;
-  @ViewChild('slidesContainer', { static: true, read: ElementRef }) slidesContainer: ElementRef;
+  @ViewChild('slides', { static: true, read: ElementRef }) slidesElementRef: ElementRef; // Reference for DOM access
 
   @ViewChild('searchbar', { static: false }) searchbar: IonSearchbar; // Use IonSearchbar instead of ElementRef
 
@@ -607,7 +607,7 @@ export class HomePage implements OnInit {
     }
     console.log('home.page.ts checkActiveSlide: Active slide index:', index);
 
-    const slides = this.slidesContainer.nativeElement.querySelectorAll('ion-slide');
+    const slides = this.slidesElementRef.nativeElement.querySelectorAll('ion-slide');
 
     if (slides[index]) {
       const activeSlideId = slides[index].id;
