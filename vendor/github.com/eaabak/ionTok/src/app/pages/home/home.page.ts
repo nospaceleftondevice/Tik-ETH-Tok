@@ -611,7 +611,7 @@ export class HomePage implements OnInit {
 
     if (slides[index]) {
       const activeSlideId = slides[index].id;
-      console.log('home.page.ts: checkActiveSlide Current Slide ID:', activeSlideId);
+      console.log('home.page.ts: checkActiveSlide index=' + index + ' Current Slide ID:', activeSlideId);
     } else {
       console.error('home.page.ts: checkActiveSlide No slide found at the active index.');
     }
