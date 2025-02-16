@@ -211,7 +211,7 @@ def update_likes(video_id):
 
         # Update the likes count in the database
         new_likes = f"{invalid_likes}:{valid_likes}"
-        print("Update likes")
+        print("Update likes account #: " + account_number)
         cur.execute('UPDATE videos SET likes = %s WHERE id = %s', (new_likes, video_id))
         conn.commit()
 
