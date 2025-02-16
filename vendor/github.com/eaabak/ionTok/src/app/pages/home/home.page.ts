@@ -460,6 +460,7 @@ export class HomePage implements OnInit {
   }
   
   handleCamera() {
+    document.querySelector('ion-slides').slideNext();
     this.showControls = false; // Hide the slider and button
 
     const audioElement = document.getElementById('background-audio') as HTMLAudioElement;
