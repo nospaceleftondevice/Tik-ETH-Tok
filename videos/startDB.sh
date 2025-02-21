@@ -21,9 +21,9 @@ docker run -d \
   -e POSTGRES_USER=user \
   -e POSTGRES_PASSWORD=password \
   -e POSTGRES_DB=video_db \
-  -p 6333::5432 \
+  -p 6333:5432 \
   -v $VOLUME_NAME:/var/lib/postgresql/data \
-  postgres:13
+  postgres:13 -c port=6333
 
 # Verify the container is running
 if [ $? -eq 0 ]; then
