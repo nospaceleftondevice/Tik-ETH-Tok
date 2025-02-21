@@ -14,9 +14,14 @@ export class HomePage implements OnInit {
   //@ViewChild(IonSlides, { static: false }) slides: IonSlides;
   @ViewChild('slides', { static: false }) slides: IonSlides;  // Reference the IonSlides component
   //@ViewChild('searchbar', { static: false }) searchbar: ElementRef;
+  @ViewChild('slides', { static: true, read: ElementRef }) slidesElementRef: ElementRef; // Reference for DOM access
+
   @ViewChild('searchbar', { static: false }) searchbar: IonSearchbar; // Use IonSearchbar instead of ElementRef
 
+  private ws: WebSocket | null = null; // WebSocket instance
+
   showSearchBar: boolean = false; // Initially hidden
+  showShield: boolean = true;
 
   videoList: any = [];
   searchResults: any[] = [];  // Add searchResults property
@@ -26,6 +31,14 @@ export class HomePage implements OnInit {
 
   chainName: string;
   showHeaderDiv: boolean;
+  showControls: boolean = true; // Controls the visibility of the slider and button
+  remoteMode: boolean = false;
+  skipMode: boolean = true;
+  
+  disableShield() {
+    // Logic to disable the shield
+    this.showShield = false;
+  }
 
   onSearch(event: any) {
     const searchTerm = event.target.value;
@@ -56,7 +69,7 @@ export class HomePage implements OnInit {
 
     this.data.searchVideos(payload).subscribe(
       (response: any) => {
-        console.log("Got results from searchVideos:");
+        console.log("home.page.ts: performSearch Got results from searchVideos:");
         console.dir(response);
         this.searchResults = response || [];
 
@@ -70,12 +83,12 @@ export class HomePage implements OnInit {
   }
 
   updateVideoList(results: any[]) {
-    console.log("updateVideoList called");
+    console.log("home.page.ts: updateVideoList called");
     console.dir(results);
 
     if (results.length > 0) {
       const insertIndex = 1;
-      console.log(`Inserting ${results.length} results at index: ${insertIndex}`);
+      console.log(`home.page.ts: updateVideoList Inserting ${results.length} results at index: ${insertIndex}`);
       this.presentToast("Adding search results to your feed");
 
       // Remove duplicates within the results array
@@ -181,18 +194,186 @@ export class HomePage implements OnInit {
     toast.present();
   }
 
+  /**
+   * Initializes the WebSocket connection to the server.
+   */
+  private initializeWebSocket() {
+    const websocketUrl = 'wss://dastream.cloud/ws'; // WebSocket endpoint
+    this.ws = new WebSocket(websocketUrl);
+
+    this.ws.onopen = () => {
+      console.log('home.page.ts: initializeWebSocket WebSocket connection established.');
+    };
+
+    this.ws.onmessage = (event) => {
+      this.handleWebSocketMessage(event.data);
+    };
+
+    this.ws.onclose = () => {
+      console.warn('home.page.ts: initializeWebSocket WebSocket connection closed. Attempting to reconnect...');
+      setTimeout(() => this.initializeWebSocket(), 5000); // Retry connection after 5 seconds
+    };
+
+    this.ws.onerror = (error) => {
+      console.error('home.page.ts: initializeWebSocket WebSocket encountered an error:', error);
+    };
+  }
+
+  /**
+   * Handles incoming WebSocket messages.
+   * @param message The received message
+   */
+  private async handleWebSocketMessage(message: string) {
+    console.log('home.page.ts Message handleWebSocketMessage received from WebSocket:'+ message + " skipMode: " + this.skipMode );
+    console.log('home.page.ts Message handleWebSocketMessage remoteMode:'+ this.remoteMode );
+    console.log('home.page.ts Message handleWebSocketMessage skipBack:'+ window.sessionStorage.getItem('skipBack') );
+
+    if (this.remoteMode)
+      return
+
+
+    if (message === 'next_slide') {
+      let index = 0;
+      if (this.skipMode && !this.remoteMode && window.sessionStorage.getItem('skipBack') == 'yes') {
+          console.log("home.page.ts handleWebSocketMessage Sliding back a slide");
+          window.sessionStorage.setItem('skipback','no');
+          this.slides.slidePrev();
+      }
+ 
+      var skiptIt = false;
+      if (window.sessionStorage.getItem('markasskipped') == "true")
+        skiptIt=true;
+
+      try {
+        // Get the active slide index
+        index = await this.slides.getActiveIndex();
+      } catch (error) {
+        console.error('home.page.ts handleWebSocketMessage Error getting active slide index:', error);
+        return;
+      }
+      if (this.skipMode && skiptIt) {
+        if (index == 0) {
+          this.slideNext();
+          return
+        }
+
+        if (index > 0) {
+          console.log("home.page.ts handleWebSocketMessage Setting acount to 99999, becuase index is > 0")
+          window.sessionStorage.setItem('account','99999');
+        }
+        console.log("home.page.ts handleWebSocketMessage got message: " + message + " skip mode: " + this.skipMode + " account: " + window.sessionStorage.getItem('account'))
+        //setTimeout(this.slideNext,5000)
+      }
+      else {
+        this.slideNext();
+      }
+    }
+
+    window.sessionStorage.setItem('markasskipped','true') 
+
+    if (message === 'like' || (message === 'next_slide' && !this.remoteMode && this.skipMode)) {
+      let index = 0;
+      if (message === 'like')
+        window.sessionStorage.setItem('account','droid');
+      try {
+        // Get the active slide index
+        index = await this.slides.getActiveIndex();
+      } catch (error) {
+        console.error('home.page.ts handleWebSocketMessage Error getting active slide index:', error);
+        return;
+      }
+  
+      console.log('home.page.ts handleWebSocketMessage: Active slide index:', index);
+  
+      // Get the active ion-slide
+      const ionSlides = document.querySelectorAll('ion-slide');
+      const activeSlide = ionSlides[index];
+  
+      if (!activeSlide) {
+        console.warn('Active slide not found.');
+        return;
+      }
+  
+      // Find the first div with an id attribute within the active slide
+      const targetDiv = activeSlide.querySelector('div[id]');
+  
+      if (!targetDiv) {
+        console.warn('home.page.ts handleWebSocketMessage No div with an id attribute found in the active slide.');
+        return;
+      }
+  
+      console.log('home.page.ts handleWebSocketMessage Found target div:', targetDiv);
+  
+      // Simulate a click event on the div
+      targetDiv.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      console.log('home.page.ts handleWebSocketMessage Click event dispatched to the target div.');
+    }
+
+    //if (this.skipMode) {
+    //    this.slideNext();
+    //}
+  }
+
+
+  /**
+   * Navigates to the next slide.
+   */
+  private async slideNext() {
+    const markasskipped = window.sessionStorage.getItem('markasskipped')
+    var marknext = false;
+    let index = 0;
+    try {
+      // Get the current active slide index
+      index = await this.slides.getActiveIndex();
+    } catch (error) { }
+
+    if (markasskipped === 'true' && index > 1)
+      marknext = true;
+
+      if (this.slides && marknext) {
+      console.log('home.page.ts slideNext Navigating to the next slide...');
+      if (this.skipMode && marknext) {
+        try {
+          // Hit the URL endpoint
+          const response = await fetch('https://dastream.cloud/next_slide', {
+            method: 'GET', // or 'POST' depending on what the endpoint expects
+          });
+      
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+      
+          const data = await response.json(); // Assuming the response is JSON
+          console.log('Next slide data:', data);
+        } catch (error) {
+          console.error('Error hitting the next_slide endpoint:', error);
+        }
+        console.log('home.page.ts slideNext Mark the current video as skipped');
+      }
+      await this.slides.slideNext();
+    }
+  }
+
   ngOnInit() {
+    this.initializeWebSocket();
     window.sessionStorage.setItem("next","");
     window.sessionStorage.setItem('viewbookmarks',"false");
     window.sessionStorage.removeItem("videoResults");
+    window.sessionStorage.setItem('markasskipped','true') 
     //window.localStorage.removeItem("bookmarks");
-    console.log('Get video list');
+    console.log('home.page.ts: ngOnInit Get video list');
     //this.videoList = this.data.getVideoList();
     const chainId = window.sessionStorage.getItem('chain');
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
     if (!this.showHeaderDiv) {
-      alert("Account: " + window.localStorage.getItem('account'));
+      console.log("home.page.ts: ngOnInit Browser User Agent: ", navigator.userAgent);
+      if (window.location.host.startsWith('audio.')) {
+        window.localStorage.setItem('account','droid')
+      }
+      else {
+        alert("Account: " + window.localStorage.getItem('account'));
+      }
       if (window.localStorage.getItem('account')) {
         window.sessionStorage.setItem('account',window.localStorage.getItem('account'))
         if (window.localStorage.getItem(window.localStorage.getItem('account')))
@@ -204,10 +385,10 @@ export class HomePage implements OnInit {
     }
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
-    console.log('Page loaded');
-    console.log('Page host: [' + window.location.host + ']');
-    console.log('Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
-    console.log('Page search: [' + window.location.search + ']');
+    console.log('home.page.ts ngOnInit Page loaded');
+    console.log('home.page.ts ngOnInit Page host: [' + window.location.host + ']');
+    console.log('home.page.ts ngOnInit Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
+    console.log('home.page.ts ngOnInit Page search: [' + window.location.search + ']');
     window.addEventListener('keydown', this.handleArrowKeys.bind(this));
     this.updateTitle();
   }
@@ -219,14 +400,14 @@ export class HomePage implements OnInit {
   }
   
   loadVideos() {
-    console.log("!! load mode videos")
+    console.log("home.page.ts loadVideos !! load mode videos")
 
     this.data.getVideoList(this.currentPage, this.limit).subscribe((videos) => {
-        console.log("DEBUG: videos sent from server: ");
+        console.log("home.page.ts loadVideos DEBUG: videos sent from server: ");
         console.dir(videos);
         this.videoList = this.videoList || [];
         this.videoList = [...this.videoList, ...videos];
-        console.log(`Got ${this.videoList.length} videos`)
+        console.log(`home.page.ts loadVideos Got ${this.videoList.length} videos`)
     });
   }
 
@@ -278,6 +459,41 @@ export class HomePage implements OnInit {
     document.body.appendChild(iframe);
   }
   
+  handleCamera() {
+    document.querySelector('ion-slides').slideNext();
+    this.showControls = false; // Hide the slider and button
+
+    const audioElement = document.getElementById('background-audio') as HTMLAudioElement;
+    const floatingVideo = document.getElementById('float') as HTMLVideoElement;
+  
+    audioElement.muted = false;
+    audioElement.play();
+    floatingVideo.muted = false;
+  
+    // Create and append iframe
+    const iframe = document.createElement('iframe');
+    iframe.id = 'camera';
+    const protocol = window.location.protocol; // 'http:' or 'https:'
+    const host = window.location.hostname;
+    //iframe.src = `${protocol}//${host}:5173${window.sessionStorage.getItem('next')}`;
+    iframe.src = `https://your.cmptr.cloud/3d/camera.html`;
+    iframe.allow = 'camera *;microphone *'
+    iframe.style.overflow = 'hidden';
+    iframe.style.opacity = '0.99';
+    iframe.style.backgroundColor = 'transparent';
+    iframe.style.position = 'absolute';
+    iframe.style.borderRadius = '1px';
+    iframe.style.top = '204px';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.transform = 'scale(1)';
+    iframe.style.zIndex = '9999';
+    iframe.setAttribute('allowTransparency', 'true'); // Ensure transparency is allowed
+    iframe.style.border = 'none'; // Optional, removes the border around the iframe
+
+  
+    document.body.appendChild(iframe);
+  }
   receiveMessage(event: MessageEvent) {
     // Optionally, you can check event.origin to ensure the message comes from the expected origin
     //if (event.origin !== 'http://192.168.1.183:5173') {
@@ -286,12 +502,12 @@ export class HomePage implements OnInit {
 
     // Access the data sent from the iframe
     const data = event.data;
-    console.log('Message received from iframe:', data);
+    console.log('home.page.ts receiveMessage Message received from iframe:', data);
 
     if (data.view == 'bookmark') {
       this.data.getVideo(data.location).subscribe(
         (response: any) => {
-          console.log("DEBUG: Got results from getVideo:");
+          console.log("home.page.ts receiveMessage DEBUG: Got results from getVideo:");
           console.dir(response);
 	  this.searchResults = Array.isArray(response) ? response : [response];
 
@@ -306,9 +522,9 @@ export class HomePage implements OnInit {
     }
 
     if (data.view === 'login') {
-      console.log(`Login box with status [${data.status}]`);
+      console.log(`home.page.ts receiveMessage Login box with status [${data.status}]`);
       if (data.status === "ready") {
-        console.log("resize login iframe");
+        console.log("home.page.ts receiveMessage resize login iframe");
         document.getElementById("web3auth").style.transform = 'scale(.70)';
         document.getElementById("web3auth").style.top = '-150px';
         document.getElementById("web3auth").style.height = '170%';
@@ -335,7 +551,7 @@ export class HomePage implements OnInit {
 
     // Handle the received data (e.g., update UI, log data, etc.)
     if (data.view === 'loggedInView' || data.view === "abort" ) {
-      console.log('Iframe is in loggedInView, account:', data.account);
+      console.log('home.page.ts receiveMessage Iframe is in loggedInView, account:', data.account);
       window.sessionStorage.setItem("account",data.account);
       window.sessionStorage.setItem("chain",String(data.chain));
       //const chainId = window.sessionStorage.getItem("chain");
@@ -365,6 +581,9 @@ export class HomePage implements OnInit {
   }
 
   ngOnDestroy() {
+    if (this.ws) {
+      this.ws.close();
+    } 
     // Remove the event listener when the component is destroyed
     window.removeEventListener('message', this.receiveMessage.bind(this), false);
     window.removeEventListener('keydown', this.handleArrowKeys.bind(this));
@@ -373,7 +592,7 @@ export class HomePage implements OnInit {
   ionViewDidEnter() {
     const chainId = window.sessionStorage.getItem('chain');
     //alert(this.chainMap[chainId]);
-    console.log(`Chain Id: ${chainId}`);
+    console.log(`home.page.ts ionViewDidEnter Chain Id: ${chainId}`);
     console.dir(chainId);
     this.chainName = this.chainMap[chainId] || 'Unknown Chain';
     this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
@@ -388,13 +607,21 @@ export class HomePage implements OnInit {
       index = await this.slides.getActiveIndex();
     }
     catch (error) {
-      console.log("------------------ error: " + error)
+      console.log("home.page.ts checkActiveSlide ------------------ error: " + error)
     }
-    console.log('Active slide index:', index);
+    console.log('home.page.ts checkActiveSlide: Active slide index:', index);
 
-    // You can now perform actions based on the active slide index
-    // Example: Pause videos on inactive slides
-    this.pauseInactiveSlides(index);
+    const slides = this.slidesElementRef.nativeElement.querySelectorAll('ion-slide');
+
+    if (slides[index]) {
+      const activeSlideId = slides[index].id;
+      console.log('home.page.ts: checkActiveSlide index=' + index + ' Current Slide ID:', activeSlideId);
+    } else {
+      console.error('home.page.ts: checkActiveSlide No slide found at the active index.');
+    }
+      // You can now perform actions based on the active slide index
+      // Example: Pause videos on inactive slides
+      this.pauseInactiveSlides(index);
   }
 
   pauseInactiveSlides(activeIndex: number) {
@@ -430,7 +657,11 @@ export class HomePage implements OnInit {
            newElement.style.left = '5px';
 	 }
 	 else {
+    if (!this.showHeaderDiv) {
+           newElement.innerHTML = `<iframe src="assets/fonts/dastream.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+    } else {
            newElement.innerHTML = `<iframe src="assets/fonts/intro.html?${window.sessionStorage.getItem('account')}" frameBorder="0" style="border-radius: 10px; overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe>`;
+    }
            newElement.style.height = '50%';
            newElement.style.left = '10px';
 	  }
@@ -484,18 +715,23 @@ export class HomePage implements OnInit {
           videos.forEach(video=> {
            if ((index + 1) == slides.length) 
             this.loadMoreVideos();
-           console.log('Play videos on slide index:', index);
-           console.log('Play video:', video.src );
+           console.log('home.page.ts pauseInactiveSlides Play videos on slide index:', index);
+           console.log('home.page.ts pauseInactiveSlides Play video:', video.src );
            if (index == 0) {
-             console.log("Count of index at zero: ", ++this.count)
+             console.log("home.page.ts pauseInactiveSlides Count of index at zero: ", ++this.count)
              //floating_vid.setAttribute('src',"https://your.cmptr.cloud:2017/ad" + this.count + ".mp4"); 
              floating_vid.setAttribute('src',"https://your.cmptr.cloud:2017/lft.mp4"); 
              video.src = floating_vid.getAttribute('src');
              video.play();
            }
            else {
-             floating_vid.setAttribute('src',video.src); 
-             console.log('Play this video:', this.videoList[index].url );
+             if (!this.remoteMode) {
+              floating_vid.setAttribute('src',video.src); 
+              floating_vid.setAttribute('video-id',this.videoList[index].id); 
+
+              console.log('home.page.ts pauseInactiveSlides Play this video:', this.videoList[index].url );
+             }
+             else { floating_vid.style.visibility = 'hidden' }
            }
           });
           //videos.forEach(video => video.muted = !video.muted);
@@ -505,30 +741,102 @@ export class HomePage implements OnInit {
     });
   }
 
-  // Trigger this function on slide change
-  async onSlideDidChange() { 
-    const chainId = window.sessionStorage.getItem('chain');
-    //alert(this.chainMap[chainId]);
-    console.log(`Chain Id: ${chainId}`);
-    console.dir(chainId);
-    this.chainName = this.chainMap[chainId] || 'Unknown Chain';
-    this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+// Trigger this function on slide change
+async onSlideDidChange() {
+  const chainId = window.sessionStorage.getItem('chain');
+  const remote = window.sessionStorage.getItem('remote');
+  const skipped = window.sessionStorage.getItem('skipped');
+  console.log(`home.page.ts onSlideDidChange Chain Id: ${chainId}`);
+  console.log(`home.page.ts remote: ${remote}`);
+  console.dir(chainId);
+  console.log(`home.page.ts onSlideDidChange sessionStorage skipped: ${skipped}`);
+  console.log("home.page.ts onSlideDidChange skipBack skipped: " + window.sessionStorage.getItem("skipBack"));
+  this.chainName = this.chainMap[chainId] || 'Unknown Chain';
+  this.showHeaderDiv = window.location.host.startsWith('tikethtok.app');
+  let index = 0;
+  try {
+    // Get the current active slide index
+    index = await this.slides.getActiveIndex();
+  } catch { }
 
-    const floating_vid = document.getElementById('float');
-    floating_vid.style.display = "block"
-    floating_vid.setAttribute("muted","false");
-    console.log("[[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]")
-    var index = 0;
-    try {
-      index = await this.slides.getActiveIndex();
-      if (index == 0)
-	  floating_vid.style.display = "none"
-      else
-	  floating_vid.style.display = "block"
-    }
-    catch (error) {
-      console.log("Got onSlideDidChange error: " + error)
-    }
-    this.checkActiveSlide();
+  if (remote == 'true')
+    this.remoteMode = true;
+  if (skipped == 'true' || skipped == null) {
+    this.skipMode = true;
+    window.sessionStorage.setItem('skipped','true')
   }
+  else
+    this.skipMode = false;
+
+  if (remote || (!remote && index > 1 && window.sessionStorage.getItem("skipBack") != "yes")) {
+    try {
+      // Hit the URL endpoint
+      window.sessionStorage.setItem("skipBack",'yes')
+      const response = await fetch('https://dastream.cloud/next_slide', {
+        method: 'GET', // or 'POST' depending on what the endpoint expects
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json(); // Assuming the response is JSON
+      console.log('home.page.ts omSlideDidChange Next slide data:', data);
+    } catch (error) {
+      console.error('home.page.ts omSlideDidChange Error hitting the next_slide endpoint:', error);
+    }
+  }
+  window.sessionStorage.setItem("skipBack",'no')
+
+  const floating_vid = document.getElementById('float');
+  floating_vid.style.display = "block";
+  floating_vid.setAttribute("muted", "false");
+  console.log("home.page.ts omSlideDidChange [[[[[[[[[[[[[[[[[[[[[[[[ Slide did change ]]]]]]]]]]]]]]]]]]]]]]]]]]]");
+
+  index = 0;
+  try {
+    // Get the current active slide index
+    index = await this.slides.getActiveIndex();
+
+    // Show or hide the floating video element based on the slide index
+    if (index === 0) {
+      floating_vid.style.display = "none";
+    } else {
+      floating_vid.style.display = "block";
+    }
+
+    //if (index === 1) {
+    //  this.showShield = true;
+    //}
+    // Check for the paragraph element with id "description-x"
+    const paragraph = document.getElementById(`description-${index}`);
+    if (paragraph) {
+      const paragraphText = paragraph.textContent || paragraph.innerText || '';
+      console.log(`home.page.ts omSlideDidChange Paragraph text for slide ${index}: ${paragraphText}`);
+
+      // If the paragraph text starts with "Heart", advance to the next slide
+      if (paragraphText.trim().startsWith('Heart')) {
+        console.log(`home.page.ts omSlideDidChange Paragraph starts with "Heart", advancing to the next slide...`);
+
+        // Ensure slide navigation works correctly
+        const slideCount = await this.slides.length(); // Total number of slides
+        if (index < slideCount - 1) {
+          await this.slides.slideNext(); // Advance to the next slide
+          console.log("home.page.ts omSlideDidChange Slide advanced successfully.");
+        } else {
+          console.log("home.page.ts omSlideDidChange Already on the last slide.");
+        }
+        return; // Exit early to avoid further processing for this slide
+      }
+    } else {
+      console.log(`home.page.ts omSlideDidChange No paragraph element found with id "description-${index}".`);
+    }
+  } catch (error) {
+    console.log("home.page.ts omSlideDidChange Got onSlideDidChange error: " + error);
+  }
+
+  // Perform any additional slide checks
+  this.checkActiveSlide();
+}
+
 }
