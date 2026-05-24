@@ -119,7 +119,10 @@ export class FeedComponent implements OnInit {
         console.log("feed.component.ts: buttonClicked !! setting Mark As Skipped to false")
         window.sessionStorage.setItem('markasskipped','false')
         window.sessionStorage.setItem('skipBack','false')
-        window.sessionStorage.setItem('account','droid')
+        // NOTE: removed `setItem('account','droid')`. localStorage.account
+        // now doubles as the session filter (which show to load); clobbering
+        // it on every like would break the filter and corrupt rating
+        // attribution (see music-k8s SESSIONS_AND_RATINGS.md).
       }
       else {
         console.log("feed.component.ts: buttonClicked !! setting Mark As Skipped to true")
@@ -167,12 +170,12 @@ export class FeedComponent implements OnInit {
     }).subscribe(
       response => {
         console.log('feed.component.ts: buttonClicked Request successful:', response);
-        window.localStorage.setItem('account','droid');
+        // NOTE: removed `setItem('account','droid')` here for the same reason
+        // as the session-set above. Auto-advance to the next slide stays.
         document.querySelector('ion-slides').slideNext();
       },
       error => {
         console.error('feed.component.ts: buttonClicked Request failed:', error);
-        window.localStorage.setItem('account','droid');
         document.querySelector('ion-slides').slideNext();
       }
     );
