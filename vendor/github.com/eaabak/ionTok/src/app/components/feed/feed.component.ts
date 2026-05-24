@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { AnimationOptions } from 'ngx-lottie';
 import { DataService } from "../../services/data.service";
 import { HttpClient } from '@angular/common/http'; // Import HttpClient
@@ -11,6 +11,11 @@ import { HttpClient } from '@angular/common/http'; // Import HttpClient
 export class FeedComponent implements OnInit {
   @Input() video: any;
 
+  // Fires when the user taps a star on this feed's video. Parent
+  // (home.page) tracks the videoIds it has heard from so the
+  // scroll-past hook does not also record a 0 for the same video.
+  @Output() rated = new EventEmitter<number>();
+
   option: AnimationOptions = {
     path: './assets/animations/music.json'
   };
@@ -20,9 +25,41 @@ export class FeedComponent implements OnInit {
   bookmarkStyle: string = '';  // To dynamically change the bookmark icon color
   remoteMode: boolean = false;
 
+  // User's current rating for THIS video. 0 = not rated yet this page-load.
+  // We don't fetch initial state from the server; reload resets to 0.
+  userRating: number = 0;
+
+  // Used by the template to render the star strip.
+  readonly stars = [1, 2, 3, 4, 5];
+
   constructor(private data: DataService, private http: HttpClient) {} // Inject HttpClient into the constructor
 
   ngOnInit() {}
+
+  // Tap-star handler. Records the rating and visually marks hearted (the
+  // README spec says "selecting a star implies the video was hearted").
+  // Last tap wins — the backend UPSERTs, so the user can change their mind.
+  rateVideo(event: MouseEvent, stars: number) {
+    event.stopPropagation();
+    if (!this.video || this.video.id === undefined) {
+      return;
+    }
+    this.userRating = stars;
+    this.heartStyle = 'color: red;';   // visually mark hearted
+
+    this.data.postRating(this.video.id, stars).subscribe(
+      response => {
+        console.log(`feed.component.ts: rateVideo ${stars}-star for video ${this.video.id} OK`, response);
+      },
+      error => {
+        console.error(`feed.component.ts: rateVideo ${stars}-star for video ${this.video.id} failed`, error);
+      }
+    );
+
+    // Tell the parent we have rated this video so its scroll-past hook
+    // does not also fire a 0 for the same id.
+    this.rated.emit(this.video.id);
+  }
 
   getFirstLike(likes: string): number {
     return parseInt(likes.split(':')[0], 10) || 0;  // Get the first integer, or 0 if empty
