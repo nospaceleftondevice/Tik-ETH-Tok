@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { IonSlides } from '@ionic/angular';
 import { DataService } from "../../services/data.service";
-import { ToastController } from '@ionic/angular';
+import { ToastController, LoadingController } from '@ionic/angular';
 import { IonSearchbar } from '@ionic/angular';
 
 @Component({
@@ -75,23 +75,121 @@ export class HomePage implements OnInit {
     }
   }
 
+  // Hand-off table for the in-progress S3-load. Cleared in cleanupLoadJob.
+  private currentLoadingEl: HTMLIonLoadingElement | null = null;
+  private currentJobId: string | null = null;
+  private currentPollHandle: any = null;
+
+  // Search bar submit now triggers a server-side S3 load instead of the old
+  // client-side searchVideos filter. The typed pattern is sent to
+  // POST /sessions/load; the backend lists s3://coin.computer/Videos/,
+  // egreps the keys against `pattern`, and DELETE+INSERTs rows tagged with
+  // session=pattern. On completion we set localStorage.account = pattern
+  // and reload the feed so the user sees the new session immediately.
   performSearch(searchTerm: string) {
-    // Reset the current page to 1 for search
-    const payload = { search: searchTerm, page: 1, limit: this.limit };
+    const pattern = (searchTerm || '').trim();
+    if (!pattern) {
+      return;
+    }
 
-    this.data.searchVideos(payload).subscribe(
-      (response: any) => {
-        console.log("home.page.ts: performSearch Got results from searchVideos:");
-        console.dir(response);
-        this.searchResults = response || [];
+    // Cancel any in-flight load so a rapid second submit doesn't strand
+    // the previous loading overlay or a runaway poll loop.
+    this.cleanupLoadJob();
 
-        // Call updateVideoList to insert the search results
-        this.updateVideoList(this.searchResults);
+    this.loadingController
+      .create({
+        message: `Searching for "${pattern}"…`,
+        backdropDismiss: false,
+      })
+      .then(async (el) => {
+        this.currentLoadingEl = el;
+        await el.present();
+
+        this.data.loadSession(pattern).subscribe(
+          (resp) => {
+            this.currentJobId = resp.job_id;
+            console.log(`home.page.ts: performSearch job ${resp.job_id} started for session '${resp.session}'`);
+            this.currentPollHandle = setInterval(() => this.pollLoadJob(pattern), 2000);
+          },
+          (err) => {
+            console.error('home.page.ts: performSearch loadSession failed:', err);
+            const msg = (err && err.error && err.error.error)
+              ? err.error.error
+              : 'failed to start search';
+            this.dismissLoadingWithToast(`Search failed: ${msg}`);
+          },
+        );
+      });
+  }
+
+  private pollLoadJob(pattern: string) {
+    if (!this.currentJobId) {
+      return;
+    }
+    this.data.getSessionJob(this.currentJobId).subscribe(
+      (job) => {
+        const el = this.currentLoadingEl;
+        if (el) {
+          if (job.status === 'listing') {
+            el.message = `Listing matches for "${pattern}"…`;
+          } else if (job.status === 'loading') {
+            const total = job.found || 0;
+            const loaded = job.loaded || 0;
+            el.message = total
+              ? `Loading ${loaded} / ${total} videos for "${pattern}"…`
+              : `Loading videos for "${pattern}"…`;
+          }
+        }
+        if (job.status === 'complete') {
+          this.cleanupLoadJob();
+          if (this.currentLoadingEl) {
+            this.currentLoadingEl.dismiss();
+            this.currentLoadingEl = null;
+          }
+          this.onLoadComplete(pattern, job.loaded || 0);
+        } else if (job.status === 'failed') {
+          const msg = job.error || 'unknown error';
+          this.dismissLoadingWithToast(`Search failed: ${msg}`);
+        }
       },
-      (error) => {
-        console.error('Search failed:', error);
-      }
+      (err) => {
+        console.error('home.page.ts: pollLoadJob failed:', err);
+        // Don't tear down on a transient poll failure — the next tick will retry.
+      },
     );
+  }
+
+  // Reload the feed against the newly-loaded session. localStorage.account
+  // doubles as the session filter (data.service.getVideoList appends it),
+  // so setting it here makes the next loadVideos call hit the right rows.
+  private onLoadComplete(pattern: string, loaded: number) {
+    window.localStorage.setItem('account', pattern);
+    window.sessionStorage.setItem('account', pattern);
+    this.videoList = [];
+    this.currentPage = 1;
+    this.loadVideos();
+    this.presentToast(`Loaded ${loaded} videos for "${pattern}"`);
+    // Snap to the first slide so the user sees the new content.
+    try {
+      this.slides.slideTo(0);
+    } catch { /* slide may not be ready yet — loadVideos will populate first */ }
+  }
+
+  private dismissLoadingWithToast(message: string) {
+    this.cleanupLoadJob();
+    if (this.currentLoadingEl) {
+      this.currentLoadingEl.dismiss();
+      this.currentLoadingEl = null;
+    }
+    this.presentToast(message);
+  }
+
+  private cleanupLoadJob() {
+    if (this.currentPollHandle) {
+      clearInterval(this.currentPollHandle);
+      this.currentPollHandle = null;
+    }
+    this.currentJobId = null;
   }
 
   updateVideoList(results: any[]) {
@@ -194,7 +292,11 @@ export class HomePage implements OnInit {
     '11155111': 'Ethereum Sepolia',
   };
 
-  constructor(private data: DataService, private toastController: ToastController) { }
+  constructor(
+    private data: DataService,
+    private toastController: ToastController,
+    private loadingController: LoadingController,
+  ) { }
 
   // Method to present a toast
   async presentToast(message: string) {
