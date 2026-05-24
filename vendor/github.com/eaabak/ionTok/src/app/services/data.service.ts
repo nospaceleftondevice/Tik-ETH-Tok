@@ -238,6 +238,31 @@ export class DataService {
         });
     }
 
+    // Kick off a search-bar-triggered session load. The backend lists the
+    // configured S3 bucket, filters by `pattern` (egrep semantics), and loads
+    // matching videos tagged with `session = pattern`. Returns immediately
+    // with a job id; caller polls getSessionJob() until status is
+    // 'complete' or 'failed'. Replaces the old client-side searchVideos
+    // filter (which only searched the currently-loaded session).
+    loadSession(pattern: string): Observable<{ job_id: string, session: string }> {
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/sessions/load`;
+        return this.http.post<{ job_id: string, session: string }>(apiUrl, { pattern }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // Poll companion to loadSession. Returns the full seed_jobs row so the
+    // caller can show progress: status ∈ {pending, listing, loading, complete,
+    // failed}; found = matched key count; loaded = inserted row count.
+    getSessionJob(jobId: string): Observable<any> {
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/sessions/jobs/${encodeURIComponent(jobId)}`;
+        return this.http.get<any>(apiUrl);
+    }
+
     // Method to get trending videos
     getTrends() {
         const trends = [{
