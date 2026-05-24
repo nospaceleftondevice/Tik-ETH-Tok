@@ -28,7 +28,12 @@ export class DataService {
             var protocol = window.location.protocol; // 'https:'
             var host = window.location.hostname;
             var url = protocol + '//' + host;
+            // account_number tells the backend who's asking, so it can
+            // filter out videos this user has already rated or skipped.
+            // Same value as `session` today (one storage key doubles as
+            // both); split if the keys ever diverge.
             const apiUrl = `${url}/videos?session=${encodeURIComponent(session)}` +
+                           `&account_number=${encodeURIComponent(session)}` +
                            `&page=${page}&limit=${limit}`;
 
             return this.http.get<any>(apiUrl).pipe(
@@ -88,7 +93,10 @@ export class DataService {
         }
         const protocol = window.location.protocol;
         const host = window.location.hostname;
+        // account_number filters out already-rated videos server-side
+        // (see comment in getVideoList).
         const apiUrl = `${protocol}//${host}/videos?session=${encodeURIComponent(session)}` +
+                       `&account_number=${encodeURIComponent(session)}` +
                        `&search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`;
 
         return this.http.get<any>(apiUrl).pipe(
