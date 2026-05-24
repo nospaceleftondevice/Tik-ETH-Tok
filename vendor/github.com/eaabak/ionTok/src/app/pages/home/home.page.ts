@@ -498,7 +498,17 @@ export class HomePage implements OnInit {
   }
 
   ngOnInit() {
-    this.initializeWebSocket();
+    // Disabled: handleWebSocketMessage was treating every incoming WS
+    // message as a remote-control signal — calling slideNext/slidePrev,
+    // synthesizing clicks on the heart icon (which trips the /likes
+    // kludge, clobbers videos.userPic, and hides videos from the feed),
+    // and re-mutating localStorage.account to 'droid'. With other tabs
+    // potentially connected to wss://dastream.cloud/ws, this caused
+    // random-feeling slide jumps and per-swipe count drops > 1. The
+    // music app has no use for cross-device remote control today, so
+    // skip the connection entirely. Re-enable when remote mode is
+    // properly gated (separate UI toggle, dedicated remote host, etc.).
+    // this.initializeWebSocket();
     window.sessionStorage.setItem("next","");
     window.sessionStorage.setItem('viewbookmarks',"false");
     window.sessionStorage.removeItem("videoResults");
