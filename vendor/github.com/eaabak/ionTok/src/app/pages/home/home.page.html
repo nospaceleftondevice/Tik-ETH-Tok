@@ -73,7 +73,7 @@
     </ng-container>
   </div>
 
-  <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
+  <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" (ionSlideTouchStart)="onSlideTouchStart()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index" [attr.id]="video.url">
       <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
       title="{{video.userName}}" class="{{video.userPic}}"></video>

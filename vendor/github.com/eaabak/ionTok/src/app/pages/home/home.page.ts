@@ -41,6 +41,21 @@ export class HomePage implements OnInit {
   // Initialised to 0 (the intro slide).
   private lastSlideIndex: number = 0;
 
+  // Per-touch counters used to gate the scroll-past hook so it only
+  // fires for USER-initiated slide changes. The upstream remote-control
+  // bits (WebSocket from dastream.cloud, fetch to /next_slide, programmatic
+  // slideNext calls) fire ionSlideDidChange too, and without this gate
+  // we'd record a skip per programmatic event — observed live as a single
+  // user swipe decrementing "videos left to rate" by 3.
+  //
+  // onSlideTouchStart bumps touchSequence. maybeRecordScrollPastSkip only
+  // records when touchSequence !== lastRecordedSequence (so each touch
+  // counts at most once, no matter how many slide-change events follow it),
+  // and ignores anything before the first touch (so programmatic startup
+  // events don't fire skips).
+  touchSequence: number = 0;
+  private lastRecordedSequence: number = 0;
+
   // Text shown in the searchbar's placeholder. Replaced by refreshProgress()
   // with "N videos left to rate" once the backend has answered. Default is
   // a generic hint so the bar doesn't look broken before the first response.
@@ -919,11 +934,28 @@ refreshProgress() {
   );
 }
 
+// Bumped by ionSlideTouchStart on the slider. Gates the scroll-past
+// hook so programmatic slide changes (WebSocket-driven, dastream.cloud
+// /next_slide responses, explicit slideNext() calls in the upstream
+// code) don't get counted as user skips.
+onSlideTouchStart() {
+  this.touchSequence++;
+}
+
 // Internal: if the user scrolled FORWARD past a video without tapping
 // any star during this page-load, record rating=0 (skipped) for that
 // video. Backwards motion never records. Slide 0 is the intro
 // (no <app-feed>) so we skip it.
 private maybeRecordScrollPastSkip(prevIndex: number, newIndex: number) {
+  // Gate to user-initiated changes. touchSequence starts at 0 and only
+  // increments on a real ionSlideTouchStart, so the comparison with
+  // lastRecordedSequence (also 0) means programmatic startup events and
+  // any post-initial-touch programmatic events are ignored. Each user
+  // touch counts at most once regardless of how many slide-change events
+  // follow it.
+  if (this.touchSequence === this.lastRecordedSequence) {
+    return;
+  }
   if (newIndex <= prevIndex) {
     return;  // backward or no-op
   }
@@ -938,6 +970,10 @@ private maybeRecordScrollPastSkip(prevIndex: number, newIndex: number) {
     return;  // user explicitly rated this one
   }
   // Mark BEFORE the request so rapid scrolling can't fire duplicates.
+  // Also claim this touch — subsequent slide-change events from the same
+  // gesture (or from programmatic auto-advance fired in response) won't
+  // double-count.
+  this.lastRecordedSequence = this.touchSequence;
   this.ratedThisPageLoad.add(prevVideo.id);
   this.data.postRating(prevVideo.id, 0).subscribe(
     () => {
