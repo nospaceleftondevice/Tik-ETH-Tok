@@ -379,9 +379,22 @@ export class HomePage implements OnInit {
         if (window.localStorage.getItem(window.localStorage.getItem('account')))
           this.currentPage = Number(window.localStorage.getItem(window.localStorage.getItem('account')))
       }
-      else
-        window.sessionStorage.setItem('account',prompt("Enter show name"));
-      window.localStorage.setItem('account', window.sessionStorage.getItem('account'));
+      else {
+        // prompt() returns null when the user cancels and '' for empty
+        // input. Either case used to be stored literally, which then
+        // propagated to the backend as session=null. Guard so we only
+        // store a non-empty trimmed string; if the user cancels, leave
+        // 'account' unset and data.service.getVideoList will return an
+        // empty list (see its session guard).
+        const entered = (prompt("Enter show name") || '').trim();
+        if (entered) {
+          window.sessionStorage.setItem('account', entered);
+        }
+      }
+      const acct = window.sessionStorage.getItem('account');
+      if (acct) {
+        window.localStorage.setItem('account', acct);
+      }
     }
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();

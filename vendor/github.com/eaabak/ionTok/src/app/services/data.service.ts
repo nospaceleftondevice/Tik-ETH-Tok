@@ -14,11 +14,23 @@ export class DataService {
     getVideoList(page: number = 1, limit: number = 10): Observable<any[]> {
         console.log("Protocol: " + window.location.protocol);
         if (window.location.protocol === 'https:') {
+            // Session (show name) is required. The downstream backend filters
+            // videos by `session` so multiple shows can coexist. localStorage
+            // 'account' is the user-typed show name from the home page prompt.
+            // If it's missing the user cancelled the prompt — return an empty
+            // list rather than firing the request, so we don't leak an
+            // unfiltered query to the backend.
+            const session = window.localStorage.getItem('account');
+            if (!session) {
+                console.log("getVideoList: no session in localStorage 'account'; returning empty list");
+                return of([]);
+            }
             var protocol = window.location.protocol; // 'https:'
             var host = window.location.hostname;
             var url = protocol + '//' + host;
-            const apiUrl = `${url}/videos?page=${page}&limit=${limit}`;
-    
+            const apiUrl = `${url}/videos?session=${encodeURIComponent(session)}` +
+                           `&page=${page}&limit=${limit}`;
+
             return this.http.get<any>(apiUrl).pipe(
                 map((response: any) => {
                     console.log(`Response: ${response}`);
@@ -68,9 +80,16 @@ export class DataService {
     // New method to perform a video search
     searchVideos(params: { search: string, page: number, limit: number }): Observable<any> {
         const { search, page, limit } = params;
+        // Same session-required guard as getVideoList (see note above).
+        const session = window.localStorage.getItem('account');
+        if (!session) {
+            console.log("searchVideos: no session in localStorage 'account'; returning empty list");
+            return of({ videos: [], total_videos: 0, page, limit });
+        }
         const protocol = window.location.protocol;
         const host = window.location.hostname;
-        const apiUrl = `${protocol}//${host}/videos?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`;
+        const apiUrl = `${protocol}//${host}/videos?session=${encodeURIComponent(session)}` +
+                       `&search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`;
 
         return this.http.get<any>(apiUrl).pipe(
             map((response: any) => {
@@ -204,6 +223,20 @@ export class DataService {
   }
 
 
+
+    // Record a 0-5 star rating for a video. rating === 0 means "skipped"
+    // (used by the scroll-past hook in home.page); 1-5 are explicit star
+    // taps. The backend treats this as an UPSERT on (account_number, video_id),
+    // so calling repeatedly with new values replaces the previous rating.
+    postRating(videoId: number, rating: number): Observable<any> {
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/videos/${videoId}/rating`;
+        const account = window.localStorage.getItem('account') || '000000';
+        return this.http.post(apiUrl, { account_number: account, rating }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
 
     // Method to get trending videos
     getTrends() {
