@@ -61,16 +61,17 @@
   the video. Tap any star to record a 1-5 rating; that also implies
   "hearted" (handled in rateVideo). Scroll-past with no tap records 0,
   handled at the slide level in home.page onSlideDidChange.
+
+  Styling: no background pill, all stars white. Active vs inactive is
+  conveyed only by the icon shape (`star` filled vs `star-outline`).
 -->
 <div class="star-rating"
      style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            z-index: 9999; display: flex; gap: 12px; align-items: center;
-            background: rgba(0, 0, 0, 0.45); padding: 8px 16px; border-radius: 24px;">
+            z-index: 9999; display: flex; gap: 12px; align-items: center;">
   <ion-icon *ngFor="let i of stars"
             [name]="i <= userRating ? 'star' : 'star-outline'"
-            [style.color]="i <= userRating ? 'gold' : 'white'"
             (click)="rateVideo($event, i)"
             size="large"
-            style="cursor: pointer;"></ion-icon>
+            style="color: white; cursor: pointer;"></ion-icon>
 </div>
 
