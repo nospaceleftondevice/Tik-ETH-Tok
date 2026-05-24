@@ -103,7 +103,7 @@
     <!-- Add your iframe here -->
 
 
-  <ion-searchbar *ngIf="showSearchBar" #searchbar (keyup)="onSearchKeyup($event)" id="search" style="z-index: 9999;position: absolute; top: 45%; left: 0px;" placeholder="Search..."></ion-searchbar>
+  <ion-searchbar *ngIf="showSearchBar" #searchbar (keyup)="onSearchKeyup($event)" id="search" style="z-index: 9999;position: absolute; top: 45%; left: 0px;" [placeholder]="searchPlaceholder"></ion-searchbar>
 </div>
 </ion-content>
 
