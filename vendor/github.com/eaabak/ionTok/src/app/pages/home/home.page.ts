@@ -41,6 +41,11 @@ export class HomePage implements OnInit {
   // Initialised to 0 (the intro slide).
   private lastSlideIndex: number = 0;
 
+  // Text shown in the searchbar's placeholder. Replaced by refreshProgress()
+  // with "N videos left to rate" once the backend has answered. Default is
+  // a generic hint so the bar doesn't look broken before the first response.
+  searchPlaceholder: string = 'Search to load a new session';
+
   chainName: string;
   showHeaderDiv: boolean;
   showControls: boolean = true; // Controls the visibility of the slider and button
@@ -168,6 +173,8 @@ export class HomePage implements OnInit {
     this.videoList = [];
     this.currentPage = 1;
     this.loadVideos();
+    // New session = new "left to rate" count; refresh the searchbar placeholder.
+    this.refreshProgress();
     this.presentToast(`Loaded ${loaded} videos for "${pattern}"`);
     // Snap to the first slide so the user sees the new content.
     try {
@@ -512,6 +519,9 @@ export class HomePage implements OnInit {
     }
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
+    // Populate searchPlaceholder with the per-session "N left to rate" count.
+    // Backend-side count; failure is silent.
+    this.refreshProgress();
     console.log('home.page.ts ngOnInit Page loaded');
     console.log('home.page.ts ngOnInit Page host: [' + window.location.host + ']');
     console.log('home.page.ts ngOnInit Page starts with tikethtok.app: [' + window.location.host.startsWith('tikethtok.app') + ']');
@@ -876,6 +886,30 @@ onFeedRated(videoId: number) {
     this.ratedThisPageLoad.add(videoId);
     console.log(`home.page.ts onFeedRated marked video ${videoId} as rated`);
   }
+  // Each rating decrements the remaining count; refresh the placeholder
+  // so the user sees progress immediately.
+  this.refreshProgress();
+}
+
+// Update the searchbar placeholder with the count of videos in the current
+// session that the user hasn't rated yet. Called on page load, after each
+// star tap, after each scroll-past skip, and after a /sessions/load completes.
+// Failures are intentionally silent — the placeholder just stays at whatever
+// it was, no toast or error UI for a cosmetic feature.
+refreshProgress() {
+  this.data.getSessionProgress().subscribe(
+    (resp) => {
+      if (resp && typeof resp.remaining === 'number') {
+        const n = resp.remaining;
+        this.searchPlaceholder = n === 1
+          ? '1 video left to rate'
+          : `${n} videos left to rate`;
+      }
+    },
+    (err) => {
+      console.error('home.page.ts refreshProgress failed:', err);
+    },
+  );
 }
 
 // Internal: if the user scrolled FORWARD past a video without tapping
@@ -899,7 +933,11 @@ private maybeRecordScrollPastSkip(prevIndex: number, newIndex: number) {
   // Mark BEFORE the request so rapid scrolling can't fire duplicates.
   this.ratedThisPageLoad.add(prevVideo.id);
   this.data.postRating(prevVideo.id, 0).subscribe(
-    () => console.log(`home.page.ts scroll-past 0 recorded for video ${prevVideo.id}`),
+    () => {
+      console.log(`home.page.ts scroll-past 0 recorded for video ${prevVideo.id}`);
+      // Skip counts toward "done", so refresh the placeholder.
+      this.refreshProgress();
+    },
     err => console.error(`home.page.ts scroll-past 0 failed for video ${prevVideo.id}`, err),
   );
 }

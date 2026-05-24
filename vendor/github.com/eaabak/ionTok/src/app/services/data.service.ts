@@ -263,6 +263,26 @@ export class DataService {
         return this.http.get<any>(apiUrl);
     }
 
+    // Count of videos in the active session this account hasn't yet rated
+    // or scrolled-past. Used by the searchbar placeholder to show
+    // "N videos left to rate". Returns of(null) if there's nothing to ask
+    // about (no session set yet) so the caller can leave the placeholder
+    // unchanged in that case.
+    getSessionProgress(): Observable<any> {
+        const account = window.localStorage.getItem('account');
+        if (!account) {
+            return of(null);
+        }
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        // `session` and `account_number` happen to be the same value today
+        // (one storage key doubles as both). If they ever diverge, split here.
+        const apiUrl = `${protocol}//${host}/sessions/progress` +
+                       `?session=${encodeURIComponent(account)}` +
+                       `&account_number=${encodeURIComponent(account)}`;
+        return this.http.get<any>(apiUrl);
+    }
+
     // Method to get trending videos
     getTrends() {
         const trends = [{
