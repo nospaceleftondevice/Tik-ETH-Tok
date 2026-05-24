@@ -29,6 +29,18 @@ export class HomePage implements OnInit {
   currentPage: number = 1;
   limit: number = 10;
 
+  // Set of video ids the user has explicitly rated (any 1-5 tap)
+  // during this page-load. Used by the scroll-past hook in
+  // onSlideDidChange so we do not record a 0 for a video the user
+  // actually rated. Reset on reload by design (we don't want to
+  // re-fire skip records when the user refreshes).
+  private ratedThisPageLoad = new Set<number>();
+
+  // Last slide index we observed in onSlideDidChange. Used to detect
+  // forward vs backward motion: forward + prev-not-rated = record 0.
+  // Initialised to 0 (the intro slide).
+  private lastSlideIndex: number = 0;
+
   chainName: string;
   showHeaderDiv: boolean;
   showControls: boolean = true; // Controls the visibility of the slider and button
@@ -379,9 +391,22 @@ export class HomePage implements OnInit {
         if (window.localStorage.getItem(window.localStorage.getItem('account')))
           this.currentPage = Number(window.localStorage.getItem(window.localStorage.getItem('account')))
       }
-      else
-        window.sessionStorage.setItem('account',prompt("Enter show name"));
-      window.localStorage.setItem('account', window.sessionStorage.getItem('account'));
+      else {
+        // prompt() returns null when the user cancels and '' for empty
+        // input. Either case used to be stored literally, which then
+        // propagated to the backend as session=null. Guard so we only
+        // store a non-empty trimmed string; if the user cancels, leave
+        // 'account' unset and data.service.getVideoList will return an
+        // empty list (see its session guard).
+        const entered = (prompt("Enter show name") || '').trim();
+        if (entered) {
+          window.sessionStorage.setItem('account', entered);
+        }
+      }
+      const acct = window.sessionStorage.getItem('account');
+      if (acct) {
+        window.localStorage.setItem('account', acct);
+      }
     }
     window.addEventListener('message', this.receiveMessage.bind(this), false);
     this.loadVideos();
@@ -741,6 +766,42 @@ export class HomePage implements OnInit {
     });
   }
 
+// Called by app-feed when the user taps any star (1-5). We just
+// remember the video id so the scroll-past hook (below) does not
+// double-record a 0 for the same video.
+onFeedRated(videoId: number) {
+  if (typeof videoId === 'number') {
+    this.ratedThisPageLoad.add(videoId);
+    console.log(`home.page.ts onFeedRated marked video ${videoId} as rated`);
+  }
+}
+
+// Internal: if the user scrolled FORWARD past a video without tapping
+// any star during this page-load, record rating=0 (skipped) for that
+// video. Backwards motion never records. Slide 0 is the intro
+// (no <app-feed>) so we skip it.
+private maybeRecordScrollPastSkip(prevIndex: number, newIndex: number) {
+  if (newIndex <= prevIndex) {
+    return;  // backward or no-op
+  }
+  if (prevIndex < 1) {
+    return;  // slide 0 has no feed, nothing to rate
+  }
+  const prevVideo = this.videoList && this.videoList[prevIndex];
+  if (!prevVideo || prevVideo.id === undefined) {
+    return;
+  }
+  if (this.ratedThisPageLoad.has(prevVideo.id)) {
+    return;  // user explicitly rated this one
+  }
+  // Mark BEFORE the request so rapid scrolling can't fire duplicates.
+  this.ratedThisPageLoad.add(prevVideo.id);
+  this.data.postRating(prevVideo.id, 0).subscribe(
+    () => console.log(`home.page.ts scroll-past 0 recorded for video ${prevVideo.id}`),
+    err => console.error(`home.page.ts scroll-past 0 failed for video ${prevVideo.id}`, err),
+  );
+}
+
 // Trigger this function on slide change
 async onSlideDidChange() {
   const chainId = window.sessionStorage.getItem('chain');
@@ -758,6 +819,13 @@ async onSlideDidChange() {
     // Get the current active slide index
     index = await this.slides.getActiveIndex();
   } catch { }
+
+  // Scroll-past = rating 0. Compare new index against the last one we
+  // recorded; forward motion with the previous slide unrated fires a
+  // POST /rating {rating: 0} for the previous video. See the helper
+  // for the full guard logic. Has to run BEFORE we mutate this.lastSlideIndex.
+  this.maybeRecordScrollPastSkip(this.lastSlideIndex, index);
+  this.lastSlideIndex = index;
 
   if (remote == 'true')
     this.remoteMode = true;

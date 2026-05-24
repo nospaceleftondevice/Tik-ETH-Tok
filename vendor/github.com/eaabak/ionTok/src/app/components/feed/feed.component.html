@@ -34,7 +34,7 @@
 </p>
 </div>
  
-  <div (click)="buttonClicked('comments',video.id)"
+  <div (click)="buttonClicked($event,'comments',video.id)"
      [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
     <ion-icon size="large" name="bookmark" [style]="bookmarkStyle"></ion-icon>
     <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
@@ -51,8 +51,26 @@
     </p>
   </div>
    
-  <div (click)="buttonClicked('info',video.id)" style="margin-bottom: 36px;">
+  <div (click)="buttonClicked($event,'info',video.id)" style="margin-bottom: 36px;">
     <ion-icon size="large" name="information-circle-outline"></ion-icon>
   </div>
+</div>
+
+<!--
+  Star-rating strip. Horizontal, bottom-center of the slide, on top of
+  the video. Tap any star to record a 1-5 rating; that also implies
+  "hearted" (handled in rateVideo). Scroll-past with no tap records 0,
+  handled at the slide level in home.page onSlideDidChange.
+-->
+<div class="star-rating"
+     style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; display: flex; gap: 12px; align-items: center;
+            background: rgba(0, 0, 0, 0.45); padding: 8px 16px; border-radius: 24px;">
+  <ion-icon *ngFor="let i of stars"
+            [name]="i <= userRating ? 'star' : 'star-outline'"
+            [style.color]="i <= userRating ? 'gold' : 'white'"
+            (click)="rateVideo($event, i)"
+            size="large"
+            style="cursor: pointer;"></ion-icon>
 </div>
 
