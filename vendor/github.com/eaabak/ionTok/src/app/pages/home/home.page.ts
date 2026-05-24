@@ -243,7 +243,14 @@ export class HomePage implements OnInit {
   }
 
   slideOpts = {
-    direction: 'vertical'
+    direction: 'vertical',
+    // longSwipes: false forces exactly ONE slide advance per swipe. The
+    // Swiper default (longSwipes: true) advances multiple slides on a fast
+    // or long drag and emits ionSlideDidChange for each intermediate slide.
+    // Our scroll-past hook fires per event, so a multi-slide swipe would
+    // record N skip-ratings (decrementing "videos left to rate" by N) for
+    // a single user gesture — observed as 419 → 417 from one swipe.
+    longSwipes: false,
   };
 
   // Map of Chain IDs to Chain Names
