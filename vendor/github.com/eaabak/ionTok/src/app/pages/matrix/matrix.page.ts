@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ToastController } from '@ionic/angular';
 
@@ -85,19 +86,39 @@ export class MatrixPage implements OnInit {
   axisShort: string[] = [];
   matrix: MatrixCell[][] = [];
 
+  // QR-code modal state. Opens when the user taps the QR button next to
+  // the "Pair matrix" heading; renders a fullscreen-translucent overlay
+  // with a QR encoding the current page URL (including ?session=) so
+  // anyone scanning lands on the same view.
+  qrOpen: boolean = false;
+
   constructor(
     private http: HttpClient,
     private toastController: ToastController,
+    private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   ngOnInit() {
-    // Default the search field + the loaded session to whatever the home
-    // page is currently working with. If localStorage.account is unset
-    // we just render the empty state until the user types a session.
+    // Session-selection priority:
+    //   1. ?session=<name> in the URL (QR-deep-link / shareable URLs)
+    //   2. localStorage.account (last-used session from the home page)
+    //   3. nothing — render the "enter a session name" empty state.
+    const fromUrl = this.route.snapshot.queryParamMap.get('session');
     const stored = window.localStorage.getItem('account');
-    if (stored) {
-      this.searchTerm = stored;
-      this.session = stored;
+    const initial = (fromUrl || stored || '').trim();
+    if (initial) {
+      this.searchTerm = initial;
+      this.session = initial;
+      // Make sure the URL query param reflects the loaded session even
+      // when we fell back to localStorage, so the QR code below always
+      // encodes a self-contained deep link.
+      this.syncUrlParam(initial);
+      // Also persist back to localStorage so opening a deep link sets
+      // the home page's session too.
+      if (fromUrl) {
+        window.localStorage.setItem('account', initial);
+      }
       this.refresh();
     }
   }
@@ -114,7 +135,54 @@ export class MatrixPage implements OnInit {
     this.session = term;
     // Persist so reload + the home page agree on which session is active.
     window.localStorage.setItem('account', term);
+    // Keep the URL in sync so a refresh / share / QR scan reproduces this view.
+    this.syncUrlParam(term);
     this.refresh();
+  }
+
+  /** Update ?session=<name> in the address bar without re-routing. */
+  private syncUrlParam(session: string) {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { session },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  // ---- QR-code popup ----
+
+  /** Open the QR modal. The QR encodes the current full URL so a phone
+   *  scanning it lands on this exact view (with the right session). */
+  openQr() {
+    if (!this.session) {
+      this.toast('Enter a session first');
+      return;
+    }
+    this.qrOpen = true;
+  }
+
+  /** Close the QR modal. Bound to the backdrop click and close button. */
+  closeQr() {
+    this.qrOpen = false;
+  }
+
+  /** The URL the QR encodes — current page with ?session=<name> regardless
+   *  of what's in the address bar right now (defensive against router
+   *  not having committed the syncUrlParam navigation yet). */
+  get qrTargetUrl(): string {
+    const origin = window.location.origin;
+    const path = '/matrix';
+    return `${origin}${path}?session=${encodeURIComponent(this.session)}`;
+  }
+
+  /** Image src for the QR. api.qrserver.com is a long-standing free QR
+   *  service; the URL we encode is short (~60 chars) and contains only
+   *  the session name as user-supplied data — same data already exposed
+   *  in /sessions/<name>/matrix responses, so no new privacy concern. */
+  get qrImageUrl(): string {
+    const data = encodeURIComponent(this.qrTargetUrl);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=${data}`;
   }
 
   refresh() {

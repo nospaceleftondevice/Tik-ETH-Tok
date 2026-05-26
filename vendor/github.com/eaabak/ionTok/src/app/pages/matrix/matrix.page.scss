@@ -63,6 +63,107 @@ section h2 {
   color: $text-primary;
 }
 
+// Matrix heading needs to lay the title and the QR button on the same
+// row — flex makes the button float to the right of the section title.
+.matrix-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+// QR button next to the "Pair matrix" heading. Compact icon-plus-label
+// pill; same monochrome palette as the rest of the dark theme.
+.qr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: $bg-elevated;
+  color: $text-primary;
+  border: 1px solid $border-subtle;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  ion-icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+}
+
+.qr-btn:hover {
+  background: lighten($bg-elevated, 6%);
+}
+
+.qr-btn-label {
+  letter-spacing: 0.5px;
+}
+
+// ---- QR modal ----
+//
+// Translucent backdrop covers the viewport; clicking it dismisses the
+// modal. Inner .qr-box sits centered with a white background so the
+// QR contrast is preserved no matter what color theme is around it.
+.qr-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.qr-box {
+  background: #fff;
+  color: #000;
+  border-radius: 8px;
+  padding: 16px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.qr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #333;
+}
+
+.qr-close {
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #555;
+  padding: 0 4px;
+}
+
+.qr-close:hover {
+  color: #000;
+}
+
+.qr-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.qr-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #555;
+  word-break: break-all;
+  text-align: center;
+}
+
 // ---- pair list ----
 .pair-table {
   width: 100%;
