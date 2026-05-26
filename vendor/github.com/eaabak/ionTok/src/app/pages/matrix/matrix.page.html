@@ -1,0 +1,109 @@
+<ion-header>
+  <ion-toolbar color="dark">
+    <ion-title>Matrix — {{ session || '(no session)' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <!--
+    Search bar. Same UX as home.page: type a session name, hit Enter, the
+    page reloads for that session. Persists to localStorage.account so the
+    selection sticks across reloads and matches the home-feed filter.
+  -->
+  <div class="search-row">
+    <ion-searchbar
+      [(ngModel)]="searchTerm"
+      (keyup)="onSearchKeyup($event)"
+      placeholder="Session name (e.g. Sun-May-24-26)"
+      show-clear-button="focus">
+    </ion-searchbar>
+  </div>
+
+  <!-- Stats / loading / error banner -->
+  <div class="status-line" *ngIf="loading || errorMessage || stats">
+    <span *ngIf="loading">Loading…</span>
+    <span *ngIf="errorMessage" class="error">Error: {{ errorMessage }}</span>
+    <span *ngIf="stats && !loading && !errorMessage">
+      {{ stats.rated_with_urls }} rated mixes with URLs &middot;
+      {{ stats.rated_missing_urls }} missing URLs &middot;
+      {{ stats.extraction_pending }} pending extraction &middot;
+      {{ stats.total }} total videos in session
+    </span>
+  </div>
+
+  <!-- Pair list — the actionable view. Tap a row to open both URLs. -->
+  <section class="pairs" *ngIf="pairs.length">
+    <h2>Top mixes (sorted by rating)</h2>
+    <table class="pair-table">
+      <thead>
+        <tr>
+          <th class="col-rating">Rating</th>
+          <th class="col-url">URL A</th>
+          <th class="col-url">URL B</th>
+          <th class="col-file">File</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of pairs">
+          <td class="col-rating">
+            <span class="dot"
+                  [style.background]="ratingColor(p.rating)"
+                  [class.bordered]="p.rating === 0">
+              <span class="dot-num">{{ p.rating }}</span>
+            </span>
+          </td>
+          <td class="col-url">
+            <a (click)="openUrl(p.xUrl)">{{ p.xShort }}</a>
+          </td>
+          <td class="col-url">
+            <a (click)="openUrl(p.yUrl)">{{ p.yShort }}</a>
+          </td>
+          <td class="col-file">{{ p.filename }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Heat-map matrix. Both axes carry the same URL list (deduplicated,
+       sorted by per-URL mean rating descending). Empty cells = no mix
+       for that pair. Rated=0 = white circle with thin border. Otherwise
+       solid colored dot. -->
+  <section class="matrix" *ngIf="axisUrls.length">
+    <h2>Pair matrix</h2>
+    <div class="matrix-scroll">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th class="corner"></th>
+            <th class="col-label" *ngFor="let s of axisShort">
+              <div class="rot">{{ s }}</div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of matrix; let i = index">
+            <th class="row-label">{{ axisShort[i] }}</th>
+            <td *ngFor="let cell of row" class="cell">
+              <span class="dot"
+                    *ngIf="cellHasDot(cell.rating)"
+                    [style.background]="cellColor(cell.rating)"
+                    [class.bordered]="cellNeedsBorder(cell.rating)">
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Empty state. -->
+  <div class="empty" *ngIf="!loading && !errorMessage && session && !pairs.length">
+    No rated mixes with extracted pair URLs found for
+    <strong>{{ session }}</strong>. Rate some videos on the home page; the
+    matrix will populate as URLs are extracted.
+  </div>
+
+  <div class="empty" *ngIf="!session && !loading">
+    Enter a session name above to load its matrix.
+  </div>
+</ion-content>

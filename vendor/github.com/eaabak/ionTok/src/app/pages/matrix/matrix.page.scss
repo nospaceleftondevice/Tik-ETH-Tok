@@ -1,0 +1,179 @@
+// ---- layout shell ----
+.search-row {
+  padding: 4px 8px;
+}
+
+.status-line {
+  font-size: 13px;
+  color: #666;
+  padding: 0 16px 8px;
+}
+
+.status-line .error {
+  color: #b71c1c;
+  font-weight: 600;
+}
+
+.empty {
+  padding: 32px 16px;
+  color: #555;
+  text-align: center;
+}
+
+section {
+  padding: 8px 16px 24px;
+}
+
+section h2 {
+  font-size: 16px;
+  margin: 8px 0;
+  color: #222;
+}
+
+// ---- pair list ----
+.pair-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pair-table th,
+.pair-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.pair-table th {
+  font-weight: 600;
+  color: #444;
+  background: #fafafa;
+}
+
+.col-rating {
+  width: 56px;
+  text-align: center !important;
+}
+
+.col-url a {
+  color: #1565c0;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.col-url a:hover {
+  text-decoration: underline;
+}
+
+.col-file {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #777;
+  font-size: 11px;
+}
+
+// ---- rating dots (shared by pair list + matrix) ----
+.dot {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  vertical-align: middle;
+  line-height: 22px;
+  text-align: center;
+}
+
+.dot.bordered {
+  border: 1px solid #222;
+}
+
+.dot-num {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+// ---- matrix ----
+.matrix-scroll {
+  // The matrix can grow well past viewport for big sessions. Scroll both
+  // axes; the row/column headers stay readable thanks to position: sticky.
+  overflow: auto;
+  max-height: 80vh;
+  border: 1px solid #eee;
+  background: #fff;
+}
+
+.matrix-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 11px;
+}
+
+.matrix-table th,
+.matrix-table td {
+  border: 1px solid #f0f0f0;
+}
+
+.matrix-table thead th {
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+  z-index: 2;
+}
+
+.matrix-table .row-label {
+  position: sticky;
+  left: 0;
+  background: #fafafa;
+  z-index: 1;
+  text-align: right;
+  padding: 4px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  // Slight color cue so the sticky row label visibly separates from cells.
+  border-right: 1px solid #ddd;
+}
+
+.matrix-table .corner {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  background: #fafafa;
+}
+
+.col-label {
+  // Column labels are URL shorts (~11 chars). Rotate so they don't widen
+  // every column. .rot gets the actual transform.
+  height: 96px;
+  padding: 0;
+  width: 28px;
+}
+
+.col-label .rot {
+  // -60deg keeps the text mostly horizontal but tilted up, which reads
+  // better at small sizes than full 90deg.
+  transform-origin: bottom left;
+  transform: rotate(-60deg) translate(8px, -8px);
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #444;
+}
+
+.cell {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+  background: #fff;
+}
+
+.cell .dot {
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
