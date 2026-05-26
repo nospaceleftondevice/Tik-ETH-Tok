@@ -163,11 +163,11 @@ $matrix-row-label-width: 96px;
 
 .matrix-table th,
 .matrix-table td {
-  // Cell border color intentionally kept at #f3f3f3 per user request.
-  // On the black background these light gray grid lines read as a faint
-  // graph paper backdrop — exactly the right amount of structure to make
-  // the colored dots pop without competing with them.
-  border: 1px solid #f3f3f3;
+  // No grid lines — the colored dots are sufficient to convey structure;
+  // the grid was visually noisy. The sticky row/column header borders
+  // (border-right on .row-label, border-bottom on .corner) stay so the
+  // labels are still visually separated from the cell area.
+  border: 0;
   // Hard cap so an overly long URL label can't push a cell wider.
   box-sizing: border-box;
 }

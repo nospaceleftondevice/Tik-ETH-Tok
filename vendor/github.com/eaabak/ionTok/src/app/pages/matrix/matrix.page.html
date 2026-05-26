@@ -31,7 +31,41 @@
     </span>
   </div>
 
-  <!-- Pair list — the actionable view. Tap a row to open both URLs. -->
+  <!-- Heat-map matrix. Both axes carry the same URL list (deduplicated,
+       sorted by per-URL mean rating descending). Empty cells = no mix
+       for that pair. Rated=0 = white circle with thin border. Otherwise
+       solid colored dot. Rendered FIRST so it's above the fold. -->
+  <section class="matrix" *ngIf="axisUrls.length">
+    <h2>Pair matrix</h2>
+    <div class="matrix-scroll">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th class="corner"></th>
+            <th class="col-label" *ngFor="let s of axisShort">
+              <div class="rot">{{ s }}</div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of matrix; let i = index">
+            <th class="row-label">{{ axisShort[i] }}</th>
+            <td *ngFor="let cell of row" class="cell">
+              <span class="dot"
+                    *ngIf="cellHasDot(cell.rating)"
+                    [style.background]="cellColor(cell.rating)"
+                    [class.bordered]="cellNeedsBorder(cell.rating)">
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Pair list — the actionable view, below the matrix per user
+       request so the heat-map is above the fold. Tap a row to open
+       both URLs in new tabs. -->
   <section class="pairs" *ngIf="pairs.length">
     <h2>Top mixes (sorted by rating)</h2>
     <table class="pair-table">
@@ -62,38 +96,6 @@
         </tr>
       </tbody>
     </table>
-  </section>
-
-  <!-- Heat-map matrix. Both axes carry the same URL list (deduplicated,
-       sorted by per-URL mean rating descending). Empty cells = no mix
-       for that pair. Rated=0 = white circle with thin border. Otherwise
-       solid colored dot. -->
-  <section class="matrix" *ngIf="axisUrls.length">
-    <h2>Pair matrix</h2>
-    <div class="matrix-scroll">
-      <table class="matrix-table">
-        <thead>
-          <tr>
-            <th class="corner"></th>
-            <th class="col-label" *ngFor="let s of axisShort">
-              <div class="rot">{{ s }}</div>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let row of matrix; let i = index">
-            <th class="row-label">{{ axisShort[i] }}</th>
-            <td *ngFor="let cell of row" class="cell">
-              <span class="dot"
-                    *ngIf="cellHasDot(cell.rating)"
-                    [style.background]="cellColor(cell.rating)"
-                    [class.bordered]="cellNeedsBorder(cell.rating)">
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
   </section>
 
   <!-- Empty state. -->
