@@ -36,7 +36,14 @@
        for that pair. Rated=0 = white circle with thin border. Otherwise
        solid colored dot. Rendered FIRST so it's above the fold. -->
   <section class="matrix" *ngIf="axisUrls.length">
-    <h2>Pair matrix</h2>
+    <h2 class="matrix-heading">
+      <span>Pair matrix</span>
+      <button class="qr-btn" type="button" (click)="openQr()"
+              aria-label="Show QR code for this session">
+        <ion-icon name="qr-code-outline"></ion-icon>
+        <span class="qr-btn-label">QR</span>
+      </button>
+    </h2>
     <div class="matrix-scroll">
       <table class="matrix-table">
         <thead>
@@ -107,5 +114,24 @@
 
   <div class="empty" *ngIf="!session && !loading">
     Enter a session name above to load its matrix.
+  </div>
+
+  <!--
+    QR-code modal. Rendered when qrOpen is true. Backdrop covers the
+    whole viewport at z-index above all matrix sticky cells; clicking
+    anywhere on the backdrop (outside the white box) dismisses. The
+    inner .qr-box stops click propagation so taps on the QR don't close.
+  -->
+  <div class="qr-backdrop" *ngIf="qrOpen" (click)="closeQr()">
+    <div class="qr-box" (click)="$event.stopPropagation()">
+      <div class="qr-header">
+        <span>Scan to open {{ session }}</span>
+        <button class="qr-close" type="button" (click)="closeQr()"
+                aria-label="Close QR code">×</button>
+      </div>
+      <img class="qr-img" [src]="qrImageUrl"
+           [attr.alt]="'QR code for ' + qrTargetUrl">
+      <div class="qr-url">{{ qrTargetUrl }}</div>
+    </div>
   </div>
 </ion-content>
