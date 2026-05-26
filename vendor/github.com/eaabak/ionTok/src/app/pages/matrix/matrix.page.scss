@@ -96,9 +96,17 @@ section h2 {
 }
 
 // ---- matrix ----
+//
+// Sized for sessions of ~50+ unique URLs. Each cell is 14px so an 80x80
+// matrix is ~1100px wide — fits a desktop viewport without scrolling,
+// fits a mobile viewport with a manageable amount of horizontal scroll.
+$matrix-cell: 14px;
+$matrix-dot:  10px;
+$matrix-row-label-width: 96px;
+
 .matrix-scroll {
-  // The matrix can grow well past viewport for big sessions. Scroll both
-  // axes; the row/column headers stay readable thanks to position: sticky.
+  // The matrix can grow past viewport for big sessions. Scroll both axes.
+  // Row/column headers stay visible via position: sticky.
   overflow: auto;
   max-height: 80vh;
   border: 1px solid #eee;
@@ -108,14 +116,21 @@ section h2 {
 .matrix-table {
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 11px;
+  font-size: 10px;
+  // Without an explicit table-layout, the browser sizes columns based on
+  // content (the rotated headers) which can make the row-label column
+  // disappear-narrow. Fixed layout uses the first row's declared widths.
+  table-layout: fixed;
 }
 
 .matrix-table th,
 .matrix-table td {
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f3f3f3;
+  // Hard cap so an overly long URL label can't push a cell wider.
+  box-sizing: border-box;
 }
 
+// Sticky top row (column labels).
 .matrix-table thead th {
   position: sticky;
   top: 0;
@@ -123,49 +138,72 @@ section h2 {
   z-index: 2;
 }
 
+// Sticky left column (row labels). The fix for "y-axis not visible":
+// give it an explicit width (table-layout: fixed needs this) and a
+// bigger z-index so it overlays cells properly while scrolling right.
+// Border-right gives a clean visual separator.
 .matrix-table .row-label {
   position: sticky;
   left: 0;
+  width: $matrix-row-label-width;
+  min-width: $matrix-row-label-width;
+  max-width: $matrix-row-label-width;
   background: #fafafa;
-  z-index: 1;
+  z-index: 2;
   text-align: right;
-  padding: 4px 8px;
+  padding: 0 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
   white-space: nowrap;
-  // Slight color cue so the sticky row label visibly separates from cells.
-  border-right: 1px solid #ddd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid #c8c8c8;
+  // Match the cell height so rows stay on a tight grid.
+  height: $matrix-cell;
+  line-height: $matrix-cell;
 }
 
+// Top-left corner: stays visible at both axes (highest z-index of the
+// three sticky kinds).
 .matrix-table .corner {
   position: sticky;
   left: 0;
   top: 0;
+  width: $matrix-row-label-width;
+  min-width: $matrix-row-label-width;
+  max-width: $matrix-row-label-width;
   z-index: 3;
   background: #fafafa;
+  border-right: 1px solid #c8c8c8;
+  border-bottom: 1px solid #c8c8c8;
 }
 
 .col-label {
   // Column labels are URL shorts (~11 chars). Rotate so they don't widen
-  // every column. .rot gets the actual transform.
-  height: 96px;
+  // every column to the text length. .rot wraps the actual transform.
+  height: 80px;
   padding: 0;
-  width: 28px;
+  width: $matrix-cell;
+  min-width: $matrix-cell;
+  max-width: $matrix-cell;
 }
 
 .col-label .rot {
   // -60deg keeps the text mostly horizontal but tilted up, which reads
   // better at small sizes than full 90deg.
   transform-origin: bottom left;
-  transform: rotate(-60deg) translate(8px, -8px);
+  transform: rotate(-60deg) translate(4px, -4px);
   white-space: nowrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: 10px;
   color: #444;
 }
 
 .cell {
-  width: 28px;
-  height: 28px;
+  width: $matrix-cell;
+  height: $matrix-cell;
+  min-width: $matrix-cell;
+  max-width: $matrix-cell;
   padding: 0;
   text-align: center;
   vertical-align: middle;
@@ -173,7 +211,8 @@ section h2 {
 }
 
 .cell .dot {
-  width: 16px;
-  height: 16px;
-  line-height: 16px;
+  width: $matrix-dot;
+  height: $matrix-dot;
+  line-height: $matrix-dot;
 }
+
