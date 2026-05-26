@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ToastController } from '@ionic/angular';
@@ -67,7 +67,7 @@ interface MatrixCell {
   templateUrl: './matrix.page.html',
   styleUrls: ['./matrix.page.scss'],
 })
-export class MatrixPage implements OnInit {
+export class MatrixPage implements OnInit, OnDestroy {
   session: string = '';
   searchTerm: string = '';
   loading: boolean = false;
@@ -91,6 +91,15 @@ export class MatrixPage implements OnInit {
   // with a QR encoding the current page URL (including ?session=) so
   // anyone scanning lands on the same view.
   qrOpen: boolean = false;
+
+  // setInterval handle for the 5-minute auto-refresh. Cleared in
+  // ngOnDestroy so navigating away doesn't leak the timer.
+  private autoRefreshHandle: any = null;
+
+  // 5 minutes between automatic refreshes. Long enough that we're not
+  // hammering the backend; short enough that ratings done on a phone
+  // show up on a wall-mounted matrix view without manual reload.
+  private readonly AUTO_REFRESH_MS = 5 * 60 * 1000;
 
   constructor(
     private http: HttpClient,
@@ -120,6 +129,23 @@ export class MatrixPage implements OnInit {
         window.localStorage.setItem('account', initial);
       }
       this.refresh();
+    }
+
+    // Auto-refresh fires regardless of whether we had an initial session
+    // — once the user types one in the search bar, the tick that comes
+    // ~5 minutes later will pick it up via this.session being non-empty.
+    this.autoRefreshHandle = setInterval(() => {
+      if (this.session && !this.loading) {
+        console.log('matrix.page: auto-refresh tick');
+        this.refresh();
+      }
+    }, this.AUTO_REFRESH_MS);
+  }
+
+  ngOnDestroy() {
+    if (this.autoRefreshHandle !== null) {
+      clearInterval(this.autoRefreshHandle);
+      this.autoRefreshHandle = null;
     }
   }
 
