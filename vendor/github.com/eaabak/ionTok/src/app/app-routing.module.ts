@@ -33,6 +33,15 @@ const routes: Routes = [
   {
     path: 'settings-and-privacy',
     loadChildren: () => import('./pages/settings-and-privacy/settings-and-privacy.module').then(m => m.SettingsAndPrivacyPageModule)
+  },
+  {
+    // Lazy-loaded matrix page. Reachable directly via /matrix or via a
+    // future link from the home page. Calls GET /sessions/<name>/matrix
+    // (defined in music-k8s backend); the SPA route name `matrix` doesn't
+    // collide with any backend path because backend paths sit under
+    // /sessions/<name>/matrix.
+    path: 'matrix',
+    loadChildren: () => import('./pages/matrix/matrix.module').then(m => m.MatrixPageModule)
   }
 ];
 @NgModule({
