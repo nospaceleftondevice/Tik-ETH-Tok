@@ -133,14 +133,16 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.qMode = qp.get('q_mode') === 'or' ? 'or' : 'and';
     this.strict = qp.get('strict') === '1';
 
-    // Account identity. Honor ?account= override first, otherwise fall
-    // back to localStorage. If neither, render the "set an account"
-    // empty state.
+    // Account identity. Honor ?account= override first, then localStorage,
+    // finally fall back to ?session= per the app's session-name==account
+    // convention. Means a shared link like /matrix?session=X "just works"
+    // for the recipient even without an explicit ?account= and without
+    // them having loaded that session previously.
     const fromUrl = (qp.get('account') || '').trim();
     const stored = (window.localStorage.getItem('account') || '').trim();
-    this.accountNumber = fromUrl || stored;
-    if (fromUrl) {
-      window.localStorage.setItem('account', fromUrl);
+    this.accountNumber = fromUrl || stored || this.sessionFilter;
+    if (this.accountNumber) {
+      window.localStorage.setItem('account', this.accountNumber);
     }
 
     // Sync URL so QR + reload reproduce the current view exactly.
@@ -172,6 +174,16 @@ export class MatrixPage implements OnInit, OnDestroy {
 
   onSessionInput(value: string) {
     this.sessionFilter = (value || '').trim();
+    // App convention: session name == account name. If we have no
+    // explicit account (user landed here via the empty-prompt
+    // redirect, fresh browser, or shared link without ?account=),
+    // promote the typed session to be the account too. Persist to
+    // localStorage so it sticks across reloads and matches the home
+    // page's stored account.
+    if (!this.accountNumber && this.sessionFilter) {
+      this.accountNumber = this.sessionFilter;
+      window.localStorage.setItem('account', this.sessionFilter);
+    }
     this.syncUrlParams();
     this.scheduleRefresh();
   }
@@ -275,7 +287,11 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.loading = true;
     this.errorMessage = '';
     let params = new HttpParams();
-    if (this.accountNumber) params = params.set('account_number', this.accountNumber);
+    // Defensive double-up of the session→account promotion (also in
+    // onSessionInput): if a session is in URL on first load and no
+    // account was set yet, use the session as the account here too.
+    const effectiveAccount = this.accountNumber || this.sessionFilter;
+    if (effectiveAccount) params = params.set('account_number', effectiveAccount);
     if (this.sessionFilter) params = params.set('session', this.sessionFilter);
     if (this.q) {
       params = params.set('q', this.q);
