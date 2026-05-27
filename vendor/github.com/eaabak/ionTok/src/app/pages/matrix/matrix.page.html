@@ -1,37 +1,31 @@
 <ion-header>
   <ion-toolbar color="dark">
-    <ion-title>Matrix — {{ session || '(no session)' }}</ion-title>
+    <ion-title>
+      Matrix
+      <span class="subtitle" *ngIf="count">— {{ count }} mixes</span>
+    </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
   <!--
-    Search bar. Same UX as home.page: type a session name, hit Enter, the
-    page reloads for that session. Persists to localStorage.account so the
-    selection sticks across reloads and matches the home-feed filter.
-  -->
-  <div class="search-row">
-    <ion-searchbar
-      [(ngModel)]="searchTerm"
-      (keyup)="onSearchKeyup($event)"
-      placeholder="Session name (e.g. Sun-May-24-26)"
-      show-clear-button="focus">
-    </ion-searchbar>
-  </div>
-
-  <!--
-    Title / artist filter. Independent from the session search above.
-    Empty = show everything. Non-empty = case-insensitive substring
-    against x_title, y_title, x_artist, y_artist. The Direct toggle
-    affects the matrix only (pair list is always wide).
+    Filter row. Both inputs are substring matches against the backend's
+    /mixes endpoint. They AND-combine — leave one empty to ignore that
+    dimension. Same shape will hold when we add BPM/genre/etc.: just
+    drop another input on this row.
   -->
   <div class="filter-row">
     <input class="filter-input"
            type="text"
-           [ngModel]="filter"
-           (ngModelChange)="onFilterInput($event)"
-           placeholder="Filter by title or artist…">
-    <label class="strict-toggle" title="Show only mixes where BOTH endpoints match the filter">
+           [ngModel]="sessionFilter"
+           (ngModelChange)="onSessionInput($event)"
+           placeholder="Session (substring, e.g. Sun-May)">
+    <input class="filter-input"
+           type="text"
+           [ngModel]="q"
+           (ngModelChange)="onQInput($event)"
+           placeholder="Title or artist (substring)">
+    <label class="strict-toggle" title="Matrix: only show mixes where BOTH endpoints match the title/artist filter">
       <input type="checkbox"
              [checked]="strict"
              (change)="onStrictToggle($any($event.target).checked)">
@@ -39,27 +33,20 @@
     </label>
   </div>
 
-  <!-- Stats / loading / error banner -->
-  <div class="status-line" *ngIf="loading || errorMessage || stats">
+  <div class="status-line" *ngIf="loading || errorMessage || count">
     <span *ngIf="loading">Loading…</span>
     <span *ngIf="errorMessage" class="error">Error: {{ errorMessage }}</span>
-    <span *ngIf="stats && !loading && !errorMessage">
-      {{ stats.rated_with_urls }} rated mixes with URLs &middot;
-      {{ stats.rated_missing_urls }} missing URLs &middot;
-      {{ stats.extraction_pending }} pending extraction &middot;
-      {{ stats.total }} total videos in session
+    <span *ngIf="count && !loading && !errorMessage">
+      {{ count }} mix<ng-container *ngIf="count !== 1">es</ng-container>
+      <ng-container *ngIf="accountNumber"> &middot; account {{ accountNumber }}</ng-container>
     </span>
   </div>
 
-  <!-- Heat-map matrix. Both axes carry the same URL list (deduplicated,
-       sorted by per-URL mean rating descending). Empty cells = no mix
-       for that pair. Rated=0 = white circle with thin border. Otherwise
-       solid colored dot. Rendered FIRST so it's above the fold. -->
   <section class="matrix" *ngIf="axisUrls.length">
     <h2 class="matrix-heading">
       <span>Pair matrix</span>
       <button class="qr-btn" type="button" (click)="openQr()"
-              aria-label="Show QR code for this session">
+              aria-label="Show QR code for this search">
         <ion-icon name="qr-code-outline"></ion-icon>
         <span class="qr-btn-label">QR</span>
       </button>
@@ -91,9 +78,6 @@
     </div>
   </section>
 
-  <!-- Pair list — the actionable view, below the matrix per user
-       request so the heat-map is above the fold. Tap a row to open
-       both URLs in new tabs. -->
   <section class="pairs" *ngIf="pairs.length">
     <h2>Top mixes ({{ pairs.length }} shown, sorted by rating)</h2>
     <table class="pair-table">
@@ -102,6 +86,7 @@
           <th class="col-rating">Rating</th>
           <th class="col-mix">A</th>
           <th class="col-mix">B</th>
+          <th class="col-session">Session</th>
           <th class="col-file">File</th>
         </tr>
       </thead>
@@ -124,33 +109,28 @@
             <div class="mix-title" *ngIf="p.yTitle" [attr.title]="p.yTitle">{{ p.yTitle }}</div>
             <a class="mix-url" (click)="openUrl(p.yUrl)">{{ p.yShort }}</a>
           </td>
+          <td class="col-session">{{ p.session }}</td>
           <td class="col-file">{{ p.filename }}</td>
         </tr>
       </tbody>
     </table>
   </section>
 
-  <!-- Empty state. -->
-  <div class="empty" *ngIf="!loading && !errorMessage && session && !pairs.length">
-    No rated mixes with extracted pair URLs found for
-    <strong>{{ session }}</strong>. Rate some videos on the home page; the
-    matrix will populate as URLs are extracted.
+  <!-- Empty / setup states. -->
+  <div class="empty" *ngIf="!loading && !errorMessage && accountNumber && !pairs.length">
+    No rated mixes match the current filters.
   </div>
 
-  <div class="empty" *ngIf="!session && !loading">
-    Enter a session name above to load its matrix.
+  <div class="empty" *ngIf="!accountNumber && !loading">
+    No account set. Visit the home page to choose a session, or open
+    /matrix?account=&lt;your-session&gt; to load directly.
   </div>
 
-  <!--
-    QR-code modal. Rendered when qrOpen is true. Backdrop covers the
-    whole viewport at z-index above all matrix sticky cells; clicking
-    anywhere on the backdrop (outside the white box) dismisses. The
-    inner .qr-box stops click propagation so taps on the QR don't close.
-  -->
+  <!-- QR-code modal. -->
   <div class="qr-backdrop" *ngIf="qrOpen" (click)="closeQr()">
     <div class="qr-box" (click)="$event.stopPropagation()">
       <div class="qr-header">
-        <span>Scan to open {{ session }}</span>
+        <span>Scan to open this view</span>
         <button class="qr-close" type="button" (click)="closeQr()"
                 aria-label="Close QR code">×</button>
       </div>
