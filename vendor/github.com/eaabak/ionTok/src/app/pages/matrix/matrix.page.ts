@@ -176,10 +176,16 @@ export class MatrixPage implements OnInit, OnDestroy {
     }
   }
 
-  onSessionInput(value: string) {
-    this.sessionFilter = (value || '').trim();
+  /** Session input is Enter-only — the [(ngModel)] in the template
+   *  updates sessionFilter on every keystroke (so the UI input value
+   *  stays bound), but we don't issue a /mixes request until the
+   *  user presses Enter. Title/artist below still uses debounced
+   *  per-keystroke search since incremental filtering reads better
+   *  for typing in song/artist names. */
+  onSessionEnter() {
+    this.sessionFilter = (this.sessionFilter || '').trim();
     this.syncUrlParams();
-    this.scheduleRefresh();
+    this.refresh();
   }
 
   onQInput(value: string) {
