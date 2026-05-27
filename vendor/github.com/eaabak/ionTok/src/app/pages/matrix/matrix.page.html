@@ -16,14 +16,18 @@
   -->
   <div class="filter-row">
     <!--
-      Session input. No AND/OR toggle — session is always a narrowing
-      constraint (typing a session always means "only this session").
+      Session input. Fires search ONLY on Enter (not per-keystroke).
+      Matches the home page's session bar pattern and avoids the
+      keystroke storm against an account-scoped filter that the user
+      rarely changes mid-typing. Title/artist below still debounces
+      keystrokes because incremental filtering reads better there.
+      No AND/OR toggle — session is always a narrowing constraint.
     -->
     <input class="filter-input"
            type="text"
-           [ngModel]="sessionFilter"
-           (ngModelChange)="onSessionInput($event)"
-           placeholder="Session (substring, e.g. Sun-May)">
+           [(ngModel)]="sessionFilter"
+           (keyup.enter)="onSessionEnter()"
+           placeholder="Session (substring, press Enter to apply)">
 
     <!--
       Title/artist input + AND/OR mode pill. AND (default) = filter must
