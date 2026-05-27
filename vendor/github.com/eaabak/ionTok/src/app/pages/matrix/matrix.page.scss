@@ -337,6 +337,27 @@ section h2 {
   vertical-align: top !important;
 }
 
+// Library rows in the pair list: from the songs.txt seed, not from the
+// user's rated mixes. Slightly dimmer so they read as supplementary.
+.pair-table tr.is-library {
+  opacity: 0.78;
+}
+
+// Compact grey badge in place of the rating dot for library rows.
+.library-badge {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: $text-secondary;
+  background: $bg-elevated;
+  border: 1px solid $border-subtle;
+  border-radius: 3px;
+  padding: 2px 5px;
+  text-transform: uppercase;
+}
+
 // Optional smaller subtitle in the page header.
 .subtitle {
   font-weight: 400;
