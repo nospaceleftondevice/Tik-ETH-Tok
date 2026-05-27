@@ -546,12 +546,15 @@ export class HomePage implements OnInit {
         // prompt() returns null when the user cancels and '' for empty
         // input. Either case used to be stored literally, which then
         // propagated to the backend as session=null. Guard so we only
-        // store a non-empty trimmed string; if the user cancels, leave
-        // 'account' unset and data.service.getVideoList will return an
-        // empty list (see its session guard).
+        // store a non-empty trimmed string; if the user cancels or
+        // submits empty, treat it as "I don't have a session" and
+        // redirect to /matrix where the user can browse the library.
         const entered = (prompt("Enter show name") || '').trim();
         if (entered) {
           window.sessionStorage.setItem('account', entered);
+        } else {
+          this.router.navigateByUrl('/matrix');
+          return;
         }
       }
       const acct = window.sessionStorage.getItem('account');
