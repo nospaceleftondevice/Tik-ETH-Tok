@@ -25,7 +25,9 @@ interface MatrixVideo {
   // 'library' = song_metadata_lookup seed, never has a rating
   source: 'rated' | 'library';
   id: number | null;
-  session: string | null;
+  session: string | null;       // representative; see `sessions` for full list
+  sessions: string[];           // sessions this canonical mix appears in (dedup)
+  dup_count: number;            // how many video rows collapsed into this entry
   url: string;
   filename: string;
   x_url: string | null;
@@ -35,9 +37,8 @@ interface MatrixVideo {
   x_artist: string | null;
   y_artist: string | null;
   rating: number | null;  // = ratings[0] for backward compat / convenience
-  // ALL ratings (any account) sorted desc. Frontend stacks ratings[1]
-  // behind ratings[0] to show "multiple people rated this".
-  // Empty array when nobody has rated (search-mode unrated, or library).
+  // ALL ratings (any account, any duplicate video) sorted desc.
+  // Frontend stacks ratings[1] behind ratings[0] for stacked dots.
   ratings: number[];
 }
 
@@ -53,7 +54,12 @@ interface PairRow {
   source: 'rated' | 'library';
   videoId: number | null;
   filename: string;
-  session: string | null;
+  // sessions: aggregated across all videos with the same canonical
+  // URL pair. Length 1 = unique to one session; length > 1 = same
+  // musical mix exists in multiple sessions (e.g. forward + -rev
+  // loads). UI shows them comma-separated.
+  sessions: string[];
+  dupCount: number;     // number of video rows collapsed
   xUrl: string | null;
   yUrl: string | null;
   xShort: string | null;
@@ -337,7 +343,13 @@ export class MatrixPage implements OnInit, OnDestroy {
         source: 'rated' as const,
         videoId: v.id,
         filename: v.filename,
-        session: v.session,
+        // Backend dedup gives us a list of sessions per row. Older
+        // responses (pre-PR #61) only have `session`; fall back to
+        // wrapping it so the UI keeps working during a deploy.
+        sessions: v.sessions && v.sessions.length
+          ? v.sessions
+          : (v.session ? [v.session] : []),
+        dupCount: v.dup_count ?? 1,
         xUrl: v.x_url,
         yUrl: v.y_url,
         xShort: v.x_url ? shortenYouTube(v.x_url) : null,
@@ -352,13 +364,14 @@ export class MatrixPage implements OnInit, OnDestroy {
       // Rated (non-null rating) first by rating desc; unrated rated-source
       // rows (search mode) come after by id. nullish rating coerces to -1
       // for the sort key.
-      .sort((a, b) => ((b.rating ?? -1) - (a.rating ?? -1)) || (a.videoId! - b.videoId!));
+      .sort((a, b) => ((b.rating ?? -1) - (a.rating ?? -1)) || ((a.videoId ?? 0) - (b.videoId ?? 0)));
     const libraryRows: PairRow[] = library
       .map((v) => ({
         source: 'library' as const,
         videoId: null,
         filename: v.filename,
-        session: null,
+        sessions: [],
+        dupCount: 1,
         xUrl: null,
         yUrl: null,
         xShort: null,

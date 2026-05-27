@@ -165,7 +165,16 @@
             <div class="mix-title" *ngIf="p.yTitle" [attr.title]="p.yTitle">{{ p.yTitle }}</div>
             <a class="mix-url" *ngIf="p.yUrl" (click)="openUrl(p.yUrl)">{{ p.yShort }}</a>
           </td>
-          <td class="col-session">{{ p.session }}</td>
+          <td class="col-session">
+            <!-- One row may have collapsed multiple videos that share
+                 the same canonical URL pair. Sessions joined, dup count
+                 shown as a small ×N badge when > 1. -->
+            <span *ngIf="p.sessions && p.sessions.length">{{ p.sessions.join(', ') }}</span>
+            <span class="dup-badge" *ngIf="p.dupCount > 1"
+                  [attr.title]="p.dupCount + ' video rows collapsed (same mix in multiple sessions)'">
+              ×{{ p.dupCount }}
+            </span>
+          </td>
           <td class="col-file">{{ p.filename }}</td>
         </tr>
       </tbody>
