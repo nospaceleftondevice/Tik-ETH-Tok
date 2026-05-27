@@ -110,6 +110,14 @@ export class MatrixPage implements OnInit, OnDestroy {
   private autoRefreshHandle: any = null;
   private readonly AUTO_REFRESH_MS = 5 * 60 * 1000;
 
+  // Debounce filter input → /mixes calls. Without this, ngModelChange
+  // fires on every keystroke and each request scans the videos table +
+  // 12K-row song_metadata_lookup with ILIKE — fast enough on its own
+  // but they pile up faster than they return and the UI hangs on the
+  // newest one. 300ms is the standard "type a word, then query" feel.
+  private inputDebounceHandle: any = null;
+  private readonly INPUT_DEBOUNCE_MS = 300;
+
   constructor(
     private http: HttpClient,
     private toastController: ToastController,
@@ -155,28 +163,46 @@ export class MatrixPage implements OnInit, OnDestroy {
       clearInterval(this.autoRefreshHandle);
       this.autoRefreshHandle = null;
     }
+    if (this.inputDebounceHandle !== null) {
+      clearTimeout(this.inputDebounceHandle);
+      this.inputDebounceHandle = null;
+    }
   }
 
   onSessionInput(value: string) {
     this.sessionFilter = (value || '').trim();
     this.syncUrlParams();
-    this.refresh();
+    this.scheduleRefresh();
   }
 
   onQInput(value: string) {
     this.q = (value || '').trim();
     this.syncUrlParams();
-    this.refresh();
+    this.scheduleRefresh();
   }
 
   /** Flip q's AND/OR mode. Triggers a refetch since the WHERE clause
-   *  composition depends on it. No-op when q is empty (nothing to mode). */
+   *  composition depends on it. No-op when q is empty (nothing to mode).
+   *  Mode flip is a single click, no debounce needed — fire immediately. */
   onQModeToggle() {
     this.qMode = this.qMode === 'and' ? 'or' : 'and';
     this.syncUrlParams();
     if (this.q) {
       this.refresh();
     }
+  }
+
+  /** Debounced wrapper around refresh(). Used by the text inputs so that
+   *  typing "robert" fires ONE request after the user pauses, not six.
+   *  The last keystroke wins — earlier debounce timers are cleared. */
+  private scheduleRefresh() {
+    if (this.inputDebounceHandle !== null) {
+      clearTimeout(this.inputDebounceHandle);
+    }
+    this.inputDebounceHandle = setTimeout(() => {
+      this.inputDebounceHandle = null;
+      this.refresh();
+    }, this.INPUT_DEBOUNCE_MS);
   }
 
   /** Strict is client-side only — affects matrix rendering, not the
