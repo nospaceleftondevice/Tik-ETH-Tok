@@ -146,12 +146,13 @@ export class MatrixPage implements OnInit, OnDestroy {
     // Sync URL so QR + reload reproduce the current view exactly.
     this.syncUrlParams();
 
-    if (this.accountNumber) {
-      this.refresh();
-    }
+    // refresh() works without an account now — it'll return only
+    // library results in that case (so the user can browse the seed
+    // even before loading a session). Always fire on init.
+    this.refresh();
 
     this.autoRefreshHandle = setInterval(() => {
-      if (this.accountNumber && !this.loading) {
+      if (!this.loading) {
         console.log('matrix.page: auto-refresh tick');
         this.refresh();
       }
@@ -268,12 +269,13 @@ export class MatrixPage implements OnInit, OnDestroy {
   }
 
   refresh() {
-    if (!this.accountNumber) {
-      return;
-    }
+    // account_number is optional on the backend now (library-only mode
+    // when missing). The page still works — user just sees library
+    // results, no rated mixes, until they set an account.
     this.loading = true;
     this.errorMessage = '';
-    let params = new HttpParams().set('account_number', this.accountNumber);
+    let params = new HttpParams();
+    if (this.accountNumber) params = params.set('account_number', this.accountNumber);
     if (this.sessionFilter) params = params.set('session', this.sessionFilter);
     if (this.q) {
       params = params.set('q', this.q);

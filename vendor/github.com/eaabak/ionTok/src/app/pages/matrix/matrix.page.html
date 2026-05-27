@@ -146,13 +146,19 @@
   </section>
 
   <!-- Empty / setup states. -->
-  <div class="empty" *ngIf="!loading && !errorMessage && accountNumber && !pairs.length">
-    No rated mixes match the current filters.
+  <div class="empty" *ngIf="!loading && !errorMessage && !pairs.length && (sessionFilter || q)">
+    No matches for the current filters.
   </div>
 
-  <div class="empty" *ngIf="!accountNumber && !loading">
-    No account set. Visit the home page to choose a session, or open
-    /matrix?account=&lt;your-session&gt; to load directly.
+  <div class="empty" *ngIf="!loading && !errorMessage && !pairs.length && !sessionFilter && !q">
+    <ng-container *ngIf="accountNumber">
+      Type a session, title, or artist above to search.
+    </ng-container>
+    <ng-container *ngIf="!accountNumber">
+      No account set — only library results are available.<br>
+      Type a session, title, or artist above to search the library,
+      or visit the home page to choose a session.
+    </ng-container>
   </div>
 
   <!-- QR-code modal. -->
