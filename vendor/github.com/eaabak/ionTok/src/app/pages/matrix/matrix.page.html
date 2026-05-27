@@ -15,16 +15,40 @@
     drop another input on this row.
   -->
   <div class="filter-row">
+    <!--
+      Session input. No AND/OR toggle — session is always a narrowing
+      constraint (typing a session always means "only this session").
+    -->
     <input class="filter-input"
            type="text"
            [ngModel]="sessionFilter"
            (ngModelChange)="onSessionInput($event)"
            placeholder="Session (substring, e.g. Sun-May)">
-    <input class="filter-input"
-           type="text"
-           [ngModel]="q"
-           (ngModelChange)="onQInput($event)"
-           placeholder="Title or artist (substring)">
+
+    <!--
+      Title/artist input + AND/OR mode pill. AND (default) = filter must
+      match. OR = result needs to match this OR any other OR filter
+      (useful once BPM/key dimensions land). The pill is disabled+greyed
+      when the input is empty.
+    -->
+    <div class="filter-with-mode">
+      <input class="filter-input"
+             type="text"
+             [ngModel]="q"
+             (ngModelChange)="onQInput($event)"
+             placeholder="Title or artist (substring)">
+      <button class="mode-pill"
+              type="button"
+              [class.is-or]="qMode === 'or'"
+              [disabled]="!q"
+              (click)="onQModeToggle()"
+              [attr.title]="qMode === 'and'
+                ? 'Currently AND: must match. Click to switch to OR.'
+                : 'Currently OR: at least one OR filter must match. Click to switch to AND.'">
+        {{ qMode === 'or' ? 'OR' : 'AND' }}
+      </button>
+    </div>
+
     <label class="strict-toggle" title="Matrix: only show mixes where BOTH endpoints match the title/artist filter">
       <input type="checkbox"
              [checked]="strict"
