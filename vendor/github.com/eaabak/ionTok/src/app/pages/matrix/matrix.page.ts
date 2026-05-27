@@ -71,6 +71,11 @@ export class MatrixPage implements OnInit, OnDestroy {
   // BPM/genre/tempo etc. later.
   sessionFilter: string = '';
   q: string = '';
+  // Per-filter mode: 'and' = must match (narrows), 'or' = at least one
+  // OR filter must match (broadens). Default 'and'. Session has no mode
+  // toggle — it's always a narrowing constraint. Same shape extends to
+  // future BPM/key/genre inputs (each gets its own *Mode field).
+  qMode: 'and' | 'or' = 'and';
   strict: boolean = false;
 
   // User identity. Defaults to localStorage.account (the home page's
@@ -108,6 +113,8 @@ export class MatrixPage implements OnInit, OnDestroy {
     const qp = this.route.snapshot.queryParamMap;
     this.sessionFilter = (qp.get('session') || '').trim();
     this.q = (qp.get('q') || '').trim();
+    // q_mode comes from URL too. Whitelist to {'and','or'}.
+    this.qMode = qp.get('q_mode') === 'or' ? 'or' : 'and';
     this.strict = qp.get('strict') === '1';
 
     // Account identity. Honor ?account= override first, otherwise fall
@@ -154,6 +161,16 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.refresh();
   }
 
+  /** Flip q's AND/OR mode. Triggers a refetch since the WHERE clause
+   *  composition depends on it. No-op when q is empty (nothing to mode). */
+  onQModeToggle() {
+    this.qMode = this.qMode === 'and' ? 'or' : 'and';
+    this.syncUrlParams();
+    if (this.q) {
+      this.refresh();
+    }
+  }
+
   /** Strict is client-side only — affects matrix rendering, not the
    *  backend query (which already returned the filtered set). */
   onStrictToggle(value: boolean) {
@@ -162,14 +179,17 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.applyStrict();
   }
 
-  /** Update ?session=&q=&strict= in the address bar without re-routing.
-   *  Omits empty values so the URL stays tidy. */
+  /** Update ?session=&q=&q_mode=&strict= in the address bar without
+   *  re-routing. Omits empty values + default modes so the URL stays tidy. */
   private syncUrlParams() {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
         session: this.sessionFilter || null,
         q: this.q || null,
+        // Only encode q_mode when non-default AND q is actually set,
+        // so plain searches don't pollute the URL with ?q_mode=and.
+        q_mode: (this.q && this.qMode === 'or') ? 'or' : null,
         strict: this.strict ? '1' : null,
       },
       queryParamsHandling: 'merge',
@@ -196,7 +216,10 @@ export class MatrixPage implements OnInit, OnDestroy {
     const origin = window.location.origin;
     const params = new URLSearchParams();
     if (this.sessionFilter) params.set('session', this.sessionFilter);
-    if (this.q) params.set('q', this.q);
+    if (this.q) {
+      params.set('q', this.q);
+      if (this.qMode === 'or') params.set('q_mode', 'or');
+    }
     if (this.strict) params.set('strict', '1');
     // Always include account in the QR — the recipient may not have it
     // in their localStorage.
@@ -218,7 +241,11 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.errorMessage = '';
     let params = new HttpParams().set('account_number', this.accountNumber);
     if (this.sessionFilter) params = params.set('session', this.sessionFilter);
-    if (this.q) params = params.set('q', this.q);
+    if (this.q) {
+      params = params.set('q', this.q);
+      // Only pass q_mode when non-default. Backend defaults to 'and'.
+      if (this.qMode === 'or') params = params.set('q_mode', 'or');
+    }
 
     this.http.get<MixesResponse>('/mixes', { params }).subscribe(
       (resp) => {

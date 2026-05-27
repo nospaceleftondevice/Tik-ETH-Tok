@@ -62,6 +62,53 @@ ion-content {
   color: $text-muted;
 }
 
+// Wraps a filter input + its AND/OR mode pill. Flex with no gap so the
+// pill butts against the right edge of the input (visually paired).
+.filter-with-mode {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-with-mode .filter-input {
+  flex: 1;
+  // Square off the right edge so the pill sits flush.
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: 0;
+}
+
+.mode-pill {
+  // Compact AND/OR toggle. Visually attached to the filter input on its
+  // right. Default state (AND) looks neutral; OR state lights up blue
+  // so it's obvious when the user has switched to broaden semantics.
+  background: $bg-elevated;
+  color: $text-secondary;
+  border: 1px solid $border-subtle;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding: 0 10px;
+  min-width: 48px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.mode-pill.is-or {
+  background: $link;
+  color: #fff;
+  border-color: $link;
+}
+
+.mode-pill:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .strict-toggle {
   display: inline-flex;
   align-items: center;
