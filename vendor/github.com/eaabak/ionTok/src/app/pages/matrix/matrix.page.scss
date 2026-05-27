@@ -391,6 +391,47 @@ section h2 {
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
+// Stack wrapper holds 1 or 2 absolutely-positioned dots so a video with
+// multiple raters reads as two overlapping circles. Single-rating case
+// just renders one dot (dot-front, no offset). Two-rating case offsets
+// dot-back to the bottom-left and dot-front to the top-right; the
+// front draws on top thanks to DOM order + z-index. Wrapper sized to
+// fit both dots without clipping; inline-block so the table cell
+// vertical-aligns it sensibly.
+.dot-stack {
+  position: relative;
+  display: inline-block;
+  // Big enough for a 22px primary dot offset by 6px ⇒ 28px square.
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+}
+
+.dot-stack .dot {
+  position: absolute;
+}
+
+.dot-stack .dot-back {
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.dot-stack .dot-front {
+  top: 0;
+  right: 0;
+  z-index: 2;
+}
+
+// Single-dot variant: when there's only one rating, dot-front is the
+// only child. With no .dot-back to offset against, anchor it to the
+// center so the column doesn't look lop-sided.
+.dot-stack:not(:has(.dot-back)) .dot-front {
+  top: 50%;
+  right: 50%;
+  transform: translate(50%, -50%);
+}
+
 // ---- matrix ----
 //
 // Sized for sessions of ~50+ unique URLs. Each cell is 14px so an 80x80
@@ -518,4 +559,12 @@ $matrix-row-label-width: 96px;
   width: $matrix-dot;
   height: $matrix-dot;
   line-height: $matrix-dot;
+}
+
+// Matrix-cell variant of .dot-stack. Cell is only 14px so the stack
+// can't be 28px — shrink to cell size and tighten the offset between
+// the two dots from 6px down to ~3px.
+.cell .dot-stack {
+  width: $matrix-cell;
+  height: $matrix-cell;
 }
