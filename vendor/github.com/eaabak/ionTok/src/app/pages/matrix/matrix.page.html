@@ -65,7 +65,10 @@
     <span *ngIf="loading">Loading…</span>
     <span *ngIf="errorMessage" class="error">Error: {{ errorMessage }}</span>
     <span *ngIf="count && !loading && !errorMessage">
-      {{ ratedCount }} rated
+      <!-- "loaded" = videos table rows after dedup (some may have ratings,
+           most usually don't). Previously labelled "rated" which was
+           misleading since the count includes unrated videos. -->
+      {{ ratedCount }} loaded
       <ng-container *ngIf="libraryCount > 0"> &middot; {{ libraryCount }} library</ng-container>
       <ng-container *ngIf="accountNumber"> &middot; account {{ accountNumber }}</ng-container>
     </span>
