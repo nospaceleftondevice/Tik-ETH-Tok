@@ -21,8 +21,11 @@ import { ToastController } from '@ionic/angular';
  */
 
 interface MatrixVideo {
-  id: number;
-  session: string;
+  // 'rated' = videos table, has rating + possibly URLs
+  // 'library' = song_metadata_lookup seed, no rating, no source URLs
+  source: 'rated' | 'library';
+  id: number | null;
+  session: string | null;
   url: string;
   filename: string;
   x_url: string | null;
@@ -37,22 +40,25 @@ interface MatrixVideo {
 interface MixesResponse {
   videos: MatrixVideo[];
   count: number;
+  rated_count: number;
+  library_count: number;
   filters: { account_number: string; session: string | null; q: string | null };
 }
 
 interface PairRow {
-  videoId: number;
+  source: 'rated' | 'library';
+  videoId: number | null;
   filename: string;
-  session: string;
-  xUrl: string;
-  yUrl: string;
-  xShort: string;
-  yShort: string;
+  session: string | null;
+  xUrl: string | null;
+  yUrl: string | null;
+  xShort: string | null;
+  yShort: string | null;
   xTitle: string | null;
   yTitle: string | null;
   xArtist: string | null;
   yArtist: string | null;
-  rating: number;
+  rating: number | null;
 }
 
 interface MatrixCell {
@@ -85,6 +91,8 @@ export class MatrixPage implements OnInit, OnDestroy {
   loading: boolean = false;
   errorMessage: string = '';
   count: number = 0;
+  ratedCount: number = 0;
+  libraryCount: number = 0;
 
   // Raw response from /mixes, kept so the strict toggle can rebuild the
   // matrix locally without re-fetching.
@@ -251,6 +259,8 @@ export class MatrixPage implements OnInit, OnDestroy {
       (resp) => {
         this.rawVideos = resp.videos;
         this.count = resp.count;
+        this.ratedCount = resp.rated_count ?? resp.count;
+        this.libraryCount = resp.library_count ?? 0;
         this.applyStrict();
         this.loading = false;
       },
@@ -260,6 +270,8 @@ export class MatrixPage implements OnInit, OnDestroy {
           (err && err.error && err.error.error) || 'failed to load mixes';
         this.rawVideos = [];
         this.count = 0;
+        this.ratedCount = 0;
+        this.libraryCount = 0;
         this.pairs = [];
         this.axisUrls = [];
         this.axisShort = [];
@@ -274,32 +286,63 @@ export class MatrixPage implements OnInit, OnDestroy {
    *  the matrix — pair list always shows every backend-matched mix. */
   private applyStrict() {
     const actionable = this.rawVideos;
+    const rated = actionable.filter((v) => v.source === 'rated');
+    const library = actionable.filter((v) => v.source === 'library');
 
-    this.pairs = actionable
+    // Pair list: rated first (sorted by rating desc + id), library after
+    // (sorted by file for stability). Rendering distinguishes the two via
+    // the source field (no rating dot for library, no session/url links).
+    const ratedRows: PairRow[] = rated
       .map((v) => ({
+        source: 'rated' as const,
         videoId: v.id,
         filename: v.filename,
         session: v.session,
-        xUrl: v.x_url!,
-        yUrl: v.y_url!,
-        xShort: shortenYouTube(v.x_url!),
-        yShort: shortenYouTube(v.y_url!),
+        xUrl: v.x_url,
+        yUrl: v.y_url,
+        xShort: v.x_url ? shortenYouTube(v.x_url) : null,
+        yShort: v.y_url ? shortenYouTube(v.y_url) : null,
         xTitle: v.x_title,
         yTitle: v.y_title,
         xArtist: v.x_artist,
         yArtist: v.y_artist,
-        rating: v.rating!,
+        rating: v.rating,
       }))
-      .sort((a, b) => b.rating - a.rating || a.videoId - b.videoId);
+      .sort((a, b) => (b.rating! - a.rating!) || (a.videoId! - b.videoId!));
+    const libraryRows: PairRow[] = library
+      .map((v) => ({
+        source: 'library' as const,
+        videoId: null,
+        filename: v.filename,
+        session: null,
+        xUrl: null,
+        yUrl: null,
+        xShort: null,
+        yShort: null,
+        xTitle: v.x_title,
+        yTitle: v.y_title,
+        xArtist: v.x_artist,
+        yArtist: v.y_artist,
+        rating: null,
+      }))
+      .sort((a, b) => a.filename.localeCompare(b.filename));
+    this.pairs = [...ratedRows, ...libraryRows];
 
-    const matchedUrls = new Set<string>();
-    for (const v of actionable) {
-      matchedUrls.add(v.x_url!);
-      matchedUrls.add(v.y_url!);
-    }
+    // Matrix axis is composed of two kinds of keys:
+    //   - Rated: keyed by source YT URL (x_url / y_url). Two positions per
+    //     rated mix (symmetric). Label = 11-char YT id.
+    //   - Library: keyed by mp4 stem (filename minus extension and any
+    //     trailing -<number>). One position per library entry. Label =
+    //     the stem itself. Per the user's spec — cells stay blank, the
+    //     entry just contributes an axis row/column.
+    //
+    // Axis keys are strings; URL strings and stems won't collide.
+    type AxisInfo = { label: string; tooltip: string; rated: boolean };
+    const axisInfo = new Map<string, AxisInfo>();
 
+    // Per-URL metadata for rated entries (used for tooltips + strict check).
     const urlMeta = new Map<string, { title: string | null; artist: string | null }>();
-    for (const v of actionable) {
+    for (const v of rated) {
       for (const [u, t, a] of [
         [v.x_url!, v.x_title, v.x_artist],
         [v.y_url!, v.y_title, v.y_artist],
@@ -314,10 +357,47 @@ export class MatrixPage implements OnInit, OnDestroy {
       }
     }
 
+    // Add rated URL axis entries.
+    for (const u of urlMeta.keys()) {
+      const m = urlMeta.get(u)!;
+      const labelParts: string[] = [];
+      if (m.artist) labelParts.push(m.artist);
+      if (m.title) labelParts.push(m.title);
+      axisInfo.set(u, {
+        label: shortenYouTube(u),
+        tooltip: labelParts.length ? labelParts.join(' — ') : u,
+        rated: true,
+      });
+    }
+    // Add library axis entries — one per library row, keyed by mp4 stem.
+    for (const v of library) {
+      const stem = mp4Stem(v.filename);
+      // Avoid stem collisions between library and rated (shouldn't happen
+      // in practice — stems aren't URLs — but be defensive).
+      const key = 'lib:' + stem;
+      if (!axisInfo.has(key)) {
+        const labelParts: string[] = [];
+        if (v.x_artist) labelParts.push(v.x_artist);
+        if (v.x_title) labelParts.push(v.x_title);
+        const tooltipL = labelParts.length ? labelParts.join(' — ') : stem;
+        const labelParts2: string[] = [];
+        if (v.y_artist) labelParts2.push(v.y_artist);
+        if (v.y_title) labelParts2.push(v.y_title);
+        const tooltipR = labelParts2.length ? labelParts2.join(' — ') : '';
+        axisInfo.set(key, {
+          label: stem,
+          tooltip: tooltipR ? `${tooltipL}  /  ${tooltipR}  (library)` : `${tooltipL}  (library)`,
+          rated: false,
+        });
+      }
+    }
+
+    // Sort: rated entries first (by mean rating desc), library entries
+    // appended at the end (alphabetical by label).
     const meanByUrl = new Map<string, number>();
-    for (const u of matchedUrls) {
+    for (const u of urlMeta.keys()) {
       const ratings: number[] = [];
-      for (const v of actionable) {
+      for (const v of rated) {
         if (v.x_url === u || v.y_url === u) ratings.push(v.rating!);
       }
       meanByUrl.set(
@@ -325,20 +405,17 @@ export class MatrixPage implements OnInit, OnDestroy {
         ratings.reduce((a, b) => a + b, 0) / Math.max(1, ratings.length),
       );
     }
-    const sortedAxis = Array.from(matchedUrls).sort(
+    const sortedRated = Array.from(urlMeta.keys()).sort(
       (a, b) => meanByUrl.get(b)! - meanByUrl.get(a)!,
     );
+    const sortedLibrary = Array.from(axisInfo.keys())
+      .filter((k) => k.startsWith('lib:'))
+      .sort((a, b) => axisInfo.get(a)!.label.localeCompare(axisInfo.get(b)!.label));
+    const sortedAxis = [...sortedRated, ...sortedLibrary];
 
     this.axisUrls = sortedAxis;
-    this.axisShort = sortedAxis.map(shortenYouTube);
-    this.axisTooltip = sortedAxis.map((u) => {
-      const m = urlMeta.get(u);
-      if (!m) return u;
-      const parts: string[] = [];
-      if (m.artist) parts.push(m.artist);
-      if (m.title) parts.push(m.title);
-      return parts.length ? parts.join(' — ') : u;
-    });
+    this.axisShort = sortedAxis.map((k) => axisInfo.get(k)!.label);
+    this.axisTooltip = sortedAxis.map((k) => axisInfo.get(k)!.tooltip);
 
     const n = sortedAxis.length;
     const cells: MatrixCell[][] = [];
@@ -350,11 +427,9 @@ export class MatrixPage implements OnInit, OnDestroy {
       cells.push(row);
     }
 
-    // Strict mode (only meaningful when q is set): only fill a cell if
-    // BOTH endpoints' titles or artists themselves match q. Otherwise
-    // a Chronixx × Kelis mix shows under q="Kelis" because Kelis
-    // appears, even though Chronixx doesn't match. Strict hides that
-    // and shows only mixes where both songs match the filter.
+    // Strict mode (only meaningful when q is set + applies to rated only):
+    // only fill a rated cell if BOTH endpoint URLs' title/artist match q.
+    // Library entries never produce cells, so strict doesn't affect them.
     const needle = this.q.toLowerCase();
     const urlMatchesQ = (u: string): boolean => {
       if (!needle) return true;
@@ -367,21 +442,32 @@ export class MatrixPage implements OnInit, OnDestroy {
 
     const idx = new Map<string, number>();
     sortedAxis.forEach((u, i) => idx.set(u, i));
-    for (const v of actionable) {
-      const i = idx.get(v.x_url!);
-      const j = idx.get(v.y_url!);
+
+    // Place rated entries on the matrix as today.
+    for (const v of rated) {
+      if (!v.x_url || !v.y_url) continue;
+      const i = idx.get(v.x_url);
+      const j = idx.get(v.y_url);
       if (i === undefined || j === undefined) continue;
       if (this.strict && needle) {
-        if (!urlMatchesQ(v.x_url!) || !urlMatchesQ(v.y_url!)) continue;
+        if (!urlMatchesQ(v.x_url) || !urlMatchesQ(v.y_url)) continue;
       }
       for (const [a, b] of [[i, j], [j, i]] as [number, number][]) {
         const cell = cells[a][b];
-        cell.videoIds.push(v.id);
+        cell.videoIds.push(v.id!);
         if (cell.rating === null || v.rating! > cell.rating) {
           cell.rating = v.rating!;
         }
       }
     }
+
+    // Library entries DON'T produce cells (per user spec: "the ones which
+    // have not been rated will show blank"). They contribute axis labels
+    // only — the user can see they exist, but no rating dot fires until
+    // the mp4 is loaded into a session and rated. Once that happens, the
+    // mp4 becomes a 'rated' entry on a different axis position (its real
+    // YT URL) and gets a real cell, leaving its library stem axis empty.
+
     this.matrix = cells;
   }
 
@@ -430,4 +516,22 @@ function shortenYouTube(url: string): string {
   const longMatch = url.match(/[?&]v=([A-Za-z0-9_-]{11})/);
   if (longMatch) return longMatch[1];
   return url.slice(-11);
+}
+
+/**
+ * Library mp4s have no source YT URL — they need a stable axis key
+ * derived from the filename. Per the user's spec, use "everything
+ * before the <<number>>.mp4". Strip:
+ *   - the trailing .mp4 (case-insensitive)
+ *   - a trailing -<digits> chunk if present (e.g. Sun-May-24-26-10 → Sun-May-24-26)
+ * If neither applies, return the filename with extension dropped.
+ *
+ * For mp4 filenames where the number isn't at the end (e.g.
+ * --1-Left-Mac.attlocal.net.mp4) the trailing-number strip does
+ * nothing — the full stem is shown, which is still readable.
+ */
+function mp4Stem(filename: string): string {
+  let s = (filename || '').replace(/\.mp4$/i, '');
+  s = s.replace(/-\d+$/, '');
+  return s;
 }

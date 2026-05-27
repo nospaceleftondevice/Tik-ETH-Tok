@@ -61,7 +61,8 @@
     <span *ngIf="loading">Loading…</span>
     <span *ngIf="errorMessage" class="error">Error: {{ errorMessage }}</span>
     <span *ngIf="count && !loading && !errorMessage">
-      {{ count }} mix<ng-container *ngIf="count !== 1">es</ng-container>
+      {{ ratedCount }} rated
+      <ng-container *ngIf="libraryCount > 0"> &middot; {{ libraryCount }} library</ng-container>
       <ng-container *ngIf="accountNumber"> &middot; account {{ accountNumber }}</ng-container>
     </span>
   </div>
@@ -115,23 +116,27 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let p of pairs">
+        <tr *ngFor="let p of pairs" [class.is-library]="p.source === 'library'">
           <td class="col-rating">
-            <span class="dot"
-                  [style.background]="ratingColor(p.rating)"
+            <!-- Rated entries: filled rating dot. Library entries:
+                 small grey "library" badge, no rating number. -->
+            <span *ngIf="p.source === 'rated'" class="dot"
+                  [style.background]="ratingColor(p.rating!)"
                   [class.bordered]="p.rating === 0">
               <span class="dot-num">{{ p.rating }}</span>
             </span>
+            <span *ngIf="p.source === 'library'" class="library-badge"
+                  title="From songs.txt library — not yet rated">lib</span>
           </td>
           <td class="col-mix">
             <div class="mix-artist" *ngIf="p.xArtist">{{ p.xArtist }}</div>
             <div class="mix-title" *ngIf="p.xTitle" [attr.title]="p.xTitle">{{ p.xTitle }}</div>
-            <a class="mix-url" (click)="openUrl(p.xUrl)">{{ p.xShort }}</a>
+            <a class="mix-url" *ngIf="p.xUrl" (click)="openUrl(p.xUrl)">{{ p.xShort }}</a>
           </td>
           <td class="col-mix">
             <div class="mix-artist" *ngIf="p.yArtist">{{ p.yArtist }}</div>
             <div class="mix-title" *ngIf="p.yTitle" [attr.title]="p.yTitle">{{ p.yTitle }}</div>
-            <a class="mix-url" (click)="openUrl(p.yUrl)">{{ p.yShort }}</a>
+            <a class="mix-url" *ngIf="p.yUrl" (click)="openUrl(p.yUrl)">{{ p.yShort }}</a>
           </td>
           <td class="col-session">{{ p.session }}</td>
           <td class="col-file">{{ p.filename }}</td>
