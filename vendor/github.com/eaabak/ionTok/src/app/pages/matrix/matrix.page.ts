@@ -11,15 +11,22 @@ import { ToastController } from '@ionic/angular';
  *
  * Backend feed: `GET /sessions/<name>/matrix?account_number=<x>`. Returns
  * each video in the session with its rating + extracted (x_url, y_url)
- * pair URLs. Videos that haven't been rated, or that have no extracted
- * URLs (extraction failed / no `network` tag in the mp4), are silently
+ * pair URLs and (x_title, y_title, x_artist, y_artist) song metadata.
+ * Videos that haven't been rated, or that have no extracted URLs
+ * (extraction failed / no `network` tag in the mp4), are silently
  * skipped — the page is for actionable show-curation, not a complete
  * audit of the session.
  *
- * The search bar at top behaves like home.page's: typing a session name
- * and pressing Enter reloads the matrix for that session. localStorage
- * 'account' doubles as the default and as the matrix's account_number
- * (matches the convention used everywhere else in this app).
+ * URL params:
+ *   ?session=<name>  loads/persists which session is being viewed
+ *   ?filter=<text>   case-insensitive substring filter on titles/artists
+ *   ?strict=1        matrix shows only mixes where BOTH endpoints match
+ *                    the filter (rather than the wider "anything paired
+ *                    with a matched URL" default)
+ *
+ * The pair-list filter is always "wide" — a row is shown if filter
+ * matches any of the four metadata fields. The strict toggle only
+ * affects the matrix.
  */
 
 interface MatrixVideo {
@@ -28,6 +35,10 @@ interface MatrixVideo {
   filename: string;
   x_url: string | null;
   y_url: string | null;
+  x_title: string | null;
+  y_title: string | null;
+  x_artist: string | null;
+  y_artist: string | null;
   metadata_extracted_at: string | null;
   rating: number | null;
 }
@@ -54,6 +65,10 @@ interface PairRow {
   yUrl: string;
   xShort: string;
   yShort: string;
+  xTitle: string | null;
+  yTitle: string | null;
+  xArtist: string | null;
+  yArtist: string | null;
   rating: number;
 }
 
@@ -74,16 +89,29 @@ export class MatrixPage implements OnInit, OnDestroy {
   errorMessage: string = '';
   stats: MatrixStats | null = null;
 
+  // Title/artist filter state. Both persisted to URL params so a QR /
+  // shared link reproduces the exact view. filter is case-insensitive
+  // substring; strict toggles matrix display between "matched cells
+  // only" and "matched cells + their 1-hop neighborhood".
+  filter: string = '';
+  strict: boolean = false;
+
+  // Raw response from /sessions/<name>/matrix. Kept so that filter
+  // changes can rebuild pairs+matrix locally without re-fetching.
+  private rawVideos: MatrixVideo[] = [];
+
   // The actionable view: every (x, y, rating) where both URLs are present
-  // and the user rated it, sorted by rating descending.
+  // and the user rated it, sorted by rating descending. Already filtered.
   pairs: PairRow[] = [];
 
   // The matrix view. axisUrls is the ordered list of unique source URLs
   // (both axes share the same ordering — the relation is symmetric).
-  // axisShort is the truncated label shown on the axis. matrix[i][j] is
-  // the cell for (axisUrls[i], axisUrls[j]).
+  // axisShort is the truncated label shown on the axis. axisTooltip is
+  // the artist+title shown on hover. matrix[i][j] is the cell for
+  // (axisUrls[i], axisUrls[j]). All three respect the current filter.
   axisUrls: string[] = [];
   axisShort: string[] = [];
+  axisTooltip: string[] = [];
   matrix: MatrixCell[][] = [];
 
   // QR-code modal state. Opens when the user taps the QR button next to
@@ -113,16 +141,23 @@ export class MatrixPage implements OnInit, OnDestroy {
     //   1. ?session=<name> in the URL (QR-deep-link / shareable URLs)
     //   2. localStorage.account (last-used session from the home page)
     //   3. nothing — render the "enter a session name" empty state.
-    const fromUrl = this.route.snapshot.queryParamMap.get('session');
+    const qp = this.route.snapshot.queryParamMap;
+    const fromUrl = qp.get('session');
     const stored = window.localStorage.getItem('account');
     const initial = (fromUrl || stored || '').trim();
+
+    // Filter + strict come straight from URL — no localStorage. People
+    // expect filters to reset on a fresh visit, but persist within a
+    // URL they shared/scanned.
+    this.filter = (qp.get('filter') || '').trim();
+    this.strict = qp.get('strict') === '1';
+
     if (initial) {
       this.searchTerm = initial;
       this.session = initial;
-      // Make sure the URL query param reflects the loaded session even
-      // when we fell back to localStorage, so the QR code below always
-      // encodes a self-contained deep link.
-      this.syncUrlParam(initial);
+      // Sync ALL the params we care about so the QR + reload reproduce
+      // exactly. Includes session, filter, strict.
+      this.syncUrlParams();
       // Also persist back to localStorage so opening a deep link sets
       // the home page's session too.
       if (fromUrl) {
@@ -149,7 +184,7 @@ export class MatrixPage implements OnInit, OnDestroy {
     }
   }
 
-  /** Submit handler for the searchbar. Reloads for the typed session. */
+  /** Submit handler for the session searchbar. Reloads for the typed session. */
   onSearchKeyup(event: KeyboardEvent) {
     if (event.key !== 'Enter' && event.key !== 'Return') {
       return;
@@ -162,15 +197,34 @@ export class MatrixPage implements OnInit, OnDestroy {
     // Persist so reload + the home page agree on which session is active.
     window.localStorage.setItem('account', term);
     // Keep the URL in sync so a refresh / share / QR scan reproduces this view.
-    this.syncUrlParam(term);
+    this.syncUrlParams();
     this.refresh();
   }
 
-  /** Update ?session=<name> in the address bar without re-routing. */
-  private syncUrlParam(session: string) {
+  /** Called on every keystroke in the title/artist filter input. Cheap —
+   *  rebuilds pairs + matrix locally from rawVideos, no server round-trip. */
+  onFilterInput(value: string) {
+    this.filter = (value || '').trim();
+    this.syncUrlParams();
+    this.applyFilter();
+  }
+
+  /** Toggle handler for the Direct/Wide matrix mode switch. */
+  onStrictToggle(value: boolean) {
+    this.strict = !!value;
+    this.syncUrlParams();
+    this.applyFilter();
+  }
+
+  /** Update ?session=<name>&filter=<f>&strict=1 in the address bar
+   *  without re-routing. Omits empty values so the URL stays tidy. */
+  private syncUrlParams() {
+    const queryParams: any = { session: this.session || null };
+    queryParams.filter = this.filter ? this.filter : null;
+    queryParams.strict = this.strict ? '1' : null;
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { session },
+      queryParams,
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
@@ -193,19 +247,21 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.qrOpen = false;
   }
 
-  /** The URL the QR encodes — current page with ?session=<name> regardless
-   *  of what's in the address bar right now (defensive against router
-   *  not having committed the syncUrlParam navigation yet). */
+  /** The URL the QR encodes — current page with session + filter + strict
+   *  baked in so the scanner lands on the same view. */
   get qrTargetUrl(): string {
     const origin = window.location.origin;
     const path = '/matrix';
-    return `${origin}${path}?session=${encodeURIComponent(this.session)}`;
+    const params = new URLSearchParams();
+    params.set('session', this.session);
+    if (this.filter) params.set('filter', this.filter);
+    if (this.strict) params.set('strict', '1');
+    return `${origin}${path}?${params.toString()}`;
   }
 
   /** Image src for the QR. api.qrserver.com is a long-standing free QR
-   *  service; the URL we encode is short (~60 chars) and contains only
-   *  the session name as user-supplied data — same data already exposed
-   *  in /sessions/<name>/matrix responses, so no new privacy concern. */
+   *  service; the URL we encode is short (~80 chars) and contains only
+   *  the session name + user-typed filter — no PII. */
   get qrImageUrl(): string {
     const data = encodeURIComponent(this.qrTargetUrl);
     return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=${data}`;
@@ -223,15 +279,19 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.http.get<MatrixResponse>(url).subscribe(
       (resp) => {
         this.stats = resp.stats;
-        this.build(resp.videos);
+        this.rawVideos = resp.videos;
+        this.applyFilter();
         this.loading = false;
       },
       (err) => {
         console.error('matrix.page: load failed', err);
         this.errorMessage =
           (err && err.error && err.error.error) || 'failed to load matrix';
+        this.rawVideos = [];
         this.pairs = [];
         this.axisUrls = [];
+        this.axisShort = [];
+        this.axisTooltip = [];
         this.matrix = [];
         this.loading = false;
       },
@@ -239,13 +299,13 @@ export class MatrixPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Build the pair list AND the heat-map matrix from the raw video list.
-   * Filters to rated videos with both URLs extracted — the rest aren't
-   * actionable for this page.
+   * Rebuild pairs + matrix from rawVideos, applying the current
+   * filter + strict state. Called after fetch and on every filter/
+   * toggle keystroke.
    */
-  private build(videos: MatrixVideo[]) {
-    // 1. The actionable subset.
-    const actionable = videos.filter(
+  private applyFilter() {
+    // 1. Actionable subset (rated + URLs present). Same as before.
+    const actionable = this.rawVideos.filter(
       (v) =>
         v.rating !== null &&
         typeof v.x_url === 'string' &&
@@ -254,8 +314,21 @@ export class MatrixPage implements OnInit, OnDestroy {
         v.y_url,
     );
 
-    // 2. Pair list — sorted by rating desc, then by video id for stability.
+    // 2. "Matching" predicate. Empty filter matches everything.
+    //    Otherwise: case-insensitive substring against any of the four
+    //    metadata fields.
+    const needle = this.filter.toLowerCase();
+    const matches = (v: MatrixVideo): boolean => {
+      if (!needle) return true;
+      return [v.x_title, v.y_title, v.x_artist, v.y_artist].some(
+        (s) => typeof s === 'string' && s.toLowerCase().includes(needle),
+      );
+    };
+
+    // 3. Pair list — always "wide": include any video where filter
+    //    matches any side. Sorted by rating desc.
     this.pairs = actionable
+      .filter(matches)
       .map((v) => ({
         videoId: v.id,
         filename: v.filename,
@@ -263,26 +336,64 @@ export class MatrixPage implements OnInit, OnDestroy {
         yUrl: v.y_url!,
         xShort: shortenYouTube(v.x_url!),
         yShort: shortenYouTube(v.y_url!),
+        xTitle: v.x_title,
+        yTitle: v.y_title,
+        xArtist: v.x_artist,
+        yArtist: v.y_artist,
         rating: v.rating!,
       }))
       .sort((a, b) => b.rating - a.rating || a.videoId - b.videoId);
 
-    // 3. Unique URLs across both axes (matrix is symmetric — a song
-    //    paired with itself isn't a real mix, so the diagonal stays empty).
-    const urlSet = new Set<string>();
-    for (const v of actionable) {
-      urlSet.add(v.x_url!);
-      urlSet.add(v.y_url!);
+    // 4. Matched-URL set: URLs participating in any matching video.
+    //    Used by both strict and wide modes.
+    const matchedUrls = new Set<string>();
+    for (const v of actionable.filter(matches)) {
+      matchedUrls.add(v.x_url!);
+      matchedUrls.add(v.y_url!);
     }
-    const allUrls = Array.from(urlSet);
 
-    // 4. Sort axis by per-URL mean rating descending so the hottest songs
-    //    cluster at the top-left. (Heat-map-style "highest in the middle"
-    //    reordering would mean sort-by-mean then re-permute toward center;
-    //    skipping for now — descending sort already groups high ratings
-    //    in the top-left quadrant, which scans clearly enough at ~30 URLs.)
+    // 5. Axis URLs depend on the strict/wide mode:
+    //      strict: only matched URLs; cells fire only when both endpoints
+    //              are matched.
+    //      wide:   matched URLs + any URL ever paired with a matched URL
+    //              (1-hop neighborhood). Lets you see what your filtered
+    //              songs mix WITH, not just the cells where they match
+    //              each other.
+    let candidateUrls: Set<string>;
+    if (this.strict) {
+      candidateUrls = matchedUrls;
+    } else {
+      candidateUrls = new Set(matchedUrls);
+      for (const v of actionable) {
+        if (matchedUrls.has(v.x_url!) || matchedUrls.has(v.y_url!)) {
+          candidateUrls.add(v.x_url!);
+          candidateUrls.add(v.y_url!);
+        }
+      }
+    }
+
+    // 6. Per-URL artist/title for axis labels + tooltips. A URL appears
+    //    in many videos; we just take the first non-null we see.
+    const urlMeta = new Map<string, { title: string | null; artist: string | null }>();
+    for (const v of actionable) {
+      for (const [u, t, a] of [
+        [v.x_url!, v.x_title, v.x_artist],
+        [v.y_url!, v.y_title, v.y_artist],
+      ] as [string, string | null, string | null][]) {
+        if (!urlMeta.has(u)) {
+          urlMeta.set(u, { title: t, artist: a });
+        } else {
+          const cur = urlMeta.get(u)!;
+          if (!cur.title && t) cur.title = t;
+          if (!cur.artist && a) cur.artist = a;
+        }
+      }
+    }
+
+    // 7. Sort axis by per-URL mean rating descending so the hottest songs
+    //    cluster at the top-left.
     const meanByUrl = new Map<string, number>();
-    for (const u of allUrls) {
+    for (const u of candidateUrls) {
       const ratings: number[] = [];
       for (const v of actionable) {
         if (v.x_url === u || v.y_url === u) ratings.push(v.rating!);
@@ -292,13 +403,23 @@ export class MatrixPage implements OnInit, OnDestroy {
         ratings.reduce((a, b) => a + b, 0) / Math.max(1, ratings.length),
       );
     }
-    allUrls.sort((a, b) => (meanByUrl.get(b)! - meanByUrl.get(a)!));
+    const sortedAxis = Array.from(candidateUrls).sort(
+      (a, b) => meanByUrl.get(b)! - meanByUrl.get(a)!,
+    );
 
-    this.axisUrls = allUrls;
-    this.axisShort = allUrls.map(shortenYouTube);
+    this.axisUrls = sortedAxis;
+    this.axisShort = sortedAxis.map(shortenYouTube);
+    this.axisTooltip = sortedAxis.map((u) => {
+      const m = urlMeta.get(u);
+      if (!m) return u;
+      const parts: string[] = [];
+      if (m.artist) parts.push(m.artist);
+      if (m.title) parts.push(m.title);
+      return parts.length ? parts.join(' — ') : u;
+    });
 
-    // 5. Empty NxN matrix.
-    const n = allUrls.length;
+    // 8. Empty NxN matrix.
+    const n = sortedAxis.length;
     const cells: MatrixCell[][] = [];
     for (let i = 0; i < n; i++) {
       const row: MatrixCell[] = [];
@@ -308,15 +429,20 @@ export class MatrixPage implements OnInit, OnDestroy {
       cells.push(row);
     }
 
-    // 6. Place each video. The pair is unordered (a mix of A+B is the
-    //    same musical pairing as B+A), so we update BOTH (i,j) and (j,i).
-    //    If multiple mixes exist for the same pair, keep the HIGHEST
-    //    rating — the user is picking the best, not averaging.
+    // 9. Place each video. Symmetric (a mix of A+B is the same as B+A).
+    //    Cells are kept only if both endpoints are in candidateUrls;
+    //    strict additionally requires both endpoints in matchedUrls so
+    //    we don't fill cells where only one side matches the filter.
     const idx = new Map<string, number>();
-    allUrls.forEach((u, i) => idx.set(u, i));
+    sortedAxis.forEach((u, i) => idx.set(u, i));
     for (const v of actionable) {
-      const i = idx.get(v.x_url!)!;
-      const j = idx.get(v.y_url!)!;
+      const i = idx.get(v.x_url!);
+      const j = idx.get(v.y_url!);
+      if (i === undefined || j === undefined) continue;
+      if (this.strict) {
+        // Both endpoints must match the filter — keeps strict view honest.
+        if (!matchedUrls.has(v.x_url!) || !matchedUrls.has(v.y_url!)) continue;
+      }
       for (const [a, b] of [[i, j], [j, i]] as [number, number][]) {
         const cell = cells[a][b];
         cell.videoIds.push(v.id);
