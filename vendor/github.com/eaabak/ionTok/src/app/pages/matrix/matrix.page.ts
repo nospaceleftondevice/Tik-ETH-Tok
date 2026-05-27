@@ -386,12 +386,19 @@ export class MatrixPage implements OnInit, OnDestroy {
     const axisInfo = new Map<string, AxisInfo>();
 
     // Per-URL metadata for rated entries (used for tooltips + strict check).
+    // After backend music-k8s #57 dropped the x_url IS NOT NULL filter,
+    // rated rows can have null URLs (extraction failed / file has no
+    // standard `tvnn` atom). Skip those for the matrix axis — they
+    // contribute to the pair list (built above) but can't be keyed onto
+    // a URL-based axis position. Without this guard a null URL becomes
+    // a Map key and downstream code crashes on `key.startsWith('lib:')`.
     const urlMeta = new Map<string, { title: string | null; artist: string | null }>();
     for (const v of rated) {
       for (const [u, t, a] of [
-        [v.x_url!, v.x_title, v.x_artist],
-        [v.y_url!, v.y_title, v.y_artist],
-      ] as [string, string | null, string | null][]) {
+        [v.x_url, v.x_title, v.x_artist],
+        [v.y_url, v.y_title, v.y_artist],
+      ] as [string | null, string | null, string | null][]) {
+        if (!u) continue;
         if (!urlMeta.has(u)) {
           urlMeta.set(u, { title: t, artist: a });
         } else {
