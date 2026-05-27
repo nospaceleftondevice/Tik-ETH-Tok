@@ -273,11 +273,29 @@ section h2 {
   text-decoration: underline;
 }
 
+// Session column on the pair list — narrow text, secondary color so
+// it reads as metadata next to the dominant A/B mix cells.
+.col-session {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: $text-secondary;
+  font-size: 11px;
+  vertical-align: top !important;
+  white-space: nowrap;
+}
+
 .col-file {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   color: $text-muted;
   font-size: 11px;
   vertical-align: top !important;
+}
+
+// Optional smaller subtitle in the page header.
+.subtitle {
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 8px;
+  font-size: 0.85em;
 }
 
 // ---- rating dots (shared by pair list + matrix) ----
