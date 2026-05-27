@@ -327,7 +327,22 @@ section h2 {
   color: $text-secondary;
   font-size: 11px;
   vertical-align: top !important;
-  white-space: nowrap;
+}
+
+// ×N badge next to a session list when multiple videos collapsed
+// into one row (same canonical URL pair across sessions). Subtle
+// pill, sits inline at end of the session text.
+.dup-badge {
+  display: inline-block;
+  margin-left: 6px;
+  background: $bg-elevated;
+  color: $text-primary;
+  border: 1px solid $border-subtle;
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: help;
 }
 
 .col-file {
