@@ -1,4 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { IonSlides } from '@ionic/angular';
 import { DataService } from "../../services/data.service";
 import { ToastController, LoadingController } from '@ionic/angular';
@@ -73,24 +74,32 @@ export class HomePage implements OnInit {
   }
 
   onSearch(event: any) {
-    const searchTerm = event.target.value;
-    if (searchTerm.trim() !== '') {
+    const searchTerm = (event.target.value || '').trim();
+    if (searchTerm !== '') {
       this.performSearch(searchTerm);
+    } else {
+      // Empty submit → user has no session to rate. Send them to the
+      // matrix view where they can search the library / browse across
+      // accounts instead of being stuck on an empty feed.
+      this.router.navigateByUrl('/matrix');
     }
   }
 
   onSearchKeyup(event: KeyboardEvent) {
-    const searchTerm = (event.target as HTMLInputElement).value;
-  
+    const searchTerm = ((event.target as HTMLInputElement).value || '').trim();
+
     // Check if the Enter key was pressed
     if (event.key === 'Enter' || event.key === 'Return') {
-      if (searchTerm.trim() !== '') {
+      if (searchTerm !== '') {
         this.performSearch(searchTerm);  // Trigger the search only when Enter is pressed
         setTimeout(() => {
           this.searchbar.getInputElement().then((input) => {
             input.blur();
           });
         }, 10);
+      } else {
+        // Same redirect-to-matrix as the onSearch handler above.
+        this.router.navigateByUrl('/matrix');
       }
     }
   }
@@ -325,6 +334,7 @@ export class HomePage implements OnInit {
     private data: DataService,
     private toastController: ToastController,
     private loadingController: LoadingController,
+    private router: Router,
   ) { }
 
   // Method to present a toast
