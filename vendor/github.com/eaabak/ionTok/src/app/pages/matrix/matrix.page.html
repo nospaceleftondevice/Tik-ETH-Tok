@@ -19,6 +19,26 @@
     </ion-searchbar>
   </div>
 
+  <!--
+    Title / artist filter. Independent from the session search above.
+    Empty = show everything. Non-empty = case-insensitive substring
+    against x_title, y_title, x_artist, y_artist. The Direct toggle
+    affects the matrix only (pair list is always wide).
+  -->
+  <div class="filter-row">
+    <input class="filter-input"
+           type="text"
+           [ngModel]="filter"
+           (ngModelChange)="onFilterInput($event)"
+           placeholder="Filter by title or artist…">
+    <label class="strict-toggle" title="Show only mixes where BOTH endpoints match the filter">
+      <input type="checkbox"
+             [checked]="strict"
+             (change)="onStrictToggle($any($event.target).checked)">
+      <span>Direct matches only</span>
+    </label>
+  </div>
+
   <!-- Stats / loading / error banner -->
   <div class="status-line" *ngIf="loading || errorMessage || stats">
     <span *ngIf="loading">Loading…</span>
@@ -49,14 +69,15 @@
         <thead>
           <tr>
             <th class="corner"></th>
-            <th class="col-label" *ngFor="let s of axisShort">
+            <th class="col-label" *ngFor="let s of axisShort; let i = index"
+                [attr.title]="axisTooltip[i]">
               <div class="rot">{{ s }}</div>
             </th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let row of matrix; let i = index">
-            <th class="row-label">{{ axisShort[i] }}</th>
+            <th class="row-label" [attr.title]="axisTooltip[i]">{{ axisShort[i] }}</th>
             <td *ngFor="let cell of row" class="cell">
               <span class="dot"
                     *ngIf="cellHasDot(cell.rating)"
@@ -74,13 +95,13 @@
        request so the heat-map is above the fold. Tap a row to open
        both URLs in new tabs. -->
   <section class="pairs" *ngIf="pairs.length">
-    <h2>Top mixes (sorted by rating)</h2>
+    <h2>Top mixes ({{ pairs.length }} shown, sorted by rating)</h2>
     <table class="pair-table">
       <thead>
         <tr>
           <th class="col-rating">Rating</th>
-          <th class="col-url">URL A</th>
-          <th class="col-url">URL B</th>
+          <th class="col-mix">A</th>
+          <th class="col-mix">B</th>
           <th class="col-file">File</th>
         </tr>
       </thead>
@@ -93,11 +114,15 @@
               <span class="dot-num">{{ p.rating }}</span>
             </span>
           </td>
-          <td class="col-url">
-            <a (click)="openUrl(p.xUrl)">{{ p.xShort }}</a>
+          <td class="col-mix">
+            <div class="mix-artist" *ngIf="p.xArtist">{{ p.xArtist }}</div>
+            <div class="mix-title" *ngIf="p.xTitle" [attr.title]="p.xTitle">{{ p.xTitle }}</div>
+            <a class="mix-url" (click)="openUrl(p.xUrl)">{{ p.xShort }}</a>
           </td>
-          <td class="col-url">
-            <a (click)="openUrl(p.yUrl)">{{ p.yShort }}</a>
+          <td class="col-mix">
+            <div class="mix-artist" *ngIf="p.yArtist">{{ p.yArtist }}</div>
+            <div class="mix-title" *ngIf="p.yTitle" [attr.title]="p.yTitle">{{ p.yTitle }}</div>
+            <a class="mix-url" (click)="openUrl(p.yUrl)">{{ p.yShort }}</a>
           </td>
           <td class="col-file">{{ p.filename }}</td>
         </tr>
