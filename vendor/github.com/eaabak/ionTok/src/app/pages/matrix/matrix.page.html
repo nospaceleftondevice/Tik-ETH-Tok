@@ -91,10 +91,20 @@
           <tr *ngFor="let row of matrix; let i = index">
             <th class="row-label" [attr.title]="axisTooltip[i]">{{ axisShort[i] }}</th>
             <td *ngFor="let cell of row" class="cell">
-              <span class="dot"
-                    *ngIf="cellHasDot(cell.rating)"
-                    [style.background]="cellColor(cell.rating)"
-                    [class.bordered]="cellNeedsBorder(cell.rating)">
+              <!-- Stacked dots when multiple raters; single dot when one;
+                   nothing when blank. cell.ratings is sorted desc, top 2
+                   shown. dot-back is offset down-left, dot-front sits on
+                   top of it so the headline rating reads first. -->
+              <span class="dot-stack" *ngIf="cell.ratings && cell.ratings.length">
+                <span class="dot dot-back"
+                      *ngIf="cell.ratings.length > 1"
+                      [style.background]="cellColor(cell.ratings[1])"
+                      [class.bordered]="cellNeedsBorder(cell.ratings[1])">
+                </span>
+                <span class="dot dot-front"
+                      [style.background]="cellColor(cell.ratings[0])"
+                      [class.bordered]="cellNeedsBorder(cell.ratings[0])">
+                </span>
               </span>
             </td>
           </tr>
@@ -118,15 +128,28 @@
       <tbody>
         <tr *ngFor="let p of pairs" [class.is-library]="p.source === 'library'">
           <td class="col-rating">
-            <!-- Rated entries: filled rating dot. Library entries:
-                 small grey "library" badge, no rating number. -->
-            <span *ngIf="p.source === 'rated'" class="dot"
-                  [style.background]="ratingColor(p.rating!)"
-                  [class.bordered]="p.rating === 0">
-              <span class="dot-num">{{ p.rating }}</span>
+            <!-- Three states for the rating column:
+                 (1) Rated entry with one or more ratings → stacked dots,
+                     primary dot shows the headline number (ratings[0]).
+                     Second rating (if any) sits behind, slightly offset.
+                 (2) Rated entry with no ratings (search-mode unrated)
+                     or a library entry → small grey "lib" badge. Both
+                     mean "no rating recorded by anyone." -->
+            <span class="dot-stack" *ngIf="p.ratings && p.ratings.length">
+              <span class="dot dot-back"
+                    *ngIf="p.ratings.length > 1"
+                    [style.background]="ratingColor(p.ratings[1])"
+                    [class.bordered]="p.ratings[1] === 0">
+              </span>
+              <span class="dot dot-front"
+                    [style.background]="ratingColor(p.ratings[0])"
+                    [class.bordered]="p.ratings[0] === 0">
+                <span class="dot-num">{{ p.ratings[0] }}</span>
+              </span>
             </span>
-            <span *ngIf="p.source === 'library'" class="library-badge"
-                  title="From songs.txt library — not yet rated">lib</span>
+            <span class="library-badge"
+                  *ngIf="!p.ratings || !p.ratings.length"
+                  title="Not yet rated by anyone">lib</span>
           </td>
           <td class="col-mix">
             <div class="mix-artist" *ngIf="p.xArtist">{{ p.xArtist }}</div>

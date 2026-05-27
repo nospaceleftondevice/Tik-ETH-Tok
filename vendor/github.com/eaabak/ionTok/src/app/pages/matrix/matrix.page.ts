@@ -21,8 +21,8 @@ import { ToastController } from '@ionic/angular';
  */
 
 interface MatrixVideo {
-  // 'rated' = videos table, has rating + possibly URLs
-  // 'library' = song_metadata_lookup seed, no rating, no source URLs
+  // 'rated' = videos table, may or may not have a rating
+  // 'library' = song_metadata_lookup seed, never has a rating
   source: 'rated' | 'library';
   id: number | null;
   session: string | null;
@@ -34,7 +34,11 @@ interface MatrixVideo {
   y_title: string | null;
   x_artist: string | null;
   y_artist: string | null;
-  rating: number | null;
+  rating: number | null;  // = ratings[0] for backward compat / convenience
+  // ALL ratings (any account) sorted desc. Frontend stacks ratings[1]
+  // behind ratings[0] to show "multiple people rated this".
+  // Empty array when nobody has rated (search-mode unrated, or library).
+  ratings: number[];
 }
 
 interface MixesResponse {
@@ -59,10 +63,12 @@ interface PairRow {
   xArtist: string | null;
   yArtist: string | null;
   rating: number | null;
+  ratings: number[];
 }
 
 interface MatrixCell {
-  rating: number | null;  // null = no mix at this pair
+  rating: number | null;  // = ratings[0] when present; null when no mix or unrated
+  ratings: number[];      // top ratings across all videos placed in this cell, sorted desc
   videoIds: number[];     // 0+ videos at this pair
 }
 
@@ -335,8 +341,12 @@ export class MatrixPage implements OnInit, OnDestroy {
         xArtist: v.x_artist,
         yArtist: v.y_artist,
         rating: v.rating,
+        ratings: v.ratings || [],
       }))
-      .sort((a, b) => (b.rating! - a.rating!) || (a.videoId! - b.videoId!));
+      // Rated (non-null rating) first by rating desc; unrated rated-source
+      // rows (search mode) come after by id. nullish rating coerces to -1
+      // for the sort key.
+      .sort((a, b) => ((b.rating ?? -1) - (a.rating ?? -1)) || (a.videoId! - b.videoId!));
     const libraryRows: PairRow[] = library
       .map((v) => ({
         source: 'library' as const,
@@ -352,6 +362,7 @@ export class MatrixPage implements OnInit, OnDestroy {
         xArtist: v.x_artist,
         yArtist: v.y_artist,
         rating: null,
+        ratings: [],
       }))
       .sort((a, b) => a.filename.localeCompare(b.filename));
     this.pairs = [...ratedRows, ...libraryRows];
@@ -450,7 +461,7 @@ export class MatrixPage implements OnInit, OnDestroy {
     for (let i = 0; i < n; i++) {
       const row: MatrixCell[] = [];
       for (let j = 0; j < n; j++) {
-        row.push({ rating: null, videoIds: [] });
+        row.push({ rating: null, ratings: [], videoIds: [] });
       }
       cells.push(row);
     }
@@ -471,7 +482,10 @@ export class MatrixPage implements OnInit, OnDestroy {
     const idx = new Map<string, number>();
     sortedAxis.forEach((u, i) => idx.set(u, i));
 
-    // Place rated entries on the matrix as today.
+    // Place rated entries on the matrix. Each video contributes its full
+    // ratings[] into the cell; we keep all ratings sorted desc so the
+    // cell can render stacked dots (ratings[0] in front, ratings[1] behind
+    // when there are multiple raters across the video(s) at this pair).
     for (const v of rated) {
       if (!v.x_url || !v.y_url) continue;
       const i = idx.get(v.x_url);
@@ -480,11 +494,18 @@ export class MatrixPage implements OnInit, OnDestroy {
       if (this.strict && needle) {
         if (!urlMatchesQ(v.x_url) || !urlMatchesQ(v.y_url)) continue;
       }
+      // Pull contributing ratings out once. Empty for unrated videos —
+      // they still get a cell entry (videoId) but no dots; the cell
+      // will render blank.
+      const contributing = v.ratings && v.ratings.length ? v.ratings : [];
       for (const [a, b] of [[i, j], [j, i]] as [number, number][]) {
         const cell = cells[a][b];
-        cell.videoIds.push(v.id!);
-        if (cell.rating === null || v.rating! > cell.rating) {
-          cell.rating = v.rating!;
+        if (v.id !== null) cell.videoIds.push(v.id);
+        if (contributing.length) {
+          cell.ratings.push(...contributing);
+          // Keep sorted desc so cell.ratings[0] is the headline.
+          cell.ratings.sort((a, b) => b - a);
+          cell.rating = cell.ratings[0];
         }
       }
     }
