@@ -75,8 +75,20 @@
 
   <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" (ionSlideTouchStart)="onSlideTouchStart()" [options]="slideOpts">
     <ion-slide *ngFor="let video of videoList; let i = index" [attr.id]="video.url">
-      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
-      title="{{video.userName}}" class="{{video.userPic}}"></video>
+      <!--
+        title= and data-mix-info= are not for the user's eyes here — they
+        carry text that pauseInactiveSlides() reads back via getAttribute
+        and renders into the absolute-positioned project/description
+        overlay at the bottom of each slide. Title was hardcoded to
+        userName (=== literal "maxb" from the backend); now it's the
+        loaded session name. Description was the mp4 filename
+        (video.userPic); now it's "Artist – Title × Artist – Title"
+        composed from the new x_/y_ metadata fields (mixInfo helper
+        falls back to the filename when no metadata was extracted).
+      -->
+      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}"
+      [attr.title]="video.session || video.userName"
+      [attr.data-mix-info]="mixInfo(video)"></video>
       <!--button (click)="loadMoreVideos()" style="position: absolute; top: 20px; left: 10px">Load More</button-->
       <app-feed *ngIf="i !== 0" [video]="video" (rated)="onFeedRated($event)"></app-feed>
       <app-footer [video]="video"></app-footer>
