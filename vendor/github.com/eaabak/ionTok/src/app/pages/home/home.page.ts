@@ -884,8 +884,11 @@ export class HomePage implements OnInit {
         //console.log("Current video: ");
         //console.dir(current_video);
         if (index > 0 && current_video !== null) {
-           project.innerText = current_video.getAttribute('title') === null ? "" : current_video.getAttribute('title');
-           description.innerText = current_video.getAttribute('class') === null ? "" : current_video.getAttribute('class');
+           // The title attribute carries the session name; data-mix-info
+           // carries the composed song description (see the binding
+           // comment in home.page.html).
+           project.innerText = current_video.getAttribute('title') || '';
+           description.innerText = current_video.getAttribute('data-mix-info') || '';
            description.style.width = "87%";
            description.style.textAlign = "left";
         }
@@ -955,6 +958,27 @@ refreshProgress() {
       console.error('home.page.ts refreshProgress failed:', err);
     },
   );
+}
+
+// Compose a human-readable mix description from the backend's per-track
+// metadata. Backend (music-k8s /videos) returns x_/y_ artist + title
+// extracted from the mp4 atoms with a YouTube oEmbed backfill; either
+// pair may be missing for older mp4s. Falls back to the filename so the
+// overlay isn't blank when neither half had a hit.
+mixInfo(video: any): string {
+  if (!video) { return ''; }
+  const x = this.formatTrack(video.x_artist, video.x_title);
+  const y = this.formatTrack(video.y_artist, video.y_title);
+  if (x && y) { return `${x} × ${y}`; }
+  if (x || y) { return x || y; }
+  return video.userPic || '';
+}
+
+private formatTrack(artist: string, title: string): string {
+  const a = (artist || '').trim();
+  const t = (title || '').trim();
+  if (a && t) { return `${a} – ${t}`; }
+  return a || t || '';
 }
 
 // Bumped by ionSlideTouchStart on the slider. Gates the scroll-past

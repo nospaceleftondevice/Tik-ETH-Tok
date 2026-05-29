@@ -49,6 +49,17 @@ export class DataService {
                         userPic: video.userPic || '',
                         showcase_url: video.showcase_url || '',
                         id: video.id || '',
+                        // Backend additions (music-k8s #69): the session name
+                        // and per-track metadata used by the feed overlay to
+                        // show "<session>" up top and "Artist – Title × Artist
+                        // – Title" as the description (falls back to userPic
+                        // when both halves are NULL). Falsy-pass-through so
+                        // older backends still work.
+                        session: video.session || '',
+                        x_title: video.x_title || '',
+                        y_title: video.y_title || '',
+                        x_artist: video.x_artist || '',
+                        y_artist: video.y_artist || '',
                     }));
                     console.dir(video_map);
                     return video_map;
