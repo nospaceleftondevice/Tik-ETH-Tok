@@ -78,10 +78,12 @@ export class HomePage implements OnInit {
     if (searchTerm !== '') {
       this.performSearch(searchTerm);
     } else {
-      // Empty submit → user has no session to rate. Send them to the
-      // matrix view where they can search the library / browse across
-      // accounts instead of being stuck on an empty feed.
-      this.router.navigateByUrl('/matrix');
+      // Empty submit → no-op. Was redirecting to /matrix, but in
+      // embedded browsers (Spacewalker) that turned into a one-way
+      // trip: the search bar can submit empty unexpectedly and the
+      // user gets stranded on /matrix with no UI to come back.
+      // Stay on home; the intro slide is still rendered and the
+      // user can re-type a session.
     }
   }
 
@@ -98,8 +100,7 @@ export class HomePage implements OnInit {
           });
         }, 10);
       } else {
-        // Same redirect-to-matrix as the onSearch handler above.
-        this.router.navigateByUrl('/matrix');
+        // No-op on empty Enter; see onSearch for the rationale.
       }
     }
   }
@@ -539,14 +540,14 @@ export class HomePage implements OnInit {
         // no way to opt out of the stored session short of opening
         // devtools. Replace with a confirm offering to clear it,
         // analogous to "clear browser cache". Yes → drop both storage
-        // copies and route to /matrix (where the user can pick a new
-        // session or browse the library). No → fall through and the
-        // existing branch loads videos for the stored session.
+        // copies and stay on home with no session loaded (intro slide
+        // still renders; user can pick a session via the search bar).
+        // No → fall through and the existing branch loads videos for
+        // the stored session.
         const current = window.localStorage.getItem('account');
         if (current && window.confirm(`Current session: ${current}. Clear it?`)) {
           window.localStorage.removeItem('account');
           window.sessionStorage.removeItem('account');
-          this.router.navigateByUrl('/matrix');
           return;
         }
       }
@@ -560,13 +561,16 @@ export class HomePage implements OnInit {
         // input. Either case used to be stored literally, which then
         // propagated to the backend as session=null. Guard so we only
         // store a non-empty trimmed string; if the user cancels or
-        // submits empty, treat it as "I don't have a session" and
-        // redirect to /matrix where the user can browse the library.
+        // submits empty, stay on home with no session loaded — the
+        // intro slide is still rendered and the search bar lets the
+        // user pick a session. Previously redirected to /matrix,
+        // which was a one-way trip in embedded browsers (Spacewalker)
+        // where dialog handling pushes the user there on every reload
+        // with no UI to get back.
         const entered = (prompt("Enter show name") || '').trim();
         if (entered) {
           window.sessionStorage.setItem('account', entered);
         } else {
-          this.router.navigateByUrl('/matrix');
           return;
         }
       }

@@ -1,5 +1,16 @@
 <ion-header>
   <ion-toolbar color="dark">
+    <!--
+      Home button. Embedded browsers (Spacewalker) can land the user
+      on /matrix with no obvious way back to the feed — this gives an
+      always-visible escape hatch. routerLink goes through the Angular
+      router so it doesn't trigger a full page reload.
+    -->
+    <ion-buttons slot="start">
+      <ion-button routerLink="/tabs/home" aria-label="Home">
+        <ion-icon name="home-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
     <ion-title>
       Matrix
       <span class="subtitle" *ngIf="count">— {{ count }} mixes</span>
