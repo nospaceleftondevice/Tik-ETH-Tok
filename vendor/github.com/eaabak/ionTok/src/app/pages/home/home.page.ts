@@ -535,7 +535,20 @@ export class HomePage implements OnInit {
         window.localStorage.setItem('account','droid')
       }
       else {
-        alert("Account: " + window.localStorage.getItem('account'));
+        // Was a plain `alert("Account: <name>")` — informational only,
+        // no way to opt out of the stored session short of opening
+        // devtools. Replace with a confirm offering to clear it,
+        // analogous to "clear browser cache". Yes → drop both storage
+        // copies and route to /matrix (where the user can pick a new
+        // session or browse the library). No → fall through and the
+        // existing branch loads videos for the stored session.
+        const current = window.localStorage.getItem('account');
+        if (current && window.confirm(`Current session: ${current}. Clear it?`)) {
+          window.localStorage.removeItem('account');
+          window.sessionStorage.removeItem('account');
+          this.router.navigateByUrl('/matrix');
+          return;
+        }
       }
       if (window.localStorage.getItem('account')) {
         window.sessionStorage.setItem('account',window.localStorage.getItem('account'))
@@ -987,6 +1000,19 @@ private formatTrack(artist: string, title: string): string {
 // code) don't get counted as user skips.
 onSlideTouchStart() {
   this.touchSequence++;
+}
+
+// Persistent on-screen "advance" affordance — wired to the bottom
+// arrow in home.page.html. Equivalent to a swipe-up gesture on the
+// vertical slider; we bump touchSequence so the scroll-past hook
+// treats this exactly like a swipe (records rating 0 for the slide
+// being left if the user didn't tap a star). Touchless inputs
+// (kiosks, accessibility, mouse-only) get the same UX as touch.
+goToNextSlide() {
+  this.touchSequence++;
+  if (this.slides) {
+    this.slides.slideNext();
+  }
 }
 
 // Internal: if the user scrolled FORWARD past a video without tapping
