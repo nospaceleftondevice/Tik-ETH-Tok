@@ -107,6 +107,26 @@
   </ion-button>
 </ion-slides>
 
+<!--
+  Persistent "next slide" arrow at the bottom-most point of the
+  viewport. Click = slides.slideNext(), equivalent to a swipe-up on
+  the vertical slider. Lives at the ion-content level (not inside a
+  slide) so it shows on every slide including the intro. z-index sits
+  above the star-rating strip (9999) and the search bar so it stays
+  clickable. position: fixed pins it to the viewport so devices with
+  a bottom address bar don't push it off-screen during scroll.
+-->
+<div class="next-slide-arrow"
+     (click)="goToNextSlide()"
+     style="position: fixed; bottom: 4px; left: 50%; transform: translateX(-50%);
+            z-index: 10000; cursor: pointer; padding: 4px 16px;
+            background: rgba(0, 0, 0, 0.4); border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;"
+     role="button"
+     aria-label="Next video">
+  <ion-icon name="chevron-up-outline" style="color: white; font-size: 22px;"></ion-icon>
+</div>
+
 <video class="floating-video" id="float" autoplay loop playsinline muted controls src=""
     style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9998; pointer-events: auto;"></video>
 

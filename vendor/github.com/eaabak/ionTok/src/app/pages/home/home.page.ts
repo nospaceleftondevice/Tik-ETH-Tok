@@ -1002,6 +1002,19 @@ onSlideTouchStart() {
   this.touchSequence++;
 }
 
+// Persistent on-screen "advance" affordance — wired to the bottom
+// arrow in home.page.html. Equivalent to a swipe-up gesture on the
+// vertical slider; we bump touchSequence so the scroll-past hook
+// treats this exactly like a swipe (records rating 0 for the slide
+// being left if the user didn't tap a star). Touchless inputs
+// (kiosks, accessibility, mouse-only) get the same UX as touch.
+goToNextSlide() {
+  this.touchSequence++;
+  if (this.slides) {
+    this.slides.slideNext();
+  }
+}
+
 // Internal: if the user scrolled FORWARD past a video without tapping
 // any star during this page-load, record rating=0 (skipped) for that
 // video. Backwards motion never records. Slide 0 is the intro
