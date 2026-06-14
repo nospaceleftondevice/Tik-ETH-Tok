@@ -608,7 +608,7 @@ export class HomePage implements OnInit {
   loadVideos() {
     console.log("home.page.ts loadVideos !! load mode videos")
 
-    this.data.getVideoList(this.currentPage, this.limit).subscribe((videos) => {
+    this.data.getVideoList(this.currentPage, this.limit, this.videoListReversed).subscribe((videos) => {
         console.log("home.page.ts loadVideos DEBUG: videos sent from server: ");
         console.dir(videos);
         this.videoList = this.videoList || [];
@@ -951,36 +951,35 @@ export class HomePage implements OnInit {
   }
 
 // Called by app-feed when the user taps the chevron arrow under
-// the bookmark icon. Reverses the videoList in place, toggles the
-// arrow direction (all feed instances re-render via [listReversed]),
-// and re-anchors the current slide so the user stays on the same
-// video they were watching. The next slide change advances them
-// through the list in the new direction.
+// the bookmark icon. Toggles the reversed flag and reloads the
+// unrated set from the backend in the opposite order (?reverse=1
+// flips the SQL ORDER BY id to DESC). The previous implementation
+// reversed the in-memory videoList and slideTo'd — but that meant
+// "forward" swipes after the toggle replayed videos the user had
+// already scroll-past'd, since the local array still held them.
+// A backend reload only returns rows not yet rated/skipped by this
+// account, so reversing now actually lands the user on the LAST
+// unrated video and they proceed forward through fresh content.
 //
-// lastSlideIndex is updated so the scroll-past hook doesn't treat
-// the reposition as a forward-skip and record a rating-0 against
-// whatever video lands at the prior index. Programmatic slideTo
-// also fires ionSlideDidChange — touchSequence is left untouched
-// so the existing user-initiated-only gate continues to drop it.
+// We clear videoList, reset currentPage, flip the flag, and call
+// loadVideos() so the request fires with reverse=true. The intro
+// slide (i === 0) is recreated as part of the next render.
+// lastSlideIndex is reset to 0 so the scroll-past hook doesn't
+// treat the post-reload slide change as a forward-skip and record
+// a phantom rating-0 on whatever video lands at index 0.
 toggleVideoListOrder() {
-  if (!this.slides) {
-    this.videoListReversed = !this.videoListReversed;
-    this.videoList = (this.videoList || []).slice().reverse();
-    return;
+  this.videoListReversed = !this.videoListReversed;
+  this.videoList = [];
+  this.currentPage = 1;
+  this.lastSlideIndex = 0;
+  this.ratedThisPageLoad = new Set<number>();
+  // Slide back to 0 before the *ngFor rebuilds so we don't briefly
+  // render an out-of-range slide index against the empty list.
+  if (this.slides) {
+    this.slides.slideTo(0, 0).catch(() => {});
   }
-  this.slides.getActiveIndex().then((currentIndex: number) => {
-    const len = (this.videoList || []).length;
-    this.videoList = (this.videoList || []).slice().reverse();
-    this.videoListReversed = !this.videoListReversed;
-    const newIndex = len > 0 ? (len - 1 - currentIndex) : 0;
-    this.lastSlideIndex = newIndex;
-    // ion-slides needs a tick after *ngFor rebuilds the slides before
-    // slideTo() can land on the new index.
-    setTimeout(() => {
-      if (this.slides) { this.slides.slideTo(newIndex, 0); }
-    }, 0);
-    console.log(`home.page.ts toggleVideoListOrder reversed=${this.videoListReversed}, ${currentIndex}→${newIndex}`);
-  });
+  this.loadVideos();
+  console.log(`home.page.ts toggleVideoListOrder reversed=${this.videoListReversed}, reloading from page 1`);
 }
 
 // Called by app-feed when the user taps any star (1-5). We just
