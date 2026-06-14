@@ -78,6 +78,10 @@ interface PairRow {
   yTitle: string | null;
   xArtist: string | null;
   yArtist: string | null;
+  // Mirrors the rated row's file_size — needed by the click-to-locate
+  // handler (onRatingClick) so it can fall back to the size axis tier
+  // when xUrl/yUrl/artists are missing. Null for library rows.
+  fileSize: number | null;
   rating: number | null;
   ratings: number[];
 }
@@ -126,6 +130,15 @@ export class MatrixPage implements OnInit, OnDestroy {
   axisShort: string[] = [];
   axisTooltip: string[] = [];
   matrix: MatrixCell[][] = [];
+
+  // axis key → index into axisUrls. Populated by buildMatrix; the
+  // pair-list rating-click handler uses it to look up which cell to
+  // highlight when the user wants to locate a rated entry on the grid.
+  private cellIndexByKey: Map<string, number> = new Map();
+  // i,j of the currently-highlighted cell (set by clicking a pair-list
+  // rating). null = nothing highlighted. Cleared when filters change.
+  highlightedRow: number | null = null;
+  highlightedCol: number | null = null;
 
   qrOpen: boolean = false;
 
@@ -369,6 +382,7 @@ export class MatrixPage implements OnInit, OnDestroy {
         yTitle: v.y_title,
         xArtist: v.x_artist,
         yArtist: v.y_artist,
+        fileSize: v.file_size ?? null,
         rating: v.rating,
         ratings: v.ratings || [],
       }))
@@ -392,6 +406,7 @@ export class MatrixPage implements OnInit, OnDestroy {
         yTitle: v.y_title,
         xArtist: v.x_artist,
         yArtist: v.y_artist,
+        fileSize: null,
         rating: null,
         ratings: [],
       }))
@@ -606,6 +621,11 @@ export class MatrixPage implements OnInit, OnDestroy {
 
     const idx = new Map<string, number>();
     sortedAxis.forEach((u, i) => idx.set(u, i));
+    // Expose the index for the pair-list rating-click handler. Cleared
+    // on every rebuild because axis ordering changes when filters do.
+    this.cellIndexByKey = idx;
+    this.highlightedRow = null;
+    this.highlightedCol = null;
 
     // Per-row axis-key resolution. Returns the [iKey, jKey] pair this row
     // should fill on the matrix, or null if no tier produces axis hits.
@@ -707,6 +727,60 @@ export class MatrixPage implements OnInit, OnDestroy {
 
   openUrl(url: string) {
     window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  // Resolve a PairRow to the same axis-key pair the matrix used when
+  // it placed the dot. Mirrors resolveAxisPair() inside buildMatrix —
+  // when we refactor either, keep them in sync. Returns null when the
+  // row didn't contribute any cell (library entry, or rated row with
+  // no URL/artist/size info).
+  private pairAxisKeys(p: PairRow): [string, string] | null {
+    if (p.source === 'library') return null;
+    if (p.xUrl && p.yUrl) return [p.xUrl, p.yUrl];
+    if (p.xArtist && p.yArtist) return ['art:' + p.xArtist, 'art:' + p.yArtist];
+    if (p.fileSize) return ['size:' + p.fileSize, 'size:' + p.fileSize];
+    return null;
+  }
+
+  // Click a pair-list rating → highlight the matching matrix cell and
+  // scroll it into view. Resolves the row's axis-keys, looks up
+  // indices in cellIndexByKey, sets highlightedRow/Col so the template
+  // can paint the cell, then scrolls the matrix grid horizontally and
+  // the page vertically so the cell is visible. Tapping the same
+  // rating again clears the highlight.
+  onRatingClick(p: PairRow): void {
+    if (!p.ratings || !p.ratings.length) return;
+    const keys = this.pairAxisKeys(p);
+    if (!keys) return;
+    const i = this.cellIndexByKey.get(keys[0]);
+    const j = this.cellIndexByKey.get(keys[1]);
+    if (i === undefined || j === undefined) return;
+
+    // Tap-twice-to-clear: same cell already highlighted → toggle off.
+    if (this.highlightedRow === i && this.highlightedCol === j) {
+      this.highlightedRow = null;
+      this.highlightedCol = null;
+      return;
+    }
+    this.highlightedRow = i;
+    this.highlightedCol = j;
+
+    // Defer the scroll to next frame so Angular applies the highlight
+    // class first; then scrollIntoView nudges both the horizontal
+    // matrix-scroll container and the page itself.
+    setTimeout(() => {
+      const sel = `.matrix-table .cell[data-cell-key="${i}-${j}"]`;
+      const el = document.querySelector(sel) as HTMLElement | null;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      }
+    }, 0);
+  }
+
+  // Template predicate — kept as a method so *ngFor doesn't need to
+  // call a heavier resolver every render. row+col compare cheap.
+  isHighlightedCell(i: number, j: number): boolean {
+    return this.highlightedRow === i && this.highlightedCol === j;
   }
 }
 

@@ -108,7 +108,9 @@
         <tbody>
           <tr *ngFor="let row of matrix; let i = index">
             <th class="row-label" [attr.title]="axisTooltip[i]">{{ axisShort[i] }}</th>
-            <td *ngFor="let cell of row" class="cell">
+            <td *ngFor="let cell of row; let j = index" class="cell"
+                [attr.data-cell-key]="i + '-' + j"
+                [class.is-highlighted]="isHighlightedCell(i, j)">
               <!-- Stacked dots when multiple raters; single dot when one;
                    nothing when blank. cell.ratings is sorted desc, top 2
                    shown. dot-back is offset down-left, dot-front sits on
@@ -145,7 +147,10 @@
       </thead>
       <tbody>
         <tr *ngFor="let p of pairs" [class.is-library]="p.source === 'library'">
-          <td class="col-rating">
+          <td class="col-rating"
+              [class.rating-clickable]="p.ratings && p.ratings.length"
+              (click)="onRatingClick(p)"
+              [attr.title]="(p.ratings && p.ratings.length) ? 'Click to highlight this mix in the matrix above' : null">
             <!-- Three states for the rating column:
                  (1) Rated entry with one or more ratings → stacked dots,
                      primary dot shows the headline number (ratings[0]).
