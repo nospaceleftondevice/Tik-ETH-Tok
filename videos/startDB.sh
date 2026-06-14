@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the volume name
-VOLUME_NAME="db-data"
+VOLUME_NAME="video-data"
 
 # Check if the volume already exists
 if ! docker volume inspect $VOLUME_NAME > /dev/null 2>&1; then
@@ -16,14 +16,14 @@ fi
 echo "Starting PostgreSQL container..."
 
 docker run -d \
-  --name postgres-db \
+  --name postgres-video-db \
   --network host \
   -e POSTGRES_USER=user \
   -e POSTGRES_PASSWORD=password \
   -e POSTGRES_DB=video_db \
-  -p 5432:5432 \
+  -p 6333:5432 \
   -v $VOLUME_NAME:/var/lib/postgresql/data \
-  postgres:13
+  postgres:13 -c port=6333
 
 # Verify the container is running
 if [ $? -eq 0 ]; then

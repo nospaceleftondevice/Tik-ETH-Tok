@@ -1,0 +1,585 @@
+// ---- dark-theme palette ----
+//
+// The user asked for a black background so the colored rating dots pop.
+// Cell border color stays as-is (#f3f3f3) per the same ask — on a black
+// background the light gray grid lines are visible and define the cells
+// without competing with the dots.
+//
+// Text colors are all light variants of gray/white so they read against
+// the black backdrop. Sticky header backgrounds use opaque-black so cells
+// don't visibly show through when scrolling.
+$bg:              #000;
+$bg-elevated:     #111;  // pair-list header rows, sticky matrix headers
+$border-subtle:   #333;  // dividers between sections / pair-list rows
+$text-primary:    #eaeaea;
+$text-secondary:  #aaa;
+$text-muted:      #777;
+$link:            #6cb1ff;
+$link-hover:      #98c8ff;
+
+// ion-content provides its own background; override via the documented
+// CSS variables so the whole page sits on $bg.
+:host {
+  --ion-background-color: #{$bg};
+  --ion-text-color: #{$text-primary};
+  color: $text-primary;
+  background: $bg;
+}
+
+ion-content {
+  --background: #{$bg};
+  --color: #{$text-primary};
+}
+
+// ---- layout shell ----
+.search-row {
+  padding: 4px 8px;
+}
+
+// Title/artist filter row. Sits below the session search bar; uses a
+// plain HTML input rather than ion-searchbar because (a) ion-searchbar
+// adds a chunky surround we don't want repeated, and (b) we want the
+// strict toggle inline on the same row.
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 12px 8px;
+}
+
+.filter-input {
+  flex: 1;
+  background: $bg-elevated;
+  border: 1px solid $border-subtle;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: $text-primary;
+  font-size: 14px;
+  min-width: 0;  // allows shrinking inside flex
+}
+
+.filter-input::placeholder {
+  color: $text-muted;
+}
+
+// Wraps a filter input + its AND/OR mode pill. Flex with no gap so the
+// pill butts against the right edge of the input (visually paired).
+.filter-with-mode {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-with-mode .filter-input {
+  flex: 1;
+  // Square off the right edge so the pill sits flush.
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: 0;
+}
+
+.mode-pill {
+  // Compact AND/OR toggle. Visually attached to the filter input on its
+  // right. Default state (AND) looks neutral; OR state lights up blue
+  // so it's obvious when the user has switched to broaden semantics.
+  background: $bg-elevated;
+  color: $text-secondary;
+  border: 1px solid $border-subtle;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding: 0 10px;
+  min-width: 48px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.mode-pill.is-or {
+  background: $link;
+  color: #fff;
+  border-color: $link;
+}
+
+.mode-pill:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.strict-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: $text-secondary;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.strict-toggle input[type="checkbox"] {
+  accent-color: $link;
+  cursor: pointer;
+}
+
+.status-line {
+  font-size: 13px;
+  color: $text-secondary;
+  padding: 0 16px 8px;
+}
+
+.status-line .error {
+  color: #ef5350;  // bright red, still legible on black
+  font-weight: 600;
+}
+
+.empty {
+  padding: 32px 16px;
+  color: $text-secondary;
+  text-align: center;
+}
+
+section {
+  padding: 8px 16px 24px;
+}
+
+section h2 {
+  font-size: 16px;
+  margin: 8px 0;
+  color: $text-primary;
+}
+
+// Matrix heading needs to lay the title and the QR button on the same
+// row — flex makes the button float to the right of the section title.
+.matrix-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+// QR button next to the "Pair matrix" heading. Compact icon-plus-label
+// pill; same monochrome palette as the rest of the dark theme.
+.qr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: $bg-elevated;
+  color: $text-primary;
+  border: 1px solid $border-subtle;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  ion-icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+}
+
+.qr-btn:hover {
+  background: lighten($bg-elevated, 6%);
+}
+
+.qr-btn-label {
+  letter-spacing: 0.5px;
+}
+
+// ---- QR modal ----
+//
+// Translucent backdrop covers the viewport; clicking it dismisses the
+// modal. Inner .qr-box sits centered with a white background so the
+// QR contrast is preserved no matter what color theme is around it.
+.qr-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.qr-box {
+  background: #fff;
+  color: #000;
+  border-radius: 8px;
+  padding: 16px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.qr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #333;
+}
+
+.qr-close {
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #555;
+  padding: 0 4px;
+}
+
+.qr-close:hover {
+  color: #000;
+}
+
+.qr-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.qr-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #555;
+  word-break: break-all;
+  text-align: center;
+}
+
+// ---- pair list ----
+.pair-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: $text-primary;
+}
+
+.pair-table th,
+.pair-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid $border-subtle;
+  vertical-align: middle;
+}
+
+.pair-table th {
+  font-weight: 600;
+  color: $text-secondary;
+  background: $bg-elevated;
+}
+
+.col-rating {
+  width: 56px;
+  text-align: center !important;
+  vertical-align: top !important;
+}
+
+// Mix cells: artist (prominent) + title (muted, truncated, full title
+// in browser tooltip via the [attr.title] binding) + short URL link.
+.col-mix {
+  width: 36%;
+  vertical-align: top !important;
+}
+
+.mix-artist {
+  font-weight: 600;
+  color: $text-primary;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.mix-title {
+  color: $text-secondary;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.mix-url {
+  display: inline-block;
+  margin-top: 2px;
+  color: $link;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.mix-url:hover {
+  color: $link-hover;
+  text-decoration: underline;
+}
+
+// Session column on the pair list — narrow text, secondary color so
+// it reads as metadata next to the dominant A/B mix cells.
+.col-session {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: $text-secondary;
+  font-size: 11px;
+  vertical-align: top !important;
+}
+
+// ×N badge next to a session list when multiple videos collapsed
+// into one row (same canonical URL pair across sessions). Subtle
+// pill, sits inline at end of the session text.
+.dup-badge {
+  display: inline-block;
+  margin-left: 6px;
+  background: $bg-elevated;
+  color: $text-primary;
+  border: 1px solid $border-subtle;
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: help;
+}
+
+.col-file {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: $text-muted;
+  font-size: 11px;
+  vertical-align: top !important;
+}
+
+// Library rows in the pair list: from the songs.txt seed, not from the
+// user's rated mixes. Slightly dimmer so they read as supplementary.
+.pair-table tr.is-library {
+  opacity: 0.78;
+}
+
+// Compact grey badge in place of the rating dot for library rows.
+.library-badge {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: $text-secondary;
+  background: $bg-elevated;
+  border: 1px solid $border-subtle;
+  border-radius: 3px;
+  padding: 2px 5px;
+  text-transform: uppercase;
+}
+
+// Optional smaller subtitle in the page header.
+.subtitle {
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 8px;
+  font-size: 0.85em;
+}
+
+// ---- rating dots (shared by pair list + matrix) ----
+.dot {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  vertical-align: middle;
+  line-height: 22px;
+  text-align: center;
+}
+
+// rated=0 ("skipped") renders as a white circle with a thin border per
+// the original spec. Border color flipped to white so it's visible on
+// the black page background.
+.dot.bordered {
+  border: 1px solid $text-primary;
+}
+
+.dot-num {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+// Stack wrapper holds 1 or 2 absolutely-positioned dots so a video with
+// multiple raters reads as two overlapping circles. Single-rating case
+// just renders one dot (dot-front, no offset). Two-rating case offsets
+// dot-back to the bottom-left and dot-front to the top-right; the
+// front draws on top thanks to DOM order + z-index. Wrapper sized to
+// fit both dots without clipping; inline-block so the table cell
+// vertical-aligns it sensibly.
+.dot-stack {
+  position: relative;
+  display: inline-block;
+  // Big enough for a 22px primary dot offset by 6px ⇒ 28px square.
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+}
+
+.dot-stack .dot {
+  position: absolute;
+}
+
+.dot-stack .dot-back {
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.dot-stack .dot-front {
+  top: 0;
+  right: 0;
+  z-index: 2;
+}
+
+// Single-dot variant: when there's only one rating, dot-front is the
+// only child. With no .dot-back to offset against, anchor it to the
+// center so the column doesn't look lop-sided.
+.dot-stack:not(:has(.dot-back)) .dot-front {
+  top: 50%;
+  right: 50%;
+  transform: translate(50%, -50%);
+}
+
+// ---- matrix ----
+//
+// Sized for sessions of ~50+ unique URLs. Each cell is 14px so an 80x80
+// matrix is ~1100px wide — fits a desktop viewport without scrolling,
+// fits a mobile viewport with a manageable amount of horizontal scroll.
+$matrix-cell: 14px;
+$matrix-dot:  10px;
+$matrix-row-label-width: 96px;
+
+.matrix-scroll {
+  // The matrix can grow past viewport for big sessions. Scroll both axes.
+  // Row/column headers stay visible via position: sticky.
+  overflow: auto;
+  max-height: 80vh;
+  border: 1px solid $border-subtle;
+  background: $bg;
+}
+
+.matrix-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 10px;
+  // Without an explicit table-layout, the browser sizes columns based on
+  // content (the rotated headers) which can make the row-label column
+  // disappear-narrow. Fixed layout uses the first row's declared widths.
+  table-layout: fixed;
+}
+
+.matrix-table th,
+.matrix-table td {
+  // No grid lines — the colored dots are sufficient to convey structure;
+  // the grid was visually noisy. The sticky row/column header borders
+  // (border-right on .row-label, border-bottom on .corner) stay so the
+  // labels are still visually separated from the cell area.
+  border: 0;
+  // Hard cap so an overly long URL label can't push a cell wider.
+  box-sizing: border-box;
+}
+
+// Sticky top row (column labels). Opaque-black so cells don't show
+// through when scrolling vertically.
+.matrix-table thead th {
+  position: sticky;
+  top: 0;
+  background: $bg-elevated;
+  z-index: 2;
+}
+
+// Sticky left column (row labels). Explicit width + table-layout: fixed
+// (above) keeps the column from collapsing. Opaque-black bg so cells
+// don't show through when scrolling horizontally. Light text so the
+// URL slug is readable.
+.matrix-table .row-label {
+  position: sticky;
+  left: 0;
+  width: $matrix-row-label-width;
+  min-width: $matrix-row-label-width;
+  max-width: $matrix-row-label-width;
+  background: $bg-elevated;
+  color: $text-primary;
+  z-index: 2;
+  text-align: right;
+  padding: 0 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid $border-subtle;
+  // Match the cell height so rows stay on a tight grid.
+  height: $matrix-cell;
+  line-height: $matrix-cell;
+}
+
+// Top-left corner: stays visible at both axes (highest z-index of the
+// three sticky kinds).
+.matrix-table .corner {
+  position: sticky;
+  left: 0;
+  top: 0;
+  width: $matrix-row-label-width;
+  min-width: $matrix-row-label-width;
+  max-width: $matrix-row-label-width;
+  z-index: 3;
+  background: $bg-elevated;
+  border-right: 1px solid $border-subtle;
+  border-bottom: 1px solid $border-subtle;
+}
+
+.col-label {
+  // Column labels are URL shorts (~11 chars). Rotate so they don't widen
+  // every column to the text length. .rot wraps the actual transform.
+  height: 80px;
+  padding: 0;
+  width: $matrix-cell;
+  min-width: $matrix-cell;
+  max-width: $matrix-cell;
+}
+
+.col-label .rot {
+  // -60deg keeps the text mostly horizontal but tilted up, which reads
+  // better at small sizes than full 90deg.
+  transform-origin: bottom left;
+  transform: rotate(-60deg) translate(4px, -4px);
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: $text-primary;
+}
+
+.cell {
+  width: $matrix-cell;
+  height: $matrix-cell;
+  min-width: $matrix-cell;
+  max-width: $matrix-cell;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+  // Empty cells stay black so only the borders + colored dots are
+  // visible. Rated cells override via inline style on the .dot inside.
+  background: $bg;
+}
+
+.cell .dot {
+  width: $matrix-dot;
+  height: $matrix-dot;
+  line-height: $matrix-dot;
+}
+
+// Matrix-cell variant of .dot-stack. Cell is only 14px so the stack
+// can't be 28px — shrink to cell size and tighten the offset between
+// the two dots from 6px down to ~3px.
+.cell .dot-stack {
+  width: $matrix-cell;
+  height: $matrix-cell;
+}

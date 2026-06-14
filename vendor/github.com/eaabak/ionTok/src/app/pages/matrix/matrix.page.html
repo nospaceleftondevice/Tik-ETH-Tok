@@ -1,0 +1,227 @@
+<ion-header>
+  <ion-toolbar color="dark">
+    <!--
+      Home button. Embedded browsers (Spacewalker) can land the user
+      on /matrix with no obvious way back to the feed — this gives an
+      always-visible escape hatch. routerLink goes through the Angular
+      router so it doesn't trigger a full page reload.
+    -->
+    <ion-buttons slot="start">
+      <ion-button routerLink="/tabs/home" aria-label="Home">
+        <ion-icon name="home-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>
+      Matrix
+      <span class="subtitle" *ngIf="count">— {{ count }} mixes</span>
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <!--
+    Filter row. Both inputs are substring matches against the backend's
+    /mixes endpoint. They AND-combine — leave one empty to ignore that
+    dimension. Same shape will hold when we add BPM/genre/etc.: just
+    drop another input on this row.
+  -->
+  <div class="filter-row">
+    <!--
+      Session input. Fires search ONLY on Enter (not per-keystroke).
+      Matches the home page's session bar pattern and avoids the
+      keystroke storm against an account-scoped filter that the user
+      rarely changes mid-typing. Title/artist below still debounces
+      keystrokes because incremental filtering reads better there.
+      No AND/OR toggle — session is always a narrowing constraint.
+    -->
+    <input class="filter-input"
+           type="text"
+           [(ngModel)]="sessionFilter"
+           (keyup.enter)="onSessionEnter()"
+           placeholder="Session (substring, press Enter to apply)">
+
+    <!--
+      Title/artist input + AND/OR mode pill. AND (default) = filter must
+      match. OR = result needs to match this OR any other OR filter
+      (useful once BPM/key dimensions land). The pill is disabled+greyed
+      when the input is empty.
+    -->
+    <div class="filter-with-mode">
+      <input class="filter-input"
+             type="text"
+             [ngModel]="q"
+             (ngModelChange)="onQInput($event)"
+             placeholder="Title or artist (substring)">
+      <button class="mode-pill"
+              type="button"
+              [class.is-or]="qMode === 'or'"
+              [disabled]="!q"
+              (click)="onQModeToggle()"
+              [attr.title]="qMode === 'and'
+                ? 'Currently AND: must match. Click to switch to OR.'
+                : 'Currently OR: at least one OR filter must match. Click to switch to AND.'">
+        {{ qMode === 'or' ? 'OR' : 'AND' }}
+      </button>
+    </div>
+
+    <label class="strict-toggle" title="Matrix: only show mixes where BOTH endpoints match the title/artist filter">
+      <input type="checkbox"
+             [checked]="strict"
+             (change)="onStrictToggle($any($event.target).checked)">
+      <span>Direct matches only</span>
+    </label>
+  </div>
+
+  <div class="status-line" *ngIf="loading || errorMessage || count">
+    <span *ngIf="loading">Loading…</span>
+    <span *ngIf="errorMessage" class="error">Error: {{ errorMessage }}</span>
+    <span *ngIf="count && !loading && !errorMessage">
+      <!-- "loaded" = videos table rows after dedup (some may have ratings,
+           most usually don't). Previously labelled "rated" which was
+           misleading since the count includes unrated videos. -->
+      {{ ratedCount }} loaded
+      <ng-container *ngIf="libraryCount > 0"> &middot; {{ libraryCount }} library</ng-container>
+      <ng-container *ngIf="accountNumber"> &middot; account {{ accountNumber }}</ng-container>
+    </span>
+  </div>
+
+  <section class="matrix" *ngIf="axisUrls.length">
+    <h2 class="matrix-heading">
+      <span>Pair matrix</span>
+      <button class="qr-btn" type="button" (click)="openQr()"
+              aria-label="Show QR code for this search">
+        <ion-icon name="qr-code-outline"></ion-icon>
+        <span class="qr-btn-label">QR</span>
+      </button>
+    </h2>
+    <div class="matrix-scroll">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th class="corner"></th>
+            <th class="col-label" *ngFor="let s of axisShort; let i = index"
+                [attr.title]="axisTooltip[i]">
+              <div class="rot">{{ s }}</div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of matrix; let i = index">
+            <th class="row-label" [attr.title]="axisTooltip[i]">{{ axisShort[i] }}</th>
+            <td *ngFor="let cell of row" class="cell">
+              <!-- Stacked dots when multiple raters; single dot when one;
+                   nothing when blank. cell.ratings is sorted desc, top 2
+                   shown. dot-back is offset down-left, dot-front sits on
+                   top of it so the headline rating reads first. -->
+              <span class="dot-stack" *ngIf="cell.ratings && cell.ratings.length">
+                <span class="dot dot-back"
+                      *ngIf="cell.ratings.length > 1"
+                      [style.background]="cellColor(cell.ratings[1])"
+                      [class.bordered]="cellNeedsBorder(cell.ratings[1])">
+                </span>
+                <span class="dot dot-front"
+                      [style.background]="cellColor(cell.ratings[0])"
+                      [class.bordered]="cellNeedsBorder(cell.ratings[0])">
+                </span>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="pairs" *ngIf="pairs.length">
+    <h2>Top mixes ({{ pairs.length }} shown, sorted by rating)</h2>
+    <table class="pair-table">
+      <thead>
+        <tr>
+          <th class="col-rating">Rating</th>
+          <th class="col-mix">A</th>
+          <th class="col-mix">B</th>
+          <th class="col-session">Session</th>
+          <th class="col-file">File</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of pairs" [class.is-library]="p.source === 'library'">
+          <td class="col-rating">
+            <!-- Three states for the rating column:
+                 (1) Rated entry with one or more ratings → stacked dots,
+                     primary dot shows the headline number (ratings[0]).
+                     Second rating (if any) sits behind, slightly offset.
+                 (2) Rated entry with no ratings (search-mode unrated)
+                     or a library entry → small grey "lib" badge. Both
+                     mean "no rating recorded by anyone." -->
+            <span class="dot-stack" *ngIf="p.ratings && p.ratings.length">
+              <span class="dot dot-back"
+                    *ngIf="p.ratings.length > 1"
+                    [style.background]="ratingColor(p.ratings[1])"
+                    [class.bordered]="p.ratings[1] === 0">
+              </span>
+              <span class="dot dot-front"
+                    [style.background]="ratingColor(p.ratings[0])"
+                    [class.bordered]="p.ratings[0] === 0">
+                <span class="dot-num">{{ p.ratings[0] }}</span>
+              </span>
+            </span>
+            <span class="library-badge"
+                  *ngIf="!p.ratings || !p.ratings.length"
+                  title="Not yet rated by anyone">lib</span>
+          </td>
+          <td class="col-mix">
+            <div class="mix-artist" *ngIf="p.xArtist">{{ p.xArtist }}</div>
+            <div class="mix-title" *ngIf="p.xTitle" [attr.title]="p.xTitle">{{ p.xTitle }}</div>
+            <a class="mix-url" *ngIf="p.xUrl" (click)="openUrl(p.xUrl)">{{ p.xShort }}</a>
+          </td>
+          <td class="col-mix">
+            <div class="mix-artist" *ngIf="p.yArtist">{{ p.yArtist }}</div>
+            <div class="mix-title" *ngIf="p.yTitle" [attr.title]="p.yTitle">{{ p.yTitle }}</div>
+            <a class="mix-url" *ngIf="p.yUrl" (click)="openUrl(p.yUrl)">{{ p.yShort }}</a>
+          </td>
+          <td class="col-session">
+            <!-- One row may have collapsed multiple videos that share
+                 the same canonical URL pair. Sessions joined, dup count
+                 shown as a small ×N badge when > 1. -->
+            <span *ngIf="p.sessions && p.sessions.length">{{ p.sessions.join(', ') }}</span>
+            <span class="dup-badge" *ngIf="p.dupCount > 1"
+                  [attr.title]="p.dupCount + ' video rows collapsed (same mix in multiple sessions)'">
+              ×{{ p.dupCount }}
+            </span>
+          </td>
+          <td class="col-file">{{ p.filename }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Empty / setup states. -->
+  <div class="empty" *ngIf="!loading && !errorMessage && !pairs.length && (sessionFilter || q)">
+    No matches for the current filters.
+  </div>
+
+  <div class="empty" *ngIf="!loading && !errorMessage && !pairs.length && !sessionFilter && !q">
+    <ng-container *ngIf="accountNumber">
+      Type a session, title, or artist above to search.
+    </ng-container>
+    <ng-container *ngIf="!accountNumber">
+      No account set — only library results are available.<br>
+      Type a session, title, or artist above to search the library,
+      or visit the home page to choose a session.
+    </ng-container>
+  </div>
+
+  <!-- QR-code modal. -->
+  <div class="qr-backdrop" *ngIf="qrOpen" (click)="closeQr()">
+    <div class="qr-box" (click)="$event.stopPropagation()">
+      <div class="qr-header">
+        <span>Scan to open this view</span>
+        <button class="qr-close" type="button" (click)="closeQr()"
+                aria-label="Close QR code">×</button>
+      </div>
+      <img class="qr-img" [src]="qrImageUrl"
+           [attr.alt]="'QR code for ' + qrTargetUrl">
+      <div class="qr-url">{{ qrTargetUrl }}</div>
+    </div>
+  </div>
+</ion-content>

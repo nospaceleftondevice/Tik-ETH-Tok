@@ -6,4 +6,4 @@ npm install @capacitor/haptics
 cd vendor/github.com/eaabak/ionTok 
 npm install
 
-ionic build
+ionic build --verbose

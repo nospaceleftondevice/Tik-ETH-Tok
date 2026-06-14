@@ -14,11 +14,28 @@ export class DataService {
     getVideoList(page: number = 1, limit: number = 10): Observable<any[]> {
         console.log("Protocol: " + window.location.protocol);
         if (window.location.protocol === 'https:') {
+            // Session (show name) is required. The downstream backend filters
+            // videos by `session` so multiple shows can coexist. localStorage
+            // 'account' is the user-typed show name from the home page prompt.
+            // If it's missing the user cancelled the prompt — return an empty
+            // list rather than firing the request, so we don't leak an
+            // unfiltered query to the backend.
+            const session = window.localStorage.getItem('account');
+            if (!session) {
+                console.log("getVideoList: no session in localStorage 'account'; returning empty list");
+                return of([]);
+            }
             var protocol = window.location.protocol; // 'https:'
             var host = window.location.hostname;
             var url = protocol + '//' + host;
-            const apiUrl = `${url}/videos?page=${page}&limit=${limit}`;
-    
+            // account_number tells the backend who's asking, so it can
+            // filter out videos this user has already rated or skipped.
+            // Same value as `session` today (one storage key doubles as
+            // both); split if the keys ever diverge.
+            const apiUrl = `${url}/videos?session=${encodeURIComponent(session)}` +
+                           `&account_number=${encodeURIComponent(session)}` +
+                           `&page=${page}&limit=${limit}`;
+
             return this.http.get<any>(apiUrl).pipe(
                 map((response: any) => {
                     console.log(`Response: ${response}`);
@@ -32,6 +49,17 @@ export class DataService {
                         userPic: video.userPic || '',
                         showcase_url: video.showcase_url || '',
                         id: video.id || '',
+                        // Backend additions (music-k8s #69): the session name
+                        // and per-track metadata used by the feed overlay to
+                        // show "<session>" up top and "Artist – Title × Artist
+                        // – Title" as the description (falls back to userPic
+                        // when both halves are NULL). Falsy-pass-through so
+                        // older backends still work.
+                        session: video.session || '',
+                        x_title: video.x_title || '',
+                        y_title: video.y_title || '',
+                        x_artist: video.x_artist || '',
+                        y_artist: video.y_artist || '',
                     }));
                     console.dir(video_map);
                     return video_map;
@@ -68,9 +96,19 @@ export class DataService {
     // New method to perform a video search
     searchVideos(params: { search: string, page: number, limit: number }): Observable<any> {
         const { search, page, limit } = params;
+        // Same session-required guard as getVideoList (see note above).
+        const session = window.localStorage.getItem('account');
+        if (!session) {
+            console.log("searchVideos: no session in localStorage 'account'; returning empty list");
+            return of({ videos: [], total_videos: 0, page, limit });
+        }
         const protocol = window.location.protocol;
         const host = window.location.hostname;
-        const apiUrl = `${protocol}//${host}/videos?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`;
+        // account_number filters out already-rated videos server-side
+        // (see comment in getVideoList).
+        const apiUrl = `${protocol}//${host}/videos?session=${encodeURIComponent(session)}` +
+                       `&account_number=${encodeURIComponent(session)}` +
+                       `&search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`;
 
         return this.http.get<any>(apiUrl).pipe(
             map((response: any) => {
@@ -204,6 +242,65 @@ export class DataService {
   }
 
 
+
+    // Record a 0-5 star rating for a video. rating === 0 means "skipped"
+    // (used by the scroll-past hook in home.page); 1-5 are explicit star
+    // taps. The backend treats this as an UPSERT on (account_number, video_id),
+    // so calling repeatedly with new values replaces the previous rating.
+    postRating(videoId: number, rating: number): Observable<any> {
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/videos/${videoId}/rating`;
+        const account = window.localStorage.getItem('account') || '000000';
+        return this.http.post(apiUrl, { account_number: account, rating }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // Kick off a search-bar-triggered session load. The backend lists the
+    // configured S3 bucket, filters by `pattern` (egrep semantics), and loads
+    // matching videos tagged with `session = pattern`. Returns immediately
+    // with a job id; caller polls getSessionJob() until status is
+    // 'complete' or 'failed'. Replaces the old client-side searchVideos
+    // filter (which only searched the currently-loaded session).
+    loadSession(pattern: string): Observable<{ job_id: string, session: string }> {
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/sessions/load`;
+        return this.http.post<{ job_id: string, session: string }>(apiUrl, { pattern }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // Poll companion to loadSession. Returns the full seed_jobs row so the
+    // caller can show progress: status ∈ {pending, listing, loading, complete,
+    // failed}; found = matched key count; loaded = inserted row count.
+    getSessionJob(jobId: string): Observable<any> {
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/sessions/jobs/${encodeURIComponent(jobId)}`;
+        return this.http.get<any>(apiUrl);
+    }
+
+    // Count of videos in the active session this account hasn't yet rated
+    // or scrolled-past. Used by the searchbar placeholder to show
+    // "N videos left to rate". Returns of(null) if there's nothing to ask
+    // about (no session set yet) so the caller can leave the placeholder
+    // unchanged in that case.
+    getSessionProgress(): Observable<any> {
+        const account = window.localStorage.getItem('account');
+        if (!account) {
+            return of(null);
+        }
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        // `session` and `account_number` happen to be the same value today
+        // (one storage key doubles as both). If they ever diverge, split here.
+        const apiUrl = `${protocol}//${host}/sessions/progress` +
+                       `?session=${encodeURIComponent(account)}` +
+                       `&account_number=${encodeURIComponent(account)}`;
+        return this.http.get<any>(apiUrl);
+    }
 
     // Method to get trending videos
     getTrends() {

@@ -2,16 +2,17 @@
 
 <div class="actions" style="z-index: 9999;right: 30px;bottom: 30px;">
 
-  <div (click)="buttonClicked('bookmarks',0)" style="display: block;">
+  <div (click)="buttonClicked($event,'bookmarks',0)" style="visibility: hidden;">
     <ion-icon size="large" name="bookmarks" [style]="bookmarkStyle"></ion-icon>
   </div>
 
-  <div (click)="buttonClicked('search',0)" style="visibility: hidden; margin-bottom: 48px;">
+  <div (click)="buttonClicked($event,'search',0)" style="visibility: hidden; margin-bottom: 48px;">
     <ion-icon size="large" name="search"></ion-icon>
   </div>
 
- <div (click)="buttonClicked('likes',video.id)" 
-     [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}">
+ <div (click)="buttonClicked($event,'likes',video.id)" 
+     [ngStyle]="{'margin-bottom': getSecondLike(video.likes) === 0 ? '30px' : '40px'}"
+     [id]="'video-' + video.id">
   <ion-icon size="large" name="heart" [style]="heartStyle"></ion-icon>
   
   <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
@@ -33,7 +34,7 @@
 </p>
 </div>
  
-  <div (click)="buttonClicked('comments',video.id)"
+  <div (click)="buttonClicked($event,'comments',video.id)"
      [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
     <ion-icon size="large" name="bookmark" [style]="bookmarkStyle"></ion-icon>
     <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
@@ -50,8 +51,27 @@
     </p>
   </div>
    
-  <div (click)="buttonClicked('info',video.id)" style="margin-bottom: 36px;">
+  <div (click)="buttonClicked($event,'info',video.id)" style="margin-bottom: 36px;">
     <ion-icon size="large" name="information-circle-outline"></ion-icon>
   </div>
+</div>
+
+<!--
+  Star-rating strip. Horizontal, bottom-center of the slide, on top of
+  the video. Tap any star to record a 1-5 rating; that also implies
+  "hearted" (handled in rateVideo). Scroll-past with no tap records 0,
+  handled at the slide level in home.page onSlideDidChange.
+
+  Styling: no background pill, all stars white. Active vs inactive is
+  conveyed only by the icon shape (`star` filled vs `star-outline`).
+-->
+<div class="star-rating"
+     style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; display: flex; gap: 12px; align-items: center;">
+  <ion-icon *ngFor="let i of stars"
+            [name]="i <= userRating ? 'star' : 'star-outline'"
+            (click)="rateVideo($event, i)"
+            size="large"
+            style="color: white; cursor: pointer;"></ion-icon>
 </div>
 

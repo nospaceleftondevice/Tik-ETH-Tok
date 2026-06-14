@@ -5,26 +5,92 @@
       <strong>For You</strong></ion-title>
   </ion-toolbar>
 </ion-header-->
-
 <ion-content fullscreen>
-  <div style="position: fixed; height: 30px;top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
-  (click)="handleWeb3Auth()">
-<ng-container *ngIf="chainName !== 'Unknown Chain'; else notConnected">
- Connected to {{ chainName }} 
- <ion-icon style="position: absolute; top: 12px; color: #3880ff; " name="log-out-outline"></ion-icon>
-</ng-container>
-<ng-template #notConnected>
- You may not be connected 
- <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-in-outline"></ion-icon>
-</ng-template>
-</div>
+    <!-- Shield overlay -->
+    <div 
+      *ngIf="showShield" 
+      style="
+        position: fixed;
+        top: 30;
+        left: 0;
+        width: 100vw;
+        height: 90vh;
+        background: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+        z-index: 10001;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end; /* Align content at the top */
+        padding-bottom: 20px; /* Space from the bottom of the viewport */
+        pointer-events: auto;">
+      <div *ngIf="showControls" style="text-align: center;">
+      <div style="text-align: center; color: white;">
+        <p>Slide to disable shield</p>
+        <ion-range
+          (ionChange)="disableShield()"
+          min="0"
+          max="100"
+          step="1"
+          value="0"
+          style="
+            width: 80%;
+            --bar-background-active: #3880ff;
+            --bar-background: #999;
+            --knob-background: #fff;
+          ">
+        </ion-range>
+      </div>
+        <!-- Camera Button -->
+      <ion-button 
+        (click)="handleCamera()" 
+        color="primary"
+        style="margin-top: 10px; width: 60%; text-align: center;">
+        Camera On
+      </ion-button>
+      </div>
+    </div>
 
-  <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" [options]="slideOpts">
-    <ion-slide *ngFor="let video of videoList; let i = index">
-      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}" 
-      title="{{video.userName}}" class="{{video.userPic}}"></video>
+  <div 
+    *ngIf="showHeaderDiv"
+    style="position: fixed; height: 30px; top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
+    (click)="handleWeb3Auth()">
+    <ng-container *ngIf="chainName !== 'Unknown Chain'; else notConnected">
+      Connected to {{ chainName }}
+      <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-out-outline"></ion-icon>
+    </ng-container>
+    <ng-template #notConnected>
+      You may not be connected
+      <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-in-outline"></ion-icon>
+    </ng-template>
+  </div>
+
+  <div 
+    *ngIf="showHeaderDiv"
+    style="position: fixed; height: 30px; top: -10px; width: 100%; text-align: center; z-index: 10000; background: rgba(0, 0, 0, 0.5); color: white; padding: 10px;"
+    (click)="handleCamera()">
+    <ng-container>
+      <ion-icon style="position: absolute; top: 12px; color: #3880ff;" name="log-out-outline"></ion-icon>
+    </ng-container>
+  </div>
+
+  <ion-slides #slides (ionSlideDidChange)="onSlideDidChange()" (ionSlideTouchStart)="onSlideTouchStart()" [options]="slideOpts">
+    <ion-slide *ngFor="let video of videoList; let i = index" [attr.id]="video.url">
+      <!--
+        title= and data-mix-info= are not for the user's eyes here — they
+        carry text that pauseInactiveSlides() reads back via getAttribute
+        and renders into the absolute-positioned project/description
+        overlay at the bottom of each slide. Title was hardcoded to
+        userName (=== literal "maxb" from the backend); now it's the
+        loaded session name. Description was the mp4 filename
+        (video.userPic); now it's "Artist – Title × Artist – Title"
+        composed from the new x_/y_ metadata fields (mixInfo helper
+        falls back to the filename when no metadata was extracted).
+      -->
+      <video loop playsinline muted preload="metadata" style="background-color: #ccc1c5;" src="{{video.url}}"
+      [attr.title]="video.session || video.userName"
+      [attr.data-mix-info]="mixInfo(video)"></video>
       <!--button (click)="loadMoreVideos()" style="position: absolute; top: 20px; left: 10px">Load More</button-->
-      <app-feed *ngIf="i !== 0" [video]="video"></app-feed>
+      <app-feed *ngIf="i !== 0" [video]="video" (rated)="onFeedRated($event)"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
 
@@ -35,19 +101,41 @@
 
   <!--  overflow: hidden; opacity: 0.70; background-color: transparent; width: 70%; height: 174px;" allowTransparency="true"></iframe-->
   <!-- Button to unmute audio -->
-  <ion-button (click)="handleWeb3Auth()"
+  <ion-button *ngIf="showHeaderDiv" (click)="handleWeb3Auth()"
   style="position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%);">
     web3auth
   </ion-button>
 </ion-slides>
 
-
+<!--
+  Persistent "next slide" arrow at the bottom-most point of the
+  viewport. Click = slides.slideNext(), equivalent to a swipe-up on
+  the vertical slider. Lives at the ion-content level (not inside a
+  slide) so it shows on every slide including the intro. z-index sits
+  above the star-rating strip (9999) and the search bar so it stays
+  clickable. position: fixed pins it to the viewport so devices with
+  a bottom address bar don't push it off-screen during scroll.
+-->
+<div class="next-slide-arrow"
+     (click)="goToNextSlide()"
+     style="position: fixed; bottom: 4px; left: 50%; transform: translateX(-50%);
+            z-index: 10000; cursor: pointer; padding: 4px 16px;
+            background: rgba(0, 0, 0, 0.4); border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;"
+     role="button"
+     aria-label="Next video">
+  <ion-icon name="chevron-up-outline" style="color: white; font-size: 22px;"></ion-icon>
+</div>
 
 <video class="floating-video" id="float" autoplay loop playsinline muted controls src=""
     style="display: none;position: fixed; top: 0; left: 0; width: 100vw; height: 45vh; z-index: 9998; pointer-events: auto;"></video>
 
 <div>
-  <ion-searchbar *ngIf="showSearchBar" #searchbar (keyup)="onSearchKeyup($event)" id="search" style="z-index: 9999;position: absolute; top: 45%; left: 0px;" placeholder="Search..."></ion-searchbar>
+
+    <!-- Add your iframe here -->
+
+
+  <ion-searchbar *ngIf="showSearchBar" #searchbar (keyup)="onSearchKeyup($event)" id="search" style="z-index: 9999;position: absolute; top: 45%; left: 0px;" [placeholder]="searchPlaceholder"></ion-searchbar>
 </div>
 </ion-content>
 

@@ -12,7 +12,13 @@
   --ionicon-fill-color: red;    /* For filled icons */
 }
 
-ion-icon {
+// Scoped to .actions so it does NOT bleed onto every ion-icon in the
+// component. Originally `ion-icon { position: fixed; right: -5px; ... }`,
+// which broke the .star-rating widget by pinning every star to the same
+// off-screen-right coordinate (they stacked perfectly and looked like a
+// single star). The right-column icons (heart, bookmark, info) live
+// inside .actions and rely on this positioning.
+.actions ion-icon {
   color: white;
   height: 40px;
   width: 50px;
