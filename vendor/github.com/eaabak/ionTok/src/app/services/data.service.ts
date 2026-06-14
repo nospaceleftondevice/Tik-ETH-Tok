@@ -11,7 +11,10 @@ export class DataService {
     constructor(private http: HttpClient) {}
 
     // Method to get the list of videos with pagination
-    getVideoList(page: number = 1, limit: number = 10): Observable<any[]> {
+    // reverse=true asks the backend to ORDER BY id DESC so the user
+    // gets the unrated set from the bottom up. Driven by the chevron-up
+    // arrow under the bookmark (see home.page.toggleVideoListOrder).
+    getVideoList(page: number = 1, limit: number = 10, reverse: boolean = false): Observable<any[]> {
         console.log("Protocol: " + window.location.protocol);
         if (window.location.protocol === 'https:') {
             // Session (show name) is required. The downstream backend filters
@@ -34,7 +37,8 @@ export class DataService {
             // both); split if the keys ever diverge.
             const apiUrl = `${url}/videos?session=${encodeURIComponent(session)}` +
                            `&account_number=${encodeURIComponent(session)}` +
-                           `&page=${page}&limit=${limit}`;
+                           `&page=${page}&limit=${limit}` +
+                           (reverse ? `&reverse=1` : ``);
 
             return this.http.get<any>(apiUrl).pipe(
                 map((response: any) => {
