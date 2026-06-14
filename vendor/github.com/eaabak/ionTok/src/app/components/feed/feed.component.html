@@ -51,8 +51,18 @@
     </p>
   </div>
    
-  <div (click)="buttonClicked($event,'info',video.id)" style="margin-bottom: 36px;">
-    <ion-icon size="large" name="information-circle-outline"></ion-icon>
+  <!--
+    Reverse-list arrow. Replaced the old info icon (which did nothing —
+    'info' had no branch in buttonClicked, click just no-op'd). Default
+    is chevron-down: video list is in normal order (you're scrolling
+    through it forward). Tap once → chevron-up, parent reverses the
+    list so you can read from the bottom up. listReversed comes from
+    home.page so the icon stays in sync across all feed instances.
+  -->
+  <div (click)="toggleListDirection($event)" style="margin-bottom: 36px;"
+       [attr.aria-label]="listReversed ? 'Show list in normal order' : 'Reverse list (read from bottom)'">
+    <ion-icon size="large"
+              [name]="listReversed ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
   </div>
 </div>
 

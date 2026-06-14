@@ -11,10 +11,19 @@ import { HttpClient } from '@angular/common/http'; // Import HttpClient
 export class FeedComponent implements OnInit {
   @Input() video: any;
 
+  // Whether the parent's videoList is currently in reversed order.
+  // Drives the chevron icon direction (down = normal, up = reversed)
+  // so every feed instance stays in sync as the user scrolls.
+  @Input() listReversed: boolean = false;
+
   // Fires when the user taps a star on this feed's video. Parent
   // (home.page) tracks the videoIds it has heard from so the
   // scroll-past hook does not also record a 0 for the same video.
   @Output() rated = new EventEmitter<number>();
+
+  // Fires when the user taps the chevron arrow. Parent reverses
+  // videoList and re-anchors the current slide.
+  @Output() reverseToggled = new EventEmitter<void>();
 
   option: AnimationOptions = {
     path: './assets/animations/music.json'
@@ -93,6 +102,14 @@ export class FeedComponent implements OnInit {
           console.error('feed.component.ts: remoteLike Request failed:', error);
         }
       );
+  }
+
+  // Tap-arrow handler. Just tells the parent — home.page does the
+  // actual array reverse + slideTo re-anchor. Stop propagation so
+  // the swipe-up gesture / underlying video click don't also fire.
+  toggleListDirection(event: MouseEvent) {
+    event.stopPropagation();
+    this.reverseToggled.emit();
   }
 
   buttonClicked(event: MouseEvent, button: string, video_id: number) {

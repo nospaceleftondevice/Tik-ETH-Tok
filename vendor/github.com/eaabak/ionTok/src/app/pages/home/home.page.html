@@ -90,7 +90,9 @@
       [attr.title]="video.session || video.userName"
       [attr.data-mix-info]="mixInfo(video)"></video>
       <!--button (click)="loadMoreVideos()" style="position: absolute; top: 20px; left: 10px">Load More</button-->
-      <app-feed *ngIf="i !== 0" [video]="video" (rated)="onFeedRated($event)"></app-feed>
+      <app-feed *ngIf="i !== 0" [video]="video" [listReversed]="videoListReversed"
+                (rated)="onFeedRated($event)"
+                (reverseToggled)="toggleVideoListOrder()"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
 
