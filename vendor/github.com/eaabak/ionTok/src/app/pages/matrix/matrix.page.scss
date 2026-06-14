@@ -583,3 +583,29 @@ $matrix-row-label-width: 96px;
   width: $matrix-cell;
   height: $matrix-cell;
 }
+
+// Click-to-locate highlight. Set by onRatingClick on a pair-list row;
+// flashes a bright gold ring around the rated cell so the user can
+// find it on the otherwise-tiny grid. Outline (not box-shadow) so the
+// ring sits outside the 14px cell and doesn't push neighbors around.
+.cell.is-highlighted {
+  outline: 3px solid #ffd54f;
+  outline-offset: -1px;
+  z-index: 5;
+  position: relative;
+  animation: cell-pulse 1.2s ease-out 2;
+}
+@keyframes cell-pulse {
+  0%   { outline-color: #ffd54f; }
+  50%  { outline-color: #fff176; }
+  100% { outline-color: #ffd54f; }
+}
+
+// Click cursor on rateable rows in the pair list. The td's onRatingClick
+// only fires its work for rows with ratings; the cursor signal matches.
+.col-rating.rating-clickable {
+  cursor: pointer;
+}
+.col-rating.rating-clickable:hover .dot-front {
+  filter: brightness(1.15);
+}
