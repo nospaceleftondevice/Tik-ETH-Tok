@@ -189,7 +189,15 @@
               ×{{ p.dupCount }}
             </span>
           </td>
-          <td class="col-file">{{ p.filename }}</td>
+          <td class="col-file">
+            <!-- mp4Url links straight to the served file. The xUrl/yUrl
+                 columns above point to source YouTube videos; this one
+                 plays the actual rated mp4 (useful when YT URLs are
+                 missing — for ffmpeg-generated files the mp4 is the
+                 only thing to click). -->
+            <a class="mix-url" *ngIf="p.mp4Url" (click)="openUrl(p.mp4Url)">{{ p.filename }}</a>
+            <span *ngIf="!p.mp4Url">{{ p.filename }}</span>
+          </td>
         </tr>
       </tbody>
     </table>

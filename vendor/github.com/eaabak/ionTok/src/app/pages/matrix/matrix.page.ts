@@ -58,6 +58,12 @@ interface PairRow {
   source: 'rated' | 'library';
   videoId: number | null;
   filename: string;
+  // Direct link to the served mp4 (https://coin.computer/Videos/<filename>).
+  // Surfaces in the pair list's File column so the user can open the
+  // actual rated video — used to be implicit ("filename is shown as
+  // text") but rated rows without YT URLs had no other way to play
+  // back the file.
+  mp4Url: string | null;
   // sessions: aggregated across all videos with the same canonical
   // URL pair. Length 1 = unique to one session; length > 1 = same
   // musical mix exists in multiple sessions (e.g. forward + -rev
@@ -347,6 +353,7 @@ export class MatrixPage implements OnInit, OnDestroy {
         source: 'rated' as const,
         videoId: v.id,
         filename: v.filename,
+        mp4Url: v.url || null,
         // Backend dedup gives us a list of sessions per row. Older
         // responses (pre-PR #61) only have `session`; fall back to
         // wrapping it so the UI keeps working during a deploy.
@@ -374,6 +381,7 @@ export class MatrixPage implements OnInit, OnDestroy {
         source: 'library' as const,
         videoId: null,
         filename: v.filename,
+        mp4Url: v.url || null,
         sessions: [],
         dupCount: 1,
         xUrl: null,

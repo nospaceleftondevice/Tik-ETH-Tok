@@ -30,6 +30,13 @@ export class HomePage implements OnInit {
   currentPage: number = 1;
   limit: number = 10;
 
+  // Drives the chevron arrow in each <app-feed>. false = list rendered
+  // in normal order (chevron-down); true = reversed (chevron-up,
+  // "read from the bottom up"). Toggled by toggleVideoListOrder() —
+  // we reverse videoList in place and re-anchor the current slide so
+  // the user stays on the same video they were watching.
+  videoListReversed: boolean = false;
+
   // Set of video ids the user has explicitly rated (any 1-5 tap)
   // during this page-load. Used by the scroll-past hook in
   // onSlideDidChange so we do not record a 0 for a video the user
@@ -942,6 +949,39 @@ export class HomePage implements OnInit {
         //console.log(`Active index ${activeIndex}`);
     });
   }
+
+// Called by app-feed when the user taps the chevron arrow under
+// the bookmark icon. Reverses the videoList in place, toggles the
+// arrow direction (all feed instances re-render via [listReversed]),
+// and re-anchors the current slide so the user stays on the same
+// video they were watching. The next slide change advances them
+// through the list in the new direction.
+//
+// lastSlideIndex is updated so the scroll-past hook doesn't treat
+// the reposition as a forward-skip and record a rating-0 against
+// whatever video lands at the prior index. Programmatic slideTo
+// also fires ionSlideDidChange — touchSequence is left untouched
+// so the existing user-initiated-only gate continues to drop it.
+toggleVideoListOrder() {
+  if (!this.slides) {
+    this.videoListReversed = !this.videoListReversed;
+    this.videoList = (this.videoList || []).slice().reverse();
+    return;
+  }
+  this.slides.getActiveIndex().then((currentIndex: number) => {
+    const len = (this.videoList || []).length;
+    this.videoList = (this.videoList || []).slice().reverse();
+    this.videoListReversed = !this.videoListReversed;
+    const newIndex = len > 0 ? (len - 1 - currentIndex) : 0;
+    this.lastSlideIndex = newIndex;
+    // ion-slides needs a tick after *ngFor rebuilds the slides before
+    // slideTo() can land on the new index.
+    setTimeout(() => {
+      if (this.slides) { this.slides.slideTo(newIndex, 0); }
+    }, 0);
+    console.log(`home.page.ts toggleVideoListOrder reversed=${this.videoListReversed}, ${currentIndex}→${newIndex}`);
+  });
+}
 
 // Called by app-feed when the user taps any star (1-5). We just
 // remember the video id so the scroll-past hook (below) does not
