@@ -509,23 +509,32 @@ export class MatrixPage implements OnInit, OnDestroy {
       });
     }
     // Add library axis entries — one per library row, keyed by mp4 stem.
-    for (const v of library) {
-      const stem = mp4Stem(v.filename);
-      const key = 'lib:' + stem;
-      if (!axisInfo.has(key)) {
-        const labelParts: string[] = [];
-        if (v.x_artist) labelParts.push(v.x_artist);
-        if (v.x_title) labelParts.push(v.x_title);
-        const tooltipL = labelParts.length ? labelParts.join(' — ') : stem;
-        const labelParts2: string[] = [];
-        if (v.y_artist) labelParts2.push(v.y_artist);
-        if (v.y_title) labelParts2.push(v.y_title);
-        const tooltipR = labelParts2.length ? labelParts2.join(' — ') : '';
-        axisInfo.set(key, {
-          label: stem,
-          tooltip: tooltipR ? `${tooltipL}  /  ${tooltipR}  (library)` : `${tooltipL}  (library)`,
-          rated: false,
-        });
+    // Suppressed when a session filter is active: library rows in that
+    // mode represent songs.txt-seed entries for files that aren't loaded
+    // into the videos table for this session. The user can't rate them
+    // from the feed, so giving them blank axis rows/columns only bloats
+    // the grid (e.g. on /matrix?session=84-102-jun-11-24 they added 58
+    // fully-blank rows + 58 fully-blank columns). Library rows still
+    // appear in the pair list below the matrix.
+    if (!this.sessionFilter) {
+      for (const v of library) {
+        const stem = mp4Stem(v.filename);
+        const key = 'lib:' + stem;
+        if (!axisInfo.has(key)) {
+          const labelParts: string[] = [];
+          if (v.x_artist) labelParts.push(v.x_artist);
+          if (v.x_title) labelParts.push(v.x_title);
+          const tooltipL = labelParts.length ? labelParts.join(' — ') : stem;
+          const labelParts2: string[] = [];
+          if (v.y_artist) labelParts2.push(v.y_artist);
+          if (v.y_title) labelParts2.push(v.y_title);
+          const tooltipR = labelParts2.length ? labelParts2.join(' — ') : '';
+          axisInfo.set(key, {
+            label: stem,
+            tooltip: tooltipR ? `${tooltipL}  /  ${tooltipR}  (library)` : `${tooltipL}  (library)`,
+            rated: false,
+          });
+        }
       }
     }
 
