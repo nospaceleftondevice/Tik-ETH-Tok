@@ -434,7 +434,13 @@ export class MatrixPage implements OnInit, OnDestroy {
         this.ratedCount = resp.rated_count ?? resp.count;
         this.libraryCount = resp.library_count ?? 0;
         this.applyStrict();
-        this.loading = false;
+        // Only the reload that turned the indicator on may turn it off.
+        // A quiet poll landing mid-way through a user-initiated reload
+        // would otherwise clear "Loading…" while that one is still
+        // running.
+        if (!quiet) {
+          this.loading = false;
+        }
         if (done) done();
       },
       (err) => {
@@ -988,6 +994,12 @@ export class MatrixPage implements OnInit, OnDestroy {
     if (!target) return;
 
     this.pulseKeys = target;
+    // Move the ring now, against the grid already on screen, rather than
+    // waiting on the network. The axis can't have moved yet, so this is
+    // correct — and if the reload below fails, the pulse still ends up on
+    // the mix that was actually just rated instead of being stranded on
+    // the previous one.
+    this.resolvePulseCell();
 
     // Re-fetch rather than merging the event in locally. /mixes collapses
     // several video rows into one matrix entry and reports MAX(rating)
@@ -997,8 +1009,10 @@ export class MatrixPage implements OnInit, OnDestroy {
     // ripple's own runtime, so it costs nothing perceptible.
     this.refresh(true, () => {
       // applyStrict() has already re-resolved pulseRow/pulseCol against
-      // the rebuilt axis by the time this runs.
-      this.fireRipple();
+      // the rebuilt axis by the time this runs. The extra tick lets
+      // Angular flush the rebuilt grid to the DOM before fireRipple()
+      // goes looking for the cell to measure.
+      setTimeout(() => this.fireRipple(), 0);
     });
   }
 
