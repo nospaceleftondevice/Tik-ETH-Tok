@@ -90,9 +90,34 @@ interface RatingEvent {
   file_size: number | null;
 }
 
+/**
+ * One account's current feed position, as reported by the backend's
+ * now_playing table. Same axis-resolution fields as RatingEvent so both
+ * resolve to a cell through axisKeysFor().
+ */
+interface PlayingEntry {
+  account_number: string;
+  video_id: number;
+  updated_at: string | null;
+  session: string | null;
+  url: string;
+  filename: string;
+  x_url: string | null;
+  y_url: string | null;
+  x_title: string | null;
+  y_title: string | null;
+  x_artist: string | null;
+  y_artist: string | null;
+  file_size: number | null;
+}
+
 interface EventsResponse {
   cursor: number;
   events: RatingEvent[];
+  // Current state, not an increment — returned in full on every poll,
+  // bootstrap included. Absent on a backend that predates the feature,
+  // hence optional.
+  playing?: PlayingEntry[];
 }
 
 /** One inward-travelling wave. All waves in a burst share a centre and
@@ -225,6 +250,19 @@ export class MatrixPage implements OnInit, OnDestroy {
   // filter change). Read by the template to paint the pulsing ring.
   pulseRow: number | null = null;
   pulseCol: number | null = null;
+
+  // ---- now playing ----
+  //
+  // Whatever is currently playing in the feed, one entry per reporting
+  // account. Kept as IDENTITY (video_id + axis keys) rather than as cell
+  // coordinates: the axis re-sorts on every rebuild, so indices go stale
+  // but identity doesn't. Resolved through locateCell, so a video whose
+  // axis key changed when it was rated still lands on the right cell.
+  private playingIds: { videoId: number; keys: [string, string] | null }[] = [];
+  // Resolved "i-j" cell coordinates, both orientations of each pair. A Set
+  // because the template asks per cell and the grid can be hundreds wide —
+  // a linear scan per cell would be O(n^3) across a render.
+  private playingCells: Set<string> = new Set();
 
   // Waves currently in flight. Emptied once the burst finishes so the
   // layer goes back to holding no DOM.
@@ -838,6 +876,7 @@ export class MatrixPage implements OnInit, OnDestroy {
     // change, strict toggle, auto-refresh, live rating event — keeps the
     // pulse attached to the right mix.
     this.resolvePulseCell();
+    this.resolvePlayingCells();
   }
 
   cellColor(rating: number | null): string {
@@ -986,6 +1025,10 @@ export class MatrixPage implements OnInit, OnDestroy {
         if (resp && typeof resp.cursor === 'number') {
           this.eventCursor = resp.cursor;
         }
+        // Playing is current state, so it applies on EVERY poll including
+        // the bootstrap — unlike events, where the bootstrap deliberately
+        // returns nothing so history isn't replayed as ripples.
+        this.applyPlaying((resp && resp.playing) || []);
         if (bootstrap || !resp || !resp.events || !resp.events.length) return;
         this.onRatingEvents(resp.events);
       },
@@ -1091,6 +1134,55 @@ export class MatrixPage implements OnInit, OnDestroy {
       if (i !== undefined && j !== undefined) return [i, j];
     }
     return null;
+  }
+
+  /**
+   * Adopt the current set of playing videos.
+   *
+   * Replaces wholesale rather than merging: `playing` is the complete
+   * current state on every poll, so an account that stopped reporting is
+   * represented by its absence. Merging would leave its box on the grid
+   * forever.
+   *
+   * Unlike a rating, this fires no animation of its own — the box is a
+   * standing CSS marker on the cell. Nothing scrolls, either: a wall
+   * display shouldn't jump every time someone swipes their phone.
+   *
+   * Identity is kept as (video_id, axis keys) and resolved through
+   * locateCell for the same reason ratings are: a mix's axis key changes
+   * when it gets rated, and someone watching a video they are about to
+   * rate is the single most likely way to hit that.
+   */
+  private applyPlaying(entries: PlayingEntry[]) {
+    this.playingIds = entries.map((e) => ({
+      videoId: e.video_id,
+      keys: axisKeysFor(e.x_url, e.y_url, e.x_artist, e.y_artist, e.file_size),
+    }));
+    this.resolvePlayingCells();
+  }
+
+  /** Map the playing set onto current cell coordinates. Entries that
+   *  aren't on the grid (filtered away, or no axis information) simply
+   *  don't appear — same rule the pulse follows. */
+  private resolvePlayingCells() {
+    const cells = new Set<string>();
+    for (const p of this.playingIds) {
+      const cell = this.locateCell(p.videoId, p.keys);
+      if (!cell) continue;
+      // Both orientations. The matrix is symmetric and a mix occupies two
+      // cells, so boxing only one would look like a rendering bug. (The
+      // rating pulse marks a single cell on purpose — it's the terminus of
+      // a ripple, which has to converge somewhere specific.)
+      cells.add(cell[0] + '-' + cell[1]);
+      cells.add(cell[1] + '-' + cell[0]);
+    }
+    this.playingCells = cells;
+  }
+
+  /** Template predicate for the playing box. Set lookup, so it stays cheap
+   *  called once per cell per render. */
+  isPlayingCell(i: number, j: number): boolean {
+    return this.playingCells.has(i + '-' + j);
   }
 
   /** Axis keys for a rating event. Same tiers, same order, same helper as

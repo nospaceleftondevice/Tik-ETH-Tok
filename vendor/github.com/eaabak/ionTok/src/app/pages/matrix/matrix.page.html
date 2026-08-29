@@ -111,7 +111,8 @@
             <td *ngFor="let cell of row; let j = index" class="cell"
                 [attr.data-cell-key]="i + '-' + j"
                 [class.is-highlighted]="isHighlightedCell(i, j)"
-                [class.is-pulsing]="isPulsingCell(i, j)">
+                [class.is-pulsing]="isPulsingCell(i, j)"
+                [class.is-playing]="isPlayingCell(i, j)">
               <!-- Stacked dots when multiple raters; single dot when one;
                    nothing when blank. cell.ratings is sorted desc, top 2
                    shown. dot-back is offset down-left, dot-front sits on
