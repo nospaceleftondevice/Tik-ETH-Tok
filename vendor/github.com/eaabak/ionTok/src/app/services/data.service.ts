@@ -269,12 +269,18 @@ export class DataService {
     // Fire-and-forget by contract: this decorates someone else's screen, so
     // a failure must never disturb playback or rating. Callers subscribe
     // with an error handler that only logs.
+    //
+    // Path note: this is /videos/<id>/playing, NOT a top-level
+    // /now-playing. The ALB ingress only routes a fixed set of prefixes
+    // to the backend (/videos, /video/, /health, /sessions, /mixes) and
+    // sends everything else to this app's own nginx — so a top-level
+    // path is answered by nginx with a 405 and never reaches the API.
     postNowPlaying(videoId: number): Observable<any> {
         const protocol = window.location.protocol;
         const host = window.location.hostname;
-        const apiUrl = `${protocol}//${host}/now-playing`;
+        const apiUrl = `${protocol}//${host}/videos/${videoId}/playing`;
         const account = window.localStorage.getItem('account') || '000000';
-        return this.http.post(apiUrl, { account_number: account, video_id: videoId }, {
+        return this.http.post(apiUrl, { account_number: account }, {
             headers: { 'Content-Type': 'application/json' }
         });
     }
