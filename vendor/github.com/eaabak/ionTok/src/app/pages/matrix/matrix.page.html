@@ -110,7 +110,8 @@
             <th class="row-label" [attr.title]="axisTooltip[i]">{{ axisShort[i] }}</th>
             <td *ngFor="let cell of row; let j = index" class="cell"
                 [attr.data-cell-key]="i + '-' + j"
-                [class.is-highlighted]="isHighlightedCell(i, j)">
+                [class.is-highlighted]="isHighlightedCell(i, j)"
+                [class.is-pulsing]="isPulsingCell(i, j)">
               <!-- Stacked dots when multiple raters; single dot when one;
                    nothing when blank. cell.ratings is sorted desc, top 2
                    shown. dot-back is offset down-left, dot-front sits on
@@ -222,6 +223,22 @@
       Type a session, title, or artist above to search the library,
       or visit the home page to choose a session.
     </ng-container>
+  </div>
+
+  <!--
+    Ripple layer for live rating events.
+
+    Always in the DOM (never behind an *ngIf) so the @ViewChild resolves
+    statically in ngOnInit and spawnRings() can write the burst's centre
+    and scale onto it as CSS custom properties. Holds no children while
+    idle. Purely decorative, so it's hidden from assistive tech and never
+    takes pointer events — the grid underneath stays fully interactive
+    while a burst plays.
+  -->
+  <div class="ripple-layer" #rippleLayer aria-hidden="true">
+    <span class="ripple-ring"
+          *ngFor="let r of ripples; trackBy: trackRipple"
+          [style.animation-delay.ms]="r.delayMs"></span>
   </div>
 
   <!-- QR-code modal. -->

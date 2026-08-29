@@ -1,4 +1,12 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  Renderer2,
+  RendererStyleFlags2,
+  ViewChild,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { ToastController } from '@ionic/angular';
@@ -52,6 +60,44 @@ interface MixesResponse {
   rated_count: number;
   library_count: number;
   filters: { account_number: string; session: string | null; q: string | null };
+}
+
+/**
+ * One rating as reported by GET /mixes/events. Carries the same
+ * axis-resolution fields /mixes returns (including the same
+ * URL-from-title fallback) so the page can place the rated mix on the
+ * matrix without a second request.
+ */
+interface RatingEvent {
+  seq: number;
+  video_id: number;
+  account_number: string;
+  rating: number;
+  rated_at: string | null;
+  session: string | null;
+  url: string;
+  filename: string;
+  x_url: string | null;
+  y_url: string | null;
+  x_title: string | null;
+  y_title: string | null;
+  x_artist: string | null;
+  y_artist: string | null;
+  file_size: number | null;
+}
+
+interface EventsResponse {
+  cursor: number;
+  events: RatingEvent[];
+}
+
+/** One inward-travelling wave. All waves in a burst share a centre and
+ *  scale (written to the layer as CSS custom properties); only the
+ *  animation-delay differs, which is what makes them read as a train of
+ *  ripples rather than one ring. */
+interface Ripple {
+  id: number;
+  delayMs: number;
 }
 
 interface PairRow {
@@ -145,6 +191,42 @@ export class MatrixPage implements OnInit, OnDestroy {
   private autoRefreshHandle: any = null;
   private readonly AUTO_REFRESH_MS = 5 * 60 * 1000;
 
+  // ---- Live rating events ----
+  //
+  // Cursor into the backend's rating-event log (user_interactions.rated_seq).
+  // null until the bootstrap poll returns; see startEventPolling.
+  private eventCursor: number | null = null;
+  private eventPollHandle: any = null;
+  private eventPollInFlight: boolean = false;
+  private readonly EVENT_POLL_MS = 2000;
+
+  // Axis keys of the mix whose rating arrived most recently. Stored as
+  // KEYS, not as i/j: applyStrict() re-sorts the axis by mean rating on
+  // every rebuild, so the indices move under us but the keys don't.
+  private pulseKeys: [string, string] | null = null;
+  // Resolved position of pulseKeys on the current grid. null when the
+  // mix isn't on the matrix being viewed (or dropped off it after a
+  // filter change). Read by the template to paint the pulsing ring.
+  pulseRow: number | null = null;
+  pulseCol: number | null = null;
+
+  // Waves currently in flight. Emptied once the burst finishes so the
+  // layer goes back to holding no DOM.
+  ripples: Ripple[] = [];
+  private rippleIdSeq: number = 0;
+  private rippleClearHandle: any = null;
+  private readonly RIPPLE_WAVES = 3;
+  private readonly RIPPLE_DURATION_MS = 2600;
+  private readonly RIPPLE_STAGGER_MS = 450;
+  // Resting diameter of a ring in px. MUST match the width/height on
+  // .ripple-ring in matrix.page.scss — the scale factor that puts the
+  // first frame off the edge of the page is computed from it.
+  private readonly RIPPLE_BASE_PX = 40;
+
+  // Always rendered (never behind an *ngIf) so the ViewChild is stable
+  // and static: true can resolve it in ngOnInit.
+  @ViewChild('rippleLayer', { static: true }) rippleLayer: ElementRef<HTMLElement>;
+
   // Debounce filter input → /mixes calls. Without this, ngModelChange
   // fires on every keystroke and each request scans the videos table +
   // 12K-row song_metadata_lookup with ILIKE — fast enough on its own
@@ -158,6 +240,7 @@ export class MatrixPage implements OnInit, OnDestroy {
     private toastController: ToastController,
     private route: ActivatedRoute,
     private router: Router,
+    private renderer: Renderer2,
   ) {}
 
   ngOnInit() {
@@ -192,6 +275,8 @@ export class MatrixPage implements OnInit, OnDestroy {
         this.refresh();
       }
     }, this.AUTO_REFRESH_MS);
+
+    this.startEventPolling();
   }
 
   ngOnDestroy() {
@@ -203,6 +288,11 @@ export class MatrixPage implements OnInit, OnDestroy {
       clearTimeout(this.inputDebounceHandle);
       this.inputDebounceHandle = null;
     }
+    if (this.rippleClearHandle !== null) {
+      clearTimeout(this.rippleClearHandle);
+      this.rippleClearHandle = null;
+    }
+    this.stopEventPolling();
   }
 
   /** Session input is Enter-only — the [(ngModel)] in the template
@@ -309,12 +399,25 @@ export class MatrixPage implements OnInit, OnDestroy {
     return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=${data}`;
   }
 
-  refresh() {
+  /**
+   * Reload /mixes.
+   *
+   * @param quiet  suppress the "Loading…" line and, on failure, leave the
+   *               currently-rendered matrix alone. Used by the live
+   *               rating-event path: a wall display shouldn't flicker its
+   *               status line every time someone taps a star, and a
+   *               transient blip mid-poll must not blank a grid that is
+   *               still perfectly valid on screen.
+   * @param done   invoked after the rebuild, on success only.
+   */
+  refresh(quiet: boolean = false, done?: () => void) {
     // account_number is optional on the backend now (library-only mode
     // when missing). The page still works — user just sees library
     // results, no rated mixes, until they set an account.
-    this.loading = true;
-    this.errorMessage = '';
+    if (!quiet) {
+      this.loading = true;
+      this.errorMessage = '';
+    }
     let params = new HttpParams();
     if (this.accountNumber) params = params.set('account_number', this.accountNumber);
     if (this.sessionFilter) params = params.set('session', this.sessionFilter);
@@ -332,9 +435,16 @@ export class MatrixPage implements OnInit, OnDestroy {
         this.libraryCount = resp.library_count ?? 0;
         this.applyStrict();
         this.loading = false;
+        if (done) done();
       },
       (err) => {
         console.error('matrix.page: load failed', err);
+        // Quiet reloads keep whatever is already on screen. Wiping a
+        // valid grid because one background poll failed is strictly
+        // worse than showing a rating that's a few seconds stale.
+        if (quiet) {
+          return;
+        }
         this.errorMessage =
           (err && err.error && err.error.error) || 'failed to load mixes';
         this.rawVideos = [];
@@ -627,17 +737,10 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.highlightedRow = null;
     this.highlightedCol = null;
 
-    // Per-row axis-key resolution. Returns the [iKey, jKey] pair this row
-    // should fill on the matrix, or null if no tier produces axis hits.
-    //   - URL tier (i,j) symmetric — preferred
-    //   - artist tier ('art:X','art:Y') symmetric — fallback when URLs missing
-    //   - size tier ('size:N','size:N') diagonal — last resort
-    const resolveAxisPair = (v: MatrixVideo): [string, string] | null => {
-      if (v.x_url && v.y_url) return [v.x_url, v.y_url];
-      if (v.x_artist && v.y_artist) return ['art:' + v.x_artist, 'art:' + v.y_artist];
-      if (v.file_size) return ['size:' + v.file_size, 'size:' + v.file_size];
-      return null;
-    };
+    // Per-row axis-key resolution — see axisKeysFor() at the bottom of
+    // this file for the tier order.
+    const resolveAxisPair = (v: MatrixVideo): [string, string] | null =>
+      axisKeysFor(v.x_url, v.y_url, v.x_artist, v.y_artist, v.file_size);
 
     // Place rated entries on the matrix. Each video contributes its full
     // ratings[] into the cell; we keep all ratings sorted desc so the
@@ -691,6 +794,13 @@ export class MatrixPage implements OnInit, OnDestroy {
     // YT URL) and gets a real cell, leaving its library stem axis empty.
 
     this.matrix = cells;
+
+    // The axis was just re-sorted, so any pulse currently on the grid is
+    // pointing at stale indices. Re-resolve from the stored keys. Done
+    // here rather than at the call sites so every rebuild path — filter
+    // change, strict toggle, auto-refresh, live rating event — keeps the
+    // pulse attached to the right mix.
+    this.resolvePulseCell();
   }
 
   cellColor(rating: number | null): string {
@@ -729,17 +839,12 @@ export class MatrixPage implements OnInit, OnDestroy {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  // Resolve a PairRow to the same axis-key pair the matrix used when
-  // it placed the dot. Mirrors resolveAxisPair() inside buildMatrix —
-  // when we refactor either, keep them in sync. Returns null when the
-  // row didn't contribute any cell (library entry, or rated row with
-  // no URL/artist/size info).
+  // Resolve a PairRow to the same axis-key pair the matrix used when it
+  // placed the dot. Library rows never contribute a cell; everything else
+  // defers to the shared resolver.
   private pairAxisKeys(p: PairRow): [string, string] | null {
     if (p.source === 'library') return null;
-    if (p.xUrl && p.yUrl) return [p.xUrl, p.yUrl];
-    if (p.xArtist && p.yArtist) return ['art:' + p.xArtist, 'art:' + p.yArtist];
-    if (p.fileSize) return ['size:' + p.fileSize, 'size:' + p.fileSize];
-    return null;
+    return axisKeysFor(p.xUrl, p.yUrl, p.xArtist, p.yArtist, p.fileSize);
   }
 
   // Click a pair-list rating → highlight the matching matrix cell and
@@ -777,11 +882,272 @@ export class MatrixPage implements OnInit, OnDestroy {
     }, 0);
   }
 
+  // ---------------------------------------------------------------------
+  // Live rating events
+  //
+  // The page polls GET /mixes/events every EVENT_POLL_MS. When a rating
+  // lands on a mix that is present on the matrix currently being viewed,
+  // a burst of rings converges on that mix's cell from beyond the edges
+  // of the page and leaves a pulsing ring behind, which stays until the
+  // next rating arrives.
+  //
+  // Polling rather than a stream is a deliberate deployment constraint,
+  // not an oversight: the backend runs gunicorn sync workers (2 workers x
+  // 2 replicas), so a held-open SSE/WebSocket connection would occupy one
+  // of four request slots for the lifetime of the browser tab. See the
+  // /mixes/events docstring in music-k8s backend/server.py.
+  // ---------------------------------------------------------------------
+
+  private startEventPolling() {
+    // The first call is the bootstrap: it takes the current cursor
+    // WITHOUT returning history, so opening the page doesn't replay every
+    // rating ever recorded as a burst of ripples.
+    this.pollEvents(true);
+    this.eventPollHandle = setInterval(
+      () => this.pollEvents(false),
+      this.EVENT_POLL_MS,
+    );
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+  }
+
+  private stopEventPolling() {
+    if (this.eventPollHandle !== null) {
+      clearInterval(this.eventPollHandle);
+      this.eventPollHandle = null;
+    }
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+  }
+
+  // Arrow property, not a method: `this` has to bind, and
+  // removeEventListener needs the identical reference back in ngOnDestroy.
+  private onVisibilityChange = () => {
+    // Catch up immediately on becoming visible instead of waiting out the
+    // interval — a phone coming out of a pocket should be current at once.
+    if (!document.hidden) {
+      this.pollEvents(false);
+    }
+  };
+
+  private pollEvents(bootstrap: boolean) {
+    // Don't stack requests if one is slow; the next tick covers us.
+    if (this.eventPollInFlight) return;
+    // Skip work while backgrounded. onVisibilityChange fires a catch-up
+    // poll the moment the tab comes back, so nothing is missed — the
+    // cursor just advances in one jump instead of many.
+    if (!bootstrap && document.hidden) return;
+
+    this.eventPollInFlight = true;
+    let params = new HttpParams();
+    // Omitting `since` IS the bootstrap signal to the backend.
+    if (!bootstrap && this.eventCursor !== null) {
+      params = params.set('since', String(this.eventCursor));
+    }
+
+    this.http.get<EventsResponse>('/mixes/events', { params }).subscribe(
+      (resp) => {
+        this.eventPollInFlight = false;
+        if (resp && typeof resp.cursor === 'number') {
+          this.eventCursor = resp.cursor;
+        }
+        if (bootstrap || !resp || !resp.events || !resp.events.length) return;
+        this.onRatingEvents(resp.events);
+      },
+      (err) => {
+        this.eventPollInFlight = false;
+        // Transient by nature — a pod rolling, a wifi blip, a 404 while
+        // the backend rolls out ahead of the frontend. The next tick
+        // retries; deliberately no user-visible error, since the matrix
+        // itself is still valid and this is an enhancement on top of it.
+        console.warn('matrix.page: rating-event poll failed', err);
+      },
+    );
+  }
+
+  /**
+   * Handle a batch of rating events.
+   *
+   * Only the newest event that this matrix can actually place gets a
+   * ripple. A batch of more than one means we fell behind (backgrounded
+   * tab, slow network), and replaying a queue of ripples would be noise —
+   * the spec is that the pulse marks the latest rating, singular. The
+   * refresh() below still picks up every rating in the batch, so the
+   * *dots* are all correct; only the animation is deduplicated.
+   */
+  private onRatingEvents(events: RatingEvent[]) {
+    let target: [string, string] | null = null;
+    for (let k = events.length - 1; k >= 0; k--) {
+      const keys = this.eventAxisKeys(events[k]);
+      if (keys && this.cellIndexByKey.has(keys[0]) && this.cellIndexByKey.has(keys[1])) {
+        target = keys;
+        break;
+      }
+    }
+    // Nothing in this batch is on the matrix being viewed — the user is
+    // filtered to a different session, or the rated mp4 has no axis
+    // information yet. Stay silent; the existing pulse (if any) stands.
+    if (!target) return;
+
+    this.pulseKeys = target;
+
+    // Re-fetch rather than merging the event in locally. /mixes collapses
+    // several video rows into one matrix entry and reports MAX(rating)
+    // across every account; a single (account, video, rating) event isn't
+    // enough to reproduce that aggregate client-side, and guessing would
+    // put a wrong number on the grid. The round-trip is well under the
+    // ripple's own runtime, so it costs nothing perceptible.
+    this.refresh(true, () => {
+      // applyStrict() has already re-resolved pulseRow/pulseCol against
+      // the rebuilt axis by the time this runs.
+      this.fireRipple();
+    });
+  }
+
+  /** Axis keys for a rating event. Same tiers, same order, same helper as
+   *  the matrix build and the pair-list click-to-locate. */
+  private eventAxisKeys(e: RatingEvent): [string, string] | null {
+    return axisKeysFor(e.x_url, e.y_url, e.x_artist, e.y_artist, e.file_size);
+  }
+
+  /** Point pulseRow/pulseCol at wherever pulseKeys lives on the current
+   *  grid. Clears the pulse when the mix isn't on the axis any more (the
+   *  user filtered it away) rather than leaving a ring on an unrelated
+   *  cell that happens to now occupy those indices. */
+  private resolvePulseCell() {
+    if (!this.pulseKeys) {
+      this.pulseRow = null;
+      this.pulseCol = null;
+      return;
+    }
+    const i = this.cellIndexByKey.get(this.pulseKeys[0]);
+    const j = this.cellIndexByKey.get(this.pulseKeys[1]);
+    if (i === undefined || j === undefined) {
+      this.pulseRow = null;
+      this.pulseCol = null;
+      return;
+    }
+    this.pulseRow = i;
+    this.pulseCol = j;
+  }
+
+  /** Template predicate for the persistent ring. Cheap index compare, so
+   *  it's fine to call once per cell per render. */
+  isPulsingCell(i: number, j: number): boolean {
+    return this.pulseRow === i && this.pulseCol === j;
+  }
+
+  /** *ngFor identity for the wave list. New ids on every burst force
+   *  fresh DOM nodes, which is what restarts the CSS animation when two
+   *  ratings arrive close together. */
+  trackRipple(_index: number, r: Ripple): number {
+    return r.id;
+  }
+
+  private fireRipple() {
+    if (this.pulseRow === null || this.pulseCol === null) return;
+    const sel = `.matrix-table .cell[data-cell-key="${this.pulseRow}-${this.pulseCol}"]`;
+    const el = document.querySelector(sel) as HTMLElement | null;
+    if (!el) return;
+
+    // Bring the cell on screen first. The grid scrolls in both axes and
+    // routinely runs wider than the viewport; rings converging on a point
+    // outside the window just read as noise. Same scroll the pair-list
+    // click-to-locate performs.
+    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+
+    // Measure after the smooth scroll settles, or the rings centre on
+    // where the cell used to be. Browsers don't expose a "scroll finished"
+    // event for smooth scrolling, hence the fixed delay.
+    setTimeout(() => this.spawnRings(el), 450);
+  }
+
+  private spawnRings(el: HTMLElement) {
+    const layer = this.rippleLayer && this.rippleLayer.nativeElement;
+    if (!layer) return;
+
+    const box = el.getBoundingClientRect();
+    const cx = box.left + box.width / 2;
+    const cy = box.top + box.height / 2;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    // Distance to the farthest viewport corner. The first frame has to
+    // sit beyond it so the wave genuinely enters from off the page rather
+    // than popping into existence inside it.
+    const maxDist = Math.max(
+      Math.sqrt(cx * cx + cy * cy),
+      Math.sqrt((w - cx) * (w - cx) + cy * cy),
+      Math.sqrt(cx * cx + (h - cy) * (h - cy)),
+      Math.sqrt((w - cx) * (w - cx) + (h - cy) * (h - cy)),
+    );
+    const scale = (maxDist * 2) / this.RIPPLE_BASE_PX;
+
+    // Custom properties on the layer, read by .ripple-ring's keyframes.
+    // Renderer2 + DashCase is the reliable way to set a CSS custom
+    // property from Angular 12; a plain [style.--foo] template binding
+    // is not dependable on this version.
+    this.renderer.setStyle(layer, '--ripple-x', `${cx}px`, RendererStyleFlags2.DashCase);
+    this.renderer.setStyle(layer, '--ripple-y', `${cy}px`, RendererStyleFlags2.DashCase);
+    this.renderer.setStyle(layer, '--ripple-scale', `${scale}`, RendererStyleFlags2.DashCase);
+
+    const waves: Ripple[] = [];
+    for (let k = 0; k < this.RIPPLE_WAVES; k++) {
+      waves.push({ id: ++this.rippleIdSeq, delayMs: k * this.RIPPLE_STAGGER_MS });
+    }
+    this.ripples = waves;
+
+    // Tear the rings back out once the burst is over so the layer holds
+    // no DOM while idle. The pulsing ring on the cell is a separate,
+    // CSS-only affair and stays until the next rating replaces it.
+    if (this.rippleClearHandle !== null) {
+      clearTimeout(this.rippleClearHandle);
+    }
+    const total =
+      this.RIPPLE_DURATION_MS +
+      this.RIPPLE_STAGGER_MS * (this.RIPPLE_WAVES - 1) +
+      200;
+    this.rippleClearHandle = setTimeout(() => {
+      this.rippleClearHandle = null;
+      this.ripples = [];
+    }, total);
+  }
+
   // Template predicate — kept as a method so *ngFor doesn't need to
   // call a heavier resolver every render. row+col compare cheap.
   isHighlightedCell(i: number, j: number): boolean {
     return this.highlightedRow === i && this.highlightedCol === j;
   }
+}
+
+
+/**
+ * Canonical matrix axis-key pair for a mix, in tier order:
+ *
+ *   1. source YouTube URL pair        → [x_url, y_url]        (symmetric)
+ *   2. artist pair, when URLs missing → ['art:X', 'art:Y']    (symmetric)
+ *   3. mp4 byte size, last resort     → ['size:N', 'size:N']  (diagonal)
+ *
+ * Returns null when no tier applies — a library row, or a rated row with
+ * no URL, artist or size information at all.
+ *
+ * Single source of truth on purpose. buildMatrix() places dots with it,
+ * the pair-list click-to-locate finds cells with it, and the live
+ * rating-event handler resolves the ripple target with it. These three
+ * MUST agree: when they drift, a rating either ripples on the wrong cell
+ * or resolves to nothing and silently produces no ripple at all. The
+ * backend's /mixes and /mixes/events endpoints feed the same fields, with
+ * the same URL-from-title fallback applied, for the same reason.
+ */
+function axisKeysFor(
+  xUrl: string | null,
+  yUrl: string | null,
+  xArtist: string | null,
+  yArtist: string | null,
+  fileSize: number | null,
+): [string, string] | null {
+  if (xUrl && yUrl) return [xUrl, yUrl];
+  if (xArtist && yArtist) return ['art:' + xArtist, 'art:' + yArtist];
+  if (fileSize) return ['size:' + fileSize, 'size:' + fileSize];
+  return null;
 }
 
 
