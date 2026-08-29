@@ -737,3 +737,66 @@ $ripple-color: #4dd0e1;
     opacity: 0.8;
   }
 }
+
+// ---- now playing ----
+//
+// A pulsating BOX on every cell whose mix someone is currently watching in
+// the feed, fed by the `playing` array on the /mixes/events poll.
+//
+// Box, not circle, entirely so the two live markers stay tellable apart at
+// 14px: a circle means "just rated" (the ripple's terminus), a box means
+// "playing now". Green rather than the ripple's cyan for the same reason,
+// and because none of the six rating-dot colours is in that range.
+//
+// Drawn on ::before so it can coexist with .is-pulsing's ::after — rating
+// the video you're currently watching is the normal case, not an edge one,
+// and that cell should show both markers at once.
+//
+// Both orientations of a pair get a box (see resolvePlayingCells), unlike
+// the single-cell rating pulse.
+
+$playing-color: #69f0ae;
+
+.cell.is-playing {
+  position: relative;
+  // Above plain cells so the box isn't clipped by a neighbour's background,
+  // below .is-pulsing (4) and the click-to-locate highlight (5): when a cell
+  // is both playing and just-rated, the rating marker should read on top.
+  z-index: 3;
+}
+
+.cell.is-playing::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  margin-left: -50%;
+  margin-top: -50%;
+  // Square. A 1px radius only takes the harshness off the corners at this
+  // size; anything more starts reading as a circle, which is the one thing
+  // this marker must not do.
+  border-radius: 1px;
+  border: 2px solid $playing-color;
+  box-shadow: 0 0 8px rgba(105, 240, 174, 0.45);
+  pointer-events: none;
+  animation: playing-box 1700ms ease-in-out infinite;
+}
+
+// Breathes in and out rather than travelling outward like rating-pulse.
+// A repeating outward wave next to the rating ripple read as two versions
+// of the same event; a steady pulse reads as a state, which is what it is.
+@keyframes playing-box {
+  0%   { transform: scale(1.15); opacity: 0.55; }
+  50%  { transform: scale(2.15); opacity: 1; }
+  100% { transform: scale(1.15); opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell.is-playing::before {
+    animation: none;
+    transform: scale(1.8);
+    opacity: 0.9;
+  }
+}

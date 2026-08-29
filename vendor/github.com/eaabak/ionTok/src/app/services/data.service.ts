@@ -261,6 +261,30 @@ export class DataService {
         });
     }
 
+    // Report which video this account is currently watching in the feed.
+    // Drives the "playing" box on the matrix page. Called from home.page on
+    // every slide change and on a heartbeat, so the backend can expire the
+    // row when a tab closes.
+    //
+    // Fire-and-forget by contract: this decorates someone else's screen, so
+    // a failure must never disturb playback or rating. Callers subscribe
+    // with an error handler that only logs.
+    //
+    // Path note: this is /videos/<id>/playing, NOT a top-level
+    // /now-playing. The ALB ingress only routes a fixed set of prefixes
+    // to the backend (/videos, /video/, /health, /sessions, /mixes) and
+    // sends everything else to this app's own nginx — so a top-level
+    // path is answered by nginx with a 405 and never reaches the API.
+    postNowPlaying(videoId: number): Observable<any> {
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/videos/${videoId}/playing`;
+        const account = window.localStorage.getItem('account') || '000000';
+        return this.http.post(apiUrl, { account_number: account }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
     // Kick off a search-bar-triggered session load. The backend lists the
     // configured S3 bucket, filters by `pattern` (egrep semantics), and loads
     // matching videos tagged with `session = pattern`. Returns immediately

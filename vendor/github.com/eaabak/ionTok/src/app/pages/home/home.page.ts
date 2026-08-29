@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonSlides } from '@ionic/angular';
 import { DataService } from "../../services/data.service";
@@ -11,7 +11,7 @@ import { IonSearchbar } from '@ionic/angular';
   styleUrls: ['./home.page.scss'],
 })
 
-export class HomePage implements OnInit {
+export class HomePage implements OnInit, OnDestroy {
   //@ViewChild(IonSlides, { static: false }) slides: IonSlides;
   @ViewChild('slides', { static: false }) slides: IonSlides;  // Reference the IonSlides component
   //@ViewChild('searchbar', { static: false }) searchbar: ElementRef;
@@ -48,6 +48,23 @@ export class HomePage implements OnInit {
   // forward vs backward motion: forward + prev-not-rated = record 0.
   // Initialised to 0 (the intro slide).
   private lastSlideIndex: number = 0;
+
+  // ---- now-playing reporting ----
+  //
+  // Tells the backend which video this account is watching, so the matrix
+  // page can draw a box around the corresponding cell. Reported on every
+  // slide change plus a heartbeat, because the backend expires a row that
+  // stops being refreshed — that's how a closed tab drops off the matrix
+  // without anything having to notice it closed.
+  //
+  // Deliberately decoupled from the rating/skip path below: this is a
+  // decoration on someone else's screen and must never influence what gets
+  // rated, skipped, or counted.
+  private nowPlayingHeartbeatHandle: any = null;
+  private lastReportedPlayingId: number | null = null;
+  // Comfortably inside the backend's 90s TTL, so two beats can be missed
+  // (backgrounded phone, flaky wifi) before the box disappears.
+  private readonly NOW_PLAYING_HEARTBEAT_MS = 30 * 1000;
 
   // Per-touch counters used to gate the scroll-past hook so it only
   // fires for USER-initiated slide changes. The upstream remote-control
@@ -597,6 +614,7 @@ export class HomePage implements OnInit {
     console.log('home.page.ts ngOnInit Page search: [' + window.location.search + ']');
     window.addEventListener('keydown', this.handleArrowKeys.bind(this));
     this.updateTitle();
+    this.startNowPlayingHeartbeat();
   }
 
   private updateTitle() {
@@ -786,7 +804,50 @@ export class HomePage implements OnInit {
     }
   }
 
+  /**
+   * Report the video at `index` as currently playing.
+   *
+   * Slide 0 is the intro/search card rather than a real mix, so it never
+   * reports — a box on the black intro clip would be noise on the matrix.
+   *
+   * Skips the request when the video hasn't changed AND this is a slide
+   * change rather than a heartbeat, so swiping back and forth doesn't
+   * hammer the endpoint. The heartbeat passes force=true to refresh
+   * updated_at even when the video is the same, which is exactly what
+   * keeps a long-watched video from ageing out of the matrix.
+   */
+  private reportNowPlaying(index: number, force: boolean = false) {
+    if (index <= 0) return;
+    const video = this.videoList && this.videoList[index];
+    const videoId = video && video.id;
+    if (!videoId) return;
+    if (!force && this.lastReportedPlayingId === videoId) return;
+    this.lastReportedPlayingId = videoId;
+    this.data.postNowPlaying(videoId).subscribe(
+      () => { },
+      (err) => {
+        // Log only. This decorates the matrix page; it must never surface
+        // to the person rating, and it must never throw into the slide
+        // handler, which also drives skip recording.
+        console.warn('home.page.ts reportNowPlaying failed', err);
+      },
+    );
+  }
+
+  private startNowPlayingHeartbeat() {
+    this.nowPlayingHeartbeatHandle = setInterval(() => {
+      // Nothing to refresh while backgrounded, and a phone in a pocket
+      // isn't playing anything anyone should see boxed on a wall display.
+      if (document.hidden) return;
+      this.reportNowPlaying(this.lastSlideIndex, true);
+    }, this.NOW_PLAYING_HEARTBEAT_MS);
+  }
+
   ngOnDestroy() {
+    if (this.nowPlayingHeartbeatHandle !== null) {
+      clearInterval(this.nowPlayingHeartbeatHandle);
+      this.nowPlayingHeartbeatHandle = null;
+    }
     if (this.ws) {
       this.ws.close();
     } 
@@ -828,6 +889,10 @@ export class HomePage implements OnInit {
       // You can now perform actions based on the active slide index
       // Example: Pause videos on inactive slides
       this.pauseInactiveSlides(index);
+      // Covers arriving on the page: ionSlideDidChange doesn't fire for the
+      // slide you land on, so without this nothing reports until the first
+      // swipe and the matrix shows no box for a video already playing.
+      this.reportNowPlaying(index);
   }
 
   pauseInactiveSlides(activeIndex: number) {
@@ -1125,6 +1190,11 @@ async onSlideDidChange() {
   // for the full guard logic. Has to run BEFORE we mutate this.lastSlideIndex.
   this.maybeRecordScrollPastSkip(this.lastSlideIndex, index);
   this.lastSlideIndex = index;
+
+  // Report what's now on screen. Runs for programmatic slide changes too,
+  // unlike the skip hook above which is gated to user-initiated ones —
+  // what's playing is what's playing regardless of how it got there.
+  this.reportNowPlaying(index);
 
   if (remote == 'true')
     this.remoteMode = true;
