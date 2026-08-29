@@ -36,6 +36,10 @@ interface MatrixVideo {
   session: string | null;       // representative; see `sessions` for full list
   sessions: string[];           // sessions this canonical mix appears in (dedup)
   dup_count: number;            // how many video rows collapsed into this entry
+  // EVERY videos.id collapsed into this entry, not just `id` above.
+  // Optional because a frontend can be deployed ahead of the backend that
+  // supplies it; locateCell() falls back to axis keys when it's absent.
+  video_ids?: number[];
   url: string;
   filename: string;
   x_url: string | null;
@@ -181,6 +185,17 @@ export class MatrixPage implements OnInit, OnDestroy {
   // pair-list rating-click handler uses it to look up which cell to
   // highlight when the user wants to locate a rated entry on the grid.
   private cellIndexByKey: Map<string, number> = new Map();
+  // videos.id → [row, col]. The authoritative way to locate a mix that we
+  // know by id — a rating or now-playing event.
+  //
+  // Axis keys can't do this job on their own. /mixes collapses duplicate
+  // video rows and picks a representative by (rating desc, id), and the
+  // axis key comes from THAT row's url/artist/file_size. Rating a video
+  // promotes it to representative and changes its group's key, so a key
+  // rebuilt from a freshly-rated video's own fields describes a cell that
+  // didn't exist when the grid was built. Indexing by member id sidesteps
+  // representative churn entirely.
+  private cellIndexByVideoId: Map<number, [number, number]> = new Map();
   // i,j of the currently-highlighted cell (set by clicking a pair-list
   // rating). null = nothing highlighted. Cleared when filters change.
   highlightedRow: number | null = null;
@@ -200,9 +215,10 @@ export class MatrixPage implements OnInit, OnDestroy {
   private eventPollInFlight: boolean = false;
   private readonly EVENT_POLL_MS = 2000;
 
-  // Axis keys of the mix whose rating arrived most recently. Stored as
-  // KEYS, not as i/j: applyStrict() re-sorts the axis by mean rating on
-  // every rebuild, so the indices move under us but the keys don't.
+  // Identity of the mix whose rating arrived most recently. Stored as
+  // id + KEYS rather than as i/j: applyStrict() re-sorts the axis by mean
+  // rating on every rebuild, so indices move under us but identity doesn't.
+  private pulseVideoId: number | null = null;
   private pulseKeys: [string, string] | null = null;
   // Resolved position of pulseKeys on the current grid. null when the
   // mix isn't on the matrix being viewed (or dropped off it after a
@@ -740,6 +756,8 @@ export class MatrixPage implements OnInit, OnDestroy {
     // Expose the index for the pair-list rating-click handler. Cleared
     // on every rebuild because axis ordering changes when filters do.
     this.cellIndexByKey = idx;
+    // Rebuilt below as cells are placed. Same lifetime as cellIndexByKey.
+    const byVideoId = new Map<number, [number, number]>();
     this.highlightedRow = null;
     this.highlightedCol = null;
 
@@ -779,10 +797,22 @@ export class MatrixPage implements OnInit, OnDestroy {
       const contributing = v.ratings && v.ratings.length ? v.ratings : [];
       // Symmetric fill: (i,j) and (j,i). When i === j (size-tier diagonal
       // self-mix), the dedup naturally produces one fill rather than two.
+      // Index EVERY video collapsed into this entry, not just the
+      // representative, so an event naming any member resolves here.
+      // video_ids is absent on a backend older than music-k8s#95; fall
+      // back to the representative id alone.
+      const memberIds: number[] =
+        v.video_ids && v.video_ids.length
+          ? v.video_ids
+          : (v.id !== null ? [v.id] : []);
+      for (const mid of memberIds) {
+        byVideoId.set(mid, [i, j]);
+      }
+
       const placements: [number, number][] = i === j ? [[i, j]] : [[i, j], [j, i]];
       for (const [a, b] of placements) {
         const cell = cells[a][b];
-        if (v.id !== null) cell.videoIds.push(v.id);
+        for (const mid of memberIds) cell.videoIds.push(mid);
         if (contributing.length) {
           cell.ratings.push(...contributing);
           // Keep sorted desc so cell.ratings[0] is the headline.
@@ -800,6 +830,7 @@ export class MatrixPage implements OnInit, OnDestroy {
     // YT URL) and gets a real cell, leaving its library stem axis empty.
 
     this.matrix = cells;
+    this.cellIndexByVideoId = byVideoId;
 
     // The axis was just re-sorted, so any pulse currently on the grid is
     // pointing at stale indices. Re-resolve from the stored keys. Done
@@ -972,48 +1003,94 @@ export class MatrixPage implements OnInit, OnDestroy {
   /**
    * Handle a batch of rating events.
    *
-   * Only the newest event that this matrix can actually place gets a
-   * ripple. A batch of more than one means we fell behind (backgrounded
-   * tab, slow network), and replaying a queue of ripples would be noise —
-   * the spec is that the pulse marks the latest rating, singular. The
-   * refresh() below still picks up every rating in the batch, so the
-   * *dots* are all correct; only the animation is deduplicated.
+   * ORDER MATTERS HERE, and getting it wrong is what broke the ripple in
+   * production. This used to decide whether an event was placeable by
+   * testing it against the grid already on screen, and only refetch after
+   * that test passed. But the grid is stale by construction at exactly
+   * the moment that matters:
+   *
+   *   /mixes collapses duplicate video rows into one entry and picks a
+   *   representative by (rating desc, id). The axis key comes from THAT
+   *   row. So rating a video promotes it to representative and CHANGES
+   *   its group's axis key. A first-time rating therefore described a
+   *   cell that did not exist on the grid built moments earlier, failed
+   *   the test, and was discarded in silence.
+   *
+   * So: refetch first, then resolve against the rebuilt grid.
+   *
+   * Only the newest placeable event gets a ripple. A batch of more than
+   * one means we fell behind (backgrounded tab, slow network), and
+   * replaying a queue of ripples would be noise — the pulse marks the
+   * latest rating, singular. Every rating in the batch still lands on the
+   * grid via the refetch; only the animation is deduplicated.
    */
   private onRatingEvents(events: RatingEvent[]) {
-    let target: [string, string] | null = null;
-    for (let k = events.length - 1; k >= 0; k--) {
-      const keys = this.eventAxisKeys(events[k]);
-      if (keys && this.cellIndexByKey.has(keys[0]) && this.cellIndexByKey.has(keys[1])) {
-        target = keys;
-        break;
-      }
-    }
-    // Nothing in this batch is on the matrix being viewed — the user is
-    // filtered to a different session, or the rated mp4 has no axis
-    // information yet. Stay silent; the existing pulse (if any) stands.
-    if (!target) return;
+    // Cheap pre-gate so a rating in some other session doesn't cost every
+    // open matrix page a /mixes refetch. Deliberately permissive: it only
+    // has to skip obviously-irrelevant work, and the real placement test
+    // happens after the refetch.
+    const relevant = events.filter((e) => this.eventMatchesView(e));
+    if (!relevant.length) return;
 
-    this.pulseKeys = target;
-    // Move the ring now, against the grid already on screen, rather than
-    // waiting on the network. The axis can't have moved yet, so this is
-    // correct — and if the reload below fails, the pulse still ends up on
-    // the mix that was actually just rated instead of being stranded on
-    // the previous one.
-    this.resolvePulseCell();
-
-    // Re-fetch rather than merging the event in locally. /mixes collapses
-    // several video rows into one matrix entry and reports MAX(rating)
-    // across every account; a single (account, video, rating) event isn't
-    // enough to reproduce that aggregate client-side, and guessing would
-    // put a wrong number on the grid. The round-trip is well under the
-    // ripple's own runtime, so it costs nothing perceptible.
     this.refresh(true, () => {
-      // applyStrict() has already re-resolved pulseRow/pulseCol against
-      // the rebuilt axis by the time this runs. The extra tick lets
-      // Angular flush the rebuilt grid to the DOM before fireRipple()
-      // goes looking for the cell to measure.
-      setTimeout(() => this.fireRipple(), 0);
+      // Newest first — the pulse marks the latest rating.
+      for (let k = relevant.length - 1; k >= 0; k--) {
+        const e = relevant[k];
+        const keys = this.eventAxisKeys(e);
+        const cell = this.locateCell(e.video_id, keys);
+        if (!cell) continue;
+        this.pulseVideoId = e.video_id;
+        this.pulseKeys = keys;
+        this.pulseRow = cell[0];
+        this.pulseCol = cell[1];
+        // The extra tick lets Angular flush the rebuilt grid to the DOM
+        // before fireRipple() goes looking for the cell to measure.
+        setTimeout(() => this.fireRipple(), 0);
+        return;
+      }
+      // Nothing in the batch is on this matrix even after refetching —
+      // filtered to a different session, or the mp4 still has no axis
+      // information. Stay silent; the existing pulse stands.
     });
+  }
+
+  /**
+   * Would this event plausibly appear on the matrix being viewed?
+   *
+   * Mirrors the backend's `v.session ILIKE %session%`. Only a pre-filter
+   * to avoid pointless refetches — a false positive costs one /mixes call
+   * and then resolves to nothing, which is harmless. A false NEGATIVE
+   * would silently drop a legitimate ripple, so this stays generous.
+   */
+  private eventMatchesView(e: RatingEvent): boolean {
+    if (!this.sessionFilter) return true;
+    return (e.session || '').toLowerCase().includes(this.sessionFilter.toLowerCase());
+  }
+
+  /**
+   * Locate a mix on the current grid.
+   *
+   * video_id is authoritative: buildMatrix indexes every member of a
+   * dedup group, so this survives the representative changing under us —
+   * which is precisely what rating a video does.
+   *
+   * Axis keys are the fallback, for the window where this frontend is
+   * deployed ahead of the backend that supplies video_ids (music-k8s#95).
+   */
+  private locateCell(
+    videoId: number | null,
+    keys: [string, string] | null,
+  ): [number, number] | null {
+    if (videoId !== null && videoId !== undefined) {
+      const hit = this.cellIndexByVideoId.get(videoId);
+      if (hit) return hit;
+    }
+    if (keys) {
+      const i = this.cellIndexByKey.get(keys[0]);
+      const j = this.cellIndexByKey.get(keys[1]);
+      if (i !== undefined && j !== undefined) return [i, j];
+    }
+    return null;
   }
 
   /** Axis keys for a rating event. Same tiers, same order, same helper as
@@ -1022,25 +1099,19 @@ export class MatrixPage implements OnInit, OnDestroy {
     return axisKeysFor(e.x_url, e.y_url, e.x_artist, e.y_artist, e.file_size);
   }
 
-  /** Point pulseRow/pulseCol at wherever pulseKeys lives on the current
-   *  grid. Clears the pulse when the mix isn't on the axis any more (the
-   *  user filtered it away) rather than leaving a ring on an unrelated
-   *  cell that happens to now occupy those indices. */
+  /** Re-point pulseRow/pulseCol at wherever the pulsing mix now lives.
+   *  Clears the pulse when it isn't on the grid any more (the user
+   *  filtered it away) rather than leaving a ring on an unrelated cell
+   *  that happens to now occupy those indices. */
   private resolvePulseCell() {
-    if (!this.pulseKeys) {
+    const cell = this.locateCell(this.pulseVideoId, this.pulseKeys);
+    if (!cell) {
       this.pulseRow = null;
       this.pulseCol = null;
       return;
     }
-    const i = this.cellIndexByKey.get(this.pulseKeys[0]);
-    const j = this.cellIndexByKey.get(this.pulseKeys[1]);
-    if (i === undefined || j === undefined) {
-      this.pulseRow = null;
-      this.pulseCol = null;
-      return;
-    }
-    this.pulseRow = i;
-    this.pulseCol = j;
+    this.pulseRow = cell[0];
+    this.pulseCol = cell[1];
   }
 
   /** Template predicate for the persistent ring. Cheap index compare, so
