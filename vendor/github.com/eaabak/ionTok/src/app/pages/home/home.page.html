@@ -159,10 +159,12 @@
       well clear of the iframe at -1.
     -->
     <div class="matrix-zoom" *ngIf="showMatrixBg">
-      <ion-icon name="remove-outline"></ion-icon>
-      <ion-range min="0.3" max="2" step="0.05" [(ngModel)]="matrixZoom"
-                 aria-label="Matrix zoom"></ion-range>
       <ion-icon name="add-outline"></ion-icon>
+      <div class="range-wrap">
+        <ion-range min="0.3" max="2" step="0.05" [(ngModel)]="matrixZoom"
+                   aria-label="Matrix zoom"></ion-range>
+      </div>
+      <ion-icon name="remove-outline"></ion-icon>
     </div>
 
 
