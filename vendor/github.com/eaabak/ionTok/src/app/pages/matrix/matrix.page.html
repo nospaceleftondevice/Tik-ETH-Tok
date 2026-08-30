@@ -86,6 +86,32 @@
   </div>
 
   <!--
+    Rating distribution. Sits directly under the filters, above the
+    matrix, because it describes the CURRENT FILTER's result set: change
+    the session or the title/artist query and these counts are the first
+    thing that tells you what you just selected. Below the matrix it
+    read as a footnote to the grid rather than a summary of the query.
+    Zero-count buckets are kept so the row doesn't reflow as ratings
+    come in.
+  -->
+  <div class="rating-dist" *ngIf="pairs.length">
+    <span class="rd-item" *ngFor="let b of ratingCounts"
+          [attr.title]="b.count + ' mix' + (b.count === 1 ? '' : 'es') + ' rated ' + b.rating">
+      <span class="rd-dot"
+            [style.background]="cellColor(b.rating)"
+            [class.bordered]="cellNeedsBorder(b.rating)"></span>
+      <span class="rd-label">{{ b.rating }}</span>
+      <span class="rd-count">{{ b.count }}</span>
+    </span>
+    <span class="rd-item rd-unrated" title="No rating from any account yet">
+      <span class="rd-dot rd-dot-empty"></span>
+      <span class="rd-label">unrated</span>
+      <span class="rd-count">{{ unratedCount }}</span>
+    </span>
+    <span class="rd-total">{{ ratedTotal }} of {{ pairs.length }} rated</span>
+  </div>
+
+  <!--
     Explains an absent matrix rather than just showing nothing. A session
     whose mixes have no source-pair data (no x_url/y_url, no artist pair)
     can't be laid out as a grid at all — every mix would need its own row
@@ -166,30 +192,6 @@
       </table>
     </div>
   </section>
-
-  <!--
-    Rating distribution. Sits between the matrix and the list because it
-    summarises both: the matrix shows where the ratings landed, the list
-    shows which mixes they were, and this answers how far through the
-    session we are. Zero-count buckets are kept so the row doesn't
-    reflow as ratings come in.
-  -->
-  <div class="rating-dist" *ngIf="pairs.length">
-    <span class="rd-item" *ngFor="let b of ratingCounts"
-          [attr.title]="b.count + ' mix' + (b.count === 1 ? '' : 'es') + ' rated ' + b.rating">
-      <span class="rd-dot"
-            [style.background]="cellColor(b.rating)"
-            [class.bordered]="cellNeedsBorder(b.rating)"></span>
-      <span class="rd-label">{{ b.rating }}</span>
-      <span class="rd-count">{{ b.count }}</span>
-    </span>
-    <span class="rd-item rd-unrated" title="No rating from any account yet">
-      <span class="rd-dot rd-dot-empty"></span>
-      <span class="rd-label">unrated</span>
-      <span class="rd-count">{{ unratedCount }}</span>
-    </span>
-    <span class="rd-total">{{ ratedTotal }} of {{ pairs.length }} rated</span>
-  </div>
 
   <section class="pairs" *ngIf="pairs.length">
     <h2>Top mixes ({{ pairs.length }} shown, sorted by rating)</h2>
