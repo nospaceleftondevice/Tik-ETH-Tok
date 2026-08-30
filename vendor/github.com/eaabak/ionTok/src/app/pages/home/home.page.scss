@@ -187,3 +187,69 @@ $matrix-bg-offset: 150px;
 .matrix-bg-on ::ng-deep [id^="project-"] {
   display: none !important;
 }
+
+// Rating legend across the top while the matrix is showing. Occupies the
+// same strip as the search bar (which is why toggling the matrix on
+// closes it) and sits above #float at 9998 so it reads over the video.
+//
+// Deliberately compact: this is a strip over a playing video, not a
+// panel. Buckets stay in place even at zero so the row doesn't reflow
+// as ratings land.
+.matrix-legend {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(2px);
+  font-size: 11px;
+  color: #bbb;
+}
+
+.ml-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.ml-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: 0 0 auto;
+
+  // Rating 0 is white on a dark strip; without an outline it reads as a
+  // gap rather than a swatch.
+  &.bordered {
+    box-shadow: 0 0 0 1px #888;
+  }
+}
+
+.ml-dot-empty {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px #888;
+}
+
+.ml-label {
+  color: #888;
+}
+
+.ml-count {
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+}
+
+.ml-total {
+  margin-left: auto;
+  color: #888;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

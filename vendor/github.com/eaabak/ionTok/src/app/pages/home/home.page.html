@@ -159,6 +159,31 @@
       well clear of the iframe at -1.
     -->
     <!--
+      Rating legend, top of the screen while the matrix is up. The counts
+      arrive over postMessage from the embedded matrix page (which
+      already computes them) rather than being recomputed here, which
+      would mean repeating a query that scans the videos table and a
+      12K-row lookup.
+
+      Same z-index band as the searchbar it replaces. The two are never
+      up together -- toggling the matrix on closes the search bar.
+    -->
+    <div class="matrix-legend" *ngIf="showMatrixBg && matrixCounts.length">
+      <span class="ml-item" *ngFor="let b of matrixCounts">
+        <span class="ml-dot" [style.background]="ratingColor(b.rating)"
+              [class.bordered]="b.rating === 0"></span>
+        <span class="ml-label">{{ b.rating }}</span>
+        <span class="ml-count">{{ b.count }}</span>
+      </span>
+      <span class="ml-item">
+        <span class="ml-dot ml-dot-empty"></span>
+        <span class="ml-label">unrated</span>
+        <span class="ml-count">{{ matrixUnrated }}</span>
+      </span>
+      <span class="ml-total">{{ matrixRated }}/{{ matrixTotal }}</span>
+    </div>
+
+    <!--
       swiper-no-swiping is Swiper's own opt-out (noSwiping defaults to
       true and looks for exactly this class), which stops a drag here
       being read as a slide change. ion-slides runs direction:'vertical',

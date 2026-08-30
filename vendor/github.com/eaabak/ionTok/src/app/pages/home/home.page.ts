@@ -44,6 +44,14 @@ export class HomePage implements OnInit, OnDestroy {
   // means "nobody has said", and the old slide-driven behaviour applies.
   private searchBarManual: boolean | null = null;
 
+  // Rating breakdown for the legend shown at the top while the matrix is
+  // up. Pushed over postMessage by the embedded matrix page, which
+  // already has the numbers -- see publishCountsToParent there.
+  matrixCounts: { rating: number; count: number }[] = [];
+  matrixUnrated: number = 0;
+  matrixRated: number = 0;
+  matrixTotal: number = 0;
+
   showSearchBar: boolean = false; // Initially hidden
   showShield: boolean = true;
 
@@ -144,8 +152,38 @@ export class HomePage implements OnInit, OnDestroy {
     };
   }
 
+  /** Same colours the matrix uses for its dots, so the legend and the
+   *  grid agree. Mirrors cellColor() in matrix.page.ts. */
+  ratingColor(rating: number): string {
+    switch (rating) {
+      case 0: return '#ffffff';
+      case 1: return '#1565c0';
+      case 2: return '#42a5f5';
+      case 3: return '#fb8c00';
+      case 4: return '#fdd835';
+      case 5: return '#e53935';
+      default: return 'transparent';
+    }
+  }
+
+  private onMatrixMessage = (e: MessageEvent) => {
+    if (e.origin !== window.location.origin) return;
+    const d = e.data;
+    if (!d || d.type !== 'matrix:rating-counts') return;
+    this.matrixCounts = d.counts || [];
+    this.matrixUnrated = d.unrated || 0;
+    this.matrixRated = d.rated || 0;
+    this.matrixTotal = d.total || 0;
+  };
+
   toggleMatrixBg() {
     this.showMatrixBg = !this.showMatrixBg;
+    // The legend takes the top of the screen, which is where the search
+    // bar now lives, so they can't both be up.
+    if (this.showMatrixBg && this.showSearchBar) {
+      this.showSearchBar = false;
+      this.searchBarManual = false;
+    }
     if (this.showMatrixBg && !this.matrixBgUrl) {
       const session = (window.localStorage.getItem('account') || '').trim();
       const url = '/matrix' + (session ? '?session=' + encodeURIComponent(session) : '');
@@ -677,6 +715,7 @@ export class HomePage implements OnInit, OnDestroy {
     window.addEventListener('keydown', this.handleArrowKeys.bind(this));
     this.updateTitle();
     this.startNowPlayingHeartbeat();
+    window.addEventListener('message', this.onMatrixMessage);
   }
 
   private updateTitle() {
@@ -941,6 +980,7 @@ export class HomePage implements OnInit, OnDestroy {
       this.nowPlayingHeartbeatHandle = null;
     }
     document.removeEventListener('visibilitychange', this.onFeedVisibilityChange);
+    window.removeEventListener('message', this.onMatrixMessage);
     if (this.ws) {
       this.ws.close();
     } 
