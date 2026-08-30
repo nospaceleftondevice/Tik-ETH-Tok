@@ -52,17 +52,42 @@ $matrix-bg-offset: 150px;
   top: calc(45vh - #{$matrix-bg-offset});
   height: calc(55vh + #{$matrix-bg-offset});
   border: 0;
-  // Deliberately low. #float is 9998, the searchbar 9999, and the feed's
-  // action icons are `position:fixed; z-index:9999 !important`, so every
-  // control keeps working on top of this without being touched.
-  z-index: 5;
   background: #000;
+
+  // NEGATIVE, and it has to be.
+  //
+  // The obvious choice was a low-but-positive z-index, reasoning that the
+  // feed's action icons are `position:fixed; z-index:9999 !important` and
+  // would win. They don't. Swiper puts `transform: translate3d(...)` on
+  // .swiper-wrapper to move between slides, and a transform CREATES A
+  // STACKING CONTEXT -- so that 9999 only ranks the icons *within* the
+  // wrapper. It can't lift them above a sibling of the wrapper. The
+  // wrapper itself paints as z-index:0, so an iframe at any positive
+  // z-index covers the icons, the stars, everything inside a slide.
+  //
+  // -1 puts the iframe below the slide subtree instead. #float (9998) and
+  // the searchbar (9999) are OUTSIDE the swiper, so they still paint
+  // above it and keep working.
+  z-index: -1;
 }
 
-// The slide's own <video> would cover the iframe. It rarely renders in
-// practice (the visible player is #float), so hiding it while the matrix
-// is up costs nothing and guarantees the grid is actually visible.
+// With the iframe at z-index -1 it paints below in-flow content, so
+// anything opaque between it and the viewer hides it. ion-content paints
+// an opaque background by default, and so do the slides -- both have to
+// go transparent while the matrix is showing, or the iframe is behind a
+// black sheet and nothing appears at all.
+//
+// The slide's own <video> would also cover it. That rarely renders in
+// practice (the visible player is #float), so hiding it costs nothing.
 .matrix-bg-on {
+  --background: transparent;
+  background: transparent;
+
+  ion-slides,
+  ion-slide {
+    background: transparent;
+  }
+
   ion-slides ion-slide video {
     visibility: hidden;
   }
