@@ -88,6 +88,21 @@ $matrix-bg-offset: 150px;
     background: transparent;
   }
 
+  // Put the slide subtree explicitly ABOVE the iframe rather than relying
+  // on it happening to paint at level 0.
+  //
+  // The iframe sits at z-index -1 so it can't cover the feed's controls
+  // (see .matrix-bg). By the default painting rules the swiper subtree
+  // lands at level 0 and therefore above it -- but that depends on
+  // swiper's transform creating a stacking context, which depends on
+  // swiper's internals. Stating the intent directly removes the guess:
+  // positioned with a positive z-index, the slides and everything in
+  // them are unambiguously above -1.
+  ion-slides {
+    position: relative;
+    z-index: 1;
+  }
+
   ion-slides ion-slide video {
     visibility: hidden;
   }
