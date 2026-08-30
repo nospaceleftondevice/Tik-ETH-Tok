@@ -849,3 +849,67 @@ $playing-color: #69f0ae;
   font-size: 12px;
   line-height: 1.4;
 }
+
+// ---- rating distribution ----
+//
+// One chip per rating bucket between the matrix and the pair list. Uses
+// the same colours as the matrix dots (via cellColor) so the row reads
+// as a legend as well as a tally -- there was no legend before, so the
+// dot colours had to be learned by inference.
+.rating-dist {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 8px 6px;
+  padding: 8px 10px;
+  border: 1px solid $border-subtle;
+  border-radius: 4px;
+  background: $bg-elevated;
+  font-size: 12px;
+  color: $text-secondary;
+}
+
+.rd-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.rd-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: 0 0 auto;
+
+  // Rating 0 is white on a black page, so it needs an outline to be
+  // visible at all -- same rule the matrix dots follow.
+  &.bordered {
+    box-shadow: 0 0 0 1px $text-muted;
+  }
+}
+
+// Unrated has no colour of its own; an open ring reads as "nothing yet"
+// without implying a rating value.
+.rd-dot-empty {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px $text-muted;
+}
+
+.rd-label {
+  color: $text-muted;
+}
+
+.rd-count {
+  color: $text-primary;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+}
+
+.rd-total {
+  margin-left: auto;
+  color: $text-muted;
+  font-size: 11px;
+}
