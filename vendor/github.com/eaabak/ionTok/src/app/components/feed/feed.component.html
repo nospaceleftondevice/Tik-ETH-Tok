@@ -34,9 +34,20 @@
 </p>
 </div>
  
+  <!-- Matrix background toggle. Shows the matrix for the current session
+       behind the feed; the stars and searchbar keep working on top of it. -->
+  <div (click)="onMatrixToggle($event)" title="Show/hide the matrix behind the feed">
+    <ion-icon size="large" name="grid-outline" [style]="matrixStyle"></ion-icon>
+  </div>
+
   <div (click)="buttonClicked($event,'comments',video.id)"
      [ngStyle]="{'margin-bottom': getSecondLike(video.comments) === 0 ? '28px' : '36px'}">
-    <ion-icon size="large" name="bookmark" [style]="bookmarkStyle"></ion-icon>
+    <!-- Bookmark icon hidden: the button it sat on fires the 'comments'
+         action, not a bookmark, and the only viewer for saved bookmarks
+         was already visibility:hidden. Replaced by the matrix toggle
+         below, which reuses this slot in the actions column. -->
+    <ion-icon size="large" name="bookmark" [style]="bookmarkStyle"
+              style="display: none;"></ion-icon>
     <!-- Always show the ion-icon, but hide the numbers with visibility: hidden if they are 0 -->
     <p [ngStyle]="{'visibility': getFirstLike(video.comments) === 0 ? 'hidden' : 'visible'}">
       {{formatNumber(getFirstLike(video.comments))}}

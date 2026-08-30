@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { IonSlides } from '@ionic/angular';
 import { DataService } from "../../services/data.service";
 import { ToastController, LoadingController } from '@ionic/angular';
@@ -20,6 +21,15 @@ export class HomePage implements OnInit, OnDestroy {
   @ViewChild('searchbar', { static: false }) searchbar: IonSearchbar; // Use IonSearchbar instead of ElementRef
 
   private ws: WebSocket | null = null; // WebSocket instance
+
+  // Matrix-behind-the-feed toggle (the grid icon in the feed's action
+  // column). The iframe lives here rather than in app-feed so it can sit
+  // behind ALL the slides instead of inside whichever one is active.
+  showMatrixBg: boolean = false;
+  // Computed ONCE when the matrix is switched on, never in a getter: a
+  // getter would hand Angular a fresh SafeResourceUrl on every change
+  // detection pass, and the iframe would reload itself forever.
+  matrixBgUrl: SafeResourceUrl | null = null;
 
   showSearchBar: boolean = false; // Initially hidden
   showShield: boolean = true;
@@ -99,6 +109,19 @@ export class HomePage implements OnInit, OnDestroy {
   remoteMode: boolean = false;
   skipMode: boolean = true;
   
+  /** Show/hide the matrix behind the feed. The URL is built here, on the
+   *  way in, so it picks up whatever session the feed is currently on --
+   *  localStorage 'account' doubles as the session filter (see
+   *  data.service.getVideoList). */
+  toggleMatrixBg() {
+    this.showMatrixBg = !this.showMatrixBg;
+    if (this.showMatrixBg && !this.matrixBgUrl) {
+      const session = (window.localStorage.getItem('account') || '').trim();
+      const url = '/matrix' + (session ? '?session=' + encodeURIComponent(session) : '');
+      this.matrixBgUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    }
+  }
+
   disableShield() {
     // Logic to disable the shield
     this.showShield = false;
@@ -367,6 +390,7 @@ export class HomePage implements OnInit, OnDestroy {
     private toastController: ToastController,
     private loadingController: LoadingController,
     private router: Router,
+    private sanitizer: DomSanitizer,
   ) { }
 
   // Method to present a toast
