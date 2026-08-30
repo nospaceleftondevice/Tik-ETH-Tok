@@ -201,6 +201,19 @@ export class MatrixPage implements OnInit, OnDestroy {
 
   pairs: PairRow[] = [];
 
+  // How many mixes sit in each rating bucket, 5 down to 0, plus the
+  // unrated remainder. Rendered between the matrix and the pair list:
+  // the matrix shows WHERE the ratings are and the list shows WHICH,
+  // but neither answers "how much of this session have we actually
+  // got through", which is the question when the goal is to rate
+  // everything.
+  //
+  // Counted on the headline rating (ratings[0], the MAX across accounts)
+  // so a mix lands in exactly one bucket and the totals add up to the
+  // row count in the list below.
+  ratingCounts: { rating: number; count: number }[] = [];
+  unratedCount: number = 0;
+
   // How many rated mixes actually know what two songs they contain
   // (URL pair or artist pair). Drives the "why is there no matrix"
   // message: 0 here with a non-empty pair list means the session has no
@@ -590,6 +603,21 @@ export class MatrixPage implements OnInit, OnDestroy {
       .sort((a, b) => a.filename.localeCompare(b.filename));
     this.pairs = [...ratedRows, ...libraryRows];
 
+    const buckets = new Map<number, number>();
+    let unrated = 0;
+    for (const p of this.pairs) {
+      if (p.ratings && p.ratings.length) {
+        const headline = p.ratings[0];
+        buckets.set(headline, (buckets.get(headline) || 0) + 1);
+      } else {
+        unrated++;
+      }
+    }
+    this.ratingCounts = [5, 4, 3, 2, 1, 0].map(
+      (r) => ({ rating: r, count: buckets.get(r) || 0 }),
+    );
+    this.unratedCount = unrated;
+
     // Matrix axis is composed of four kinds of keys, in tier order:
     //   - Rated URL: keyed by source YT URL (x_url / y_url). Two positions
     //     per rated mix (symmetric). Label = 11-char YT id. Gold standard
@@ -854,6 +882,12 @@ export class MatrixPage implements OnInit, OnDestroy {
     // pulse attached to the right mix.
     this.resolvePulseCell();
     this.resolvePlayingCells();
+  }
+
+  /** Mixes carrying any rating at all — the complement of unratedCount.
+   *  Kept as a getter so it can't drift from the buckets it sums. */
+  get ratedTotal(): number {
+    return this.ratingCounts.reduce((a, b) => a + b.count, 0);
   }
 
   cellColor(rating: number | null): string {
