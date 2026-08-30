@@ -170,3 +170,16 @@ $matrix-bg-offset: 150px;
     flex: 0 0 auto;
   }
 }
+
+// Hide the per-slide info overlay while the matrix is showing. That's the
+// box pauseInactiveSlides injects at the bottom of each slide carrying the
+// session name and "Artist – Title × Artist – Title" -- useful over a
+// video, just clutter over the grid.
+//
+// ::ng-deep is required here, not stylistic. Those elements are built with
+// document.createElement inside pauseInactiveSlides, so they never receive
+// the _ngcontent attribute Angular adds to templated elements, and a
+// component-scoped selector cannot match them.
+.matrix-bg-on ::ng-deep [id^="project-"] {
+  display: none !important;
+}
