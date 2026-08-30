@@ -30,6 +30,12 @@ export class FeedComponent implements OnInit {
   // sit behind the slides rather than inside one of them.
   @Output() matrixToggled = new EventEmitter<void>();
 
+  // Asks the host page to show/hide the search bar.
+  @Output() searchToggled = new EventEmitter<void>();
+
+  // Tints the search icon while the bar is showing.
+  searchStyle: string = '';
+
   // Tints the toggle icon while the matrix is showing.
   matrixStyle: string = '';
 
@@ -118,6 +124,12 @@ export class FeedComponent implements OnInit {
   toggleListDirection(event: MouseEvent) {
     event.stopPropagation();
     this.reverseToggled.emit();
+  }
+
+  onSearchToggle(event: MouseEvent) {
+    event.stopPropagation();
+    this.searchStyle = this.searchStyle === 'color: #4dd0e1;' ? '' : 'color: #4dd0e1;';
+    this.searchToggled.emit();
   }
 
   onMatrixToggle(event: MouseEvent) {

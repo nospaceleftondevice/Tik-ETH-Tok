@@ -31,6 +31,19 @@ export class HomePage implements OnInit, OnDestroy {
   // detection pass, and the iframe would reload itself forever.
   matrixBgUrl: SafeResourceUrl | null = null;
 
+  // Zoom applied to the matrix iframe, driven by the slider that appears
+  // bottom-right while it's showing. The grid's cells are 14px, so the
+  // useful direction is usually OUT (< 1) to fit more of it on screen.
+  matrixZoom: number = 1;
+
+  // Must match $matrix-bg-offset in home.page.scss -- the iframe's height
+  // is derived from it, and the zoom recomputes that height.
+  private readonly MATRIX_BG_OFFSET_PX = 150;
+
+  // Once the user touches the search toggle, their choice sticks. null
+  // means "nobody has said", and the old slide-driven behaviour applies.
+  private searchBarManual: boolean | null = null;
+
   showSearchBar: boolean = false; // Initially hidden
   showShield: boolean = true;
 
@@ -113,6 +126,24 @@ export class HomePage implements OnInit, OnDestroy {
    *  way in, so it picks up whatever session the feed is currently on --
    *  localStorage 'account' doubles as the session filter (see
    *  data.service.getVideoList). */
+  toggleSearchBar() {
+    this.showSearchBar = !this.showSearchBar;
+    this.searchBarManual = this.showSearchBar;
+  }
+
+  /** Zoom the iframe by rendering it at 1/zoom the size and scaling it
+   *  back up. Scaling alone would just crop; resizing the element first
+   *  means a zoom-out genuinely shows MORE of the matrix. */
+  get matrixBgStyle(): { [k: string]: string } {
+    const z = this.matrixZoom || 1;
+    return {
+      width: (100 / z) + 'vw',
+      height: 'calc((55vh + ' + this.MATRIX_BG_OFFSET_PX + 'px) / ' + z + ')',
+      transform: 'scale(' + z + ')',
+      'transform-origin': 'top left',
+    };
+  }
+
   toggleMatrixBg() {
     this.showMatrixBg = !this.showMatrixBg;
     if (this.showMatrixBg && !this.matrixBgUrl) {
@@ -962,10 +993,15 @@ export class HomePage implements OnInit, OnDestroy {
       const slides = document.querySelectorAll('ion-slide');
 
 	 
-      if (activeIndex == 0 )
-	this.hideSearchbar();
-      else
-	this.showSearchbar();
+      // Slide-driven show/hide, but only until the user expresses a
+      // preference with the search toggle. After that their choice wins,
+      // otherwise every swipe would undo it.
+      if (this.searchBarManual === null) {
+        if (activeIndex == 0)
+          this.hideSearchbar();
+        else
+          this.showSearchbar();
+      }
 
       slides.forEach((slide, index) => {
         const videos = slide.querySelectorAll('video');

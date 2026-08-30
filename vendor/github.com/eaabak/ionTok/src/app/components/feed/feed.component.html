@@ -34,6 +34,13 @@
 </p>
 </div>
  
+  <!-- Search-bar toggle. Sits directly under the heart. The app used to
+       show/hide the searchbar automatically on slide change; this makes
+       it the user's choice instead. -->
+  <div (click)="onSearchToggle($event)" title="Show/hide the search bar">
+    <ion-icon size="large" name="search-outline" [style]="searchStyle"></ion-icon>
+  </div>
+
   <!-- Matrix background toggle. Shows the matrix for the current session
        behind the feed; the stars and searchbar keep working on top of it. -->
   <div (click)="onMatrixToggle($event)" title="Show/hide the matrix behind the feed">

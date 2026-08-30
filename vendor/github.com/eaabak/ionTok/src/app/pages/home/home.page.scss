@@ -107,3 +107,38 @@ $matrix-bg-offset: 150px;
     visibility: hidden;
   }
 }
+
+// Zoom control for the matrix iframe. Bottom-right, clear of the action
+// column on the right edge and of the video above. z-index in the same
+// band as the searchbar so it stays above the slides (z-index 1 while
+// the matrix is up) and far above the iframe at -1.
+.matrix-zoom {
+  position: fixed;
+  right: 12px;
+  bottom: 10px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 46vw;
+  max-width: 320px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+
+  ion-range {
+    flex: 1 1 auto;
+    padding: 0;
+    --bar-background: rgba(255, 255, 255, 0.35);
+    --bar-background-active: #4dd0e1;
+    --knob-background: #4dd0e1;
+    --height: 28px;
+  }
+
+  ion-icon {
+    color: #fff;
+    font-size: 16px;
+    flex: 0 0 auto;
+  }
+}
