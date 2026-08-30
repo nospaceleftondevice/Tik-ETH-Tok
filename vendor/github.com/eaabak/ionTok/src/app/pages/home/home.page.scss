@@ -141,6 +141,10 @@ $matrix-bg-offset: 150px;
   padding: 8px 0;
   border-radius: 20px 0 0 20px;
   background: rgba(0, 0, 0, 0.55);
+  // Stop the browser treating a drag here as a scroll/pan before any JS
+  // handler gets a say. Without it the page moves under the slider even
+  // when Swiper has been told to ignore the gesture.
+  touch-action: none;
   backdrop-filter: blur(2px);
 
   .range-wrap {
