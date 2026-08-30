@@ -94,7 +94,9 @@
                 (rated)="onFeedRated($event)"
                 (reverseToggled)="toggleVideoListOrder()"
                 (matrixToggled)="toggleMatrixBg()"
-                (searchToggled)="toggleSearchBar()"></app-feed>
+                (searchToggled)="toggleSearchBar()"
+                [matrixOn]="showMatrixBg"
+                (locatePlaying)="locatePlayingInMatrix()"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
 

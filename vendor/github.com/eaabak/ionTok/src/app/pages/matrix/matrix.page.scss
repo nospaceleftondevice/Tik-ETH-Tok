@@ -918,3 +918,45 @@ $playing-color: #69f0ae;
   color: $text-muted;
   font-size: 11px;
 }
+
+// ---- currently-playing row in the pair list ----
+//
+// The rating swatch alternates with a play icon rather than being
+// replaced by it: the rating is the reason the row is interesting, so
+// hiding it to say "this is playing" trades one piece of information for
+// another. Alternating keeps both.
+//
+// Both halves run the same duration on opposite phases, so exactly one
+// is visible at a time and the swap reads as a single element changing.
+.dot-stack.swap-playing .dot {
+  animation: pair-swap-out 1.8s ease-in-out infinite;
+}
+
+.dot-stack.swap-playing .play-swap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
+  color: $playing-color;
+  animation: pair-swap-in 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pair-swap-out {
+  0%, 42%   { opacity: 1; }
+  50%, 92%  { opacity: 0; }
+  100%      { opacity: 1; }
+}
+
+@keyframes pair-swap-in {
+  0%, 42%   { opacity: 0; }
+  50%, 92%  { opacity: 1; }
+  100%      { opacity: 0; }
+}
+
+// Faint tint so the row itself is findable when scrolled to, not just
+// its swatch.
+.pair-table tbody tr.is-playing-row {
+  background: rgba(105, 240, 174, 0.07);
+}

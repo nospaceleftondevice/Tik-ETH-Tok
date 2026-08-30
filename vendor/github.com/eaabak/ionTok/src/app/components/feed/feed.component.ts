@@ -33,6 +33,13 @@ export class FeedComponent implements OnInit {
   // Asks the host page to show/hide the search bar.
   @Output() searchToggled = new EventEmitter<void>();
 
+  // Whether the matrix background is currently up. Gates the info button,
+  // which has nothing to act on otherwise.
+  @Input() matrixOn: boolean = false;
+
+  // Asks the host page to scroll the matrix's pair list to what's playing.
+  @Output() locatePlaying = new EventEmitter<void>();
+
   // Tints the search icon while the bar is showing.
   searchStyle: string = '';
 
@@ -124,6 +131,11 @@ export class FeedComponent implements OnInit {
   toggleListDirection(event: MouseEvent) {
     event.stopPropagation();
     this.reverseToggled.emit();
+  }
+
+  onLocatePlaying(event: MouseEvent) {
+    event.stopPropagation();
+    this.locatePlaying.emit();
   }
 
   onSearchToggle(event: MouseEvent) {

@@ -351,6 +351,7 @@ export class MatrixPage implements OnInit, OnDestroy {
     }, this.AUTO_REFRESH_MS);
 
     this.startEventPolling();
+    window.addEventListener('message', this.onParentMessage);
   }
 
   ngOnDestroy() {
@@ -367,6 +368,7 @@ export class MatrixPage implements OnInit, OnDestroy {
       this.rippleClearHandle = null;
     }
     this.stopEventPolling();
+    window.removeEventListener('message', this.onParentMessage);
   }
 
   /** Session input is Enter-only — the [(ngModel)] in the template
@@ -1243,6 +1245,40 @@ export class MatrixPage implements OnInit, OnDestroy {
   isPlayingCell(i: number, j: number): boolean {
     return this.playingCells.has(i + '-' + j);
   }
+
+  /** Is this pair-list row the mix currently playing in the feed?
+   *
+   *  Resolved through the cell rather than by comparing video ids: a
+   *  PairRow carries only its group's REPRESENTATIVE id, while the
+   *  now-playing report names whichever member is actually on screen.
+   *  Those differ often enough to matter, and both resolve to the same
+   *  cell, so the cell is the reliable comparison. */
+  isPlayingPair(p: PairRow): boolean {
+    const keys = this.pairAxisKeys(p);
+    const cell = this.locateCell(p.videoId, keys);
+    return !!cell && this.playingCells.has(cell[0] + '-' + cell[1]);
+  }
+
+  /** Scroll the pair list to whatever is playing. Driven by the info
+   *  button in the feed, which reaches us by postMessage since we're in
+   *  its iframe. No-op when nothing is playing or it isn't on this
+   *  matrix -- silently doing nothing beats jumping somewhere arbitrary. */
+  scrollToPlayingRow() {
+    const idx = this.pairs.findIndex((p) => this.isPlayingPair(p));
+    if (idx < 0) return;
+    setTimeout(() => {
+      const el = document.querySelector(
+        `.pair-table tbody tr[data-pair-row="${idx}"]`,
+      ) as HTMLElement | null;
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
+  }
+
+  private onParentMessage = (e: MessageEvent) => {
+    if (e.origin !== window.location.origin) return;
+    if (!e.data || e.data.type !== 'matrix:scroll-to-playing') return;
+    this.scrollToPlayingRow();
+  };
 
   /** Axis keys for a rating event. Same tiers, same order, same helper as
    *  the matrix build and the pair-list click-to-locate. */
