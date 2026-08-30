@@ -166,6 +166,18 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
 
+  /** Relay the feed's info button into the embedded matrix, which owns
+   *  the pair list and knows which row is playing. Targeted at our own
+   *  origin rather than '*'. */
+  locatePlayingInMatrix() {
+    const frame = document.querySelector('iframe.matrix-bg') as HTMLIFrameElement | null;
+    if (!frame || !frame.contentWindow) return;
+    frame.contentWindow.postMessage(
+      { type: 'matrix:scroll-to-playing' },
+      window.location.origin,
+    );
+  }
+
   private onMatrixMessage = (e: MessageEvent) => {
     if (e.origin !== window.location.origin) return;
     const d = e.data;

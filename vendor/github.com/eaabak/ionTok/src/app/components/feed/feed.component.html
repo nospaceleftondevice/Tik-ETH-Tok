@@ -50,6 +50,14 @@
     <ion-icon size="large" name="search-outline" [style]="searchStyle"></ion-icon>
   </div>
 
+  <!-- Jump the matrix's pair list to whatever is playing. Only useful
+       while the matrix is up, so it only appears then. -->
+  <div *ngIf="matrixOn" (click)="onLocatePlaying($event)"
+       title="Scroll the list to the song playing now"
+       style="margin-bottom: 44px;">
+    <ion-icon size="large" name="information-circle-outline"></ion-icon>
+  </div>
+
   <!-- Matrix background toggle. Shows the matrix for the current session
        behind the feed; the stars and searchbar keep working on top of it. -->
   <div (click)="onMatrixToggle($event)" title="Show/hide the matrix behind the feed"

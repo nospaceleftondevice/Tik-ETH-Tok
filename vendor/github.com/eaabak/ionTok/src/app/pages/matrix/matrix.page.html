@@ -210,7 +210,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let p of pairs" [class.is-library]="p.source === 'library'">
+        <tr *ngFor="let p of pairs; let pi = index"
+            [attr.data-pair-row]="pi"
+            [class.is-library]="p.source === 'library'"
+            [class.is-playing-row]="isPlayingPair(p)">
           <td class="col-rating"
               [class.rating-clickable]="p.ratings && p.ratings.length"
               (click)="onRatingClick(p)"
@@ -222,7 +225,8 @@
                  (2) Rated entry with no ratings (search-mode unrated)
                      or a library entry → small grey "lib" badge. Both
                      mean "no rating recorded by anyone." -->
-            <span class="dot-stack" *ngIf="p.ratings && p.ratings.length">
+            <span class="dot-stack" *ngIf="p.ratings && p.ratings.length"
+                  [class.swap-playing]="isPlayingPair(p)">
               <span class="dot dot-back"
                     *ngIf="p.ratings.length > 1"
                     [style.background]="ratingColor(p.ratings[1])"
@@ -233,6 +237,10 @@
                     [class.bordered]="p.ratings[0] === 0">
                 <span class="dot-num">{{ p.ratings[0] }}</span>
               </span>
+              <!-- Alternates with the dot above while this mix is playing,
+                   so the row is findable without losing the rating. -->
+              <ion-icon class="play-swap" *ngIf="isPlayingPair(p)"
+                        name="play"></ion-icon>
             </span>
             <span class="library-badge"
                   *ngIf="!p.ratings || !p.ratings.length"
