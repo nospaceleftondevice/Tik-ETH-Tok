@@ -32,3 +32,38 @@ ion-slides {
   }
 }
 
+
+// ---- matrix behind the feed ----
+//
+// Toggled by the grid icon in the feed's action column. Pulled UP by
+// $matrix-bg-offset so the matrix's own toolbar and filter row land
+// under #float (the playing video, fixed at top:0 height:45vh) and its
+// "N loaded ..." status line sits just above this page's searchbar at
+// top:45%.
+//
+// Nudge $matrix-bg-offset if the seam drifts: larger moves the matrix
+// content UP (more of its header hidden), smaller moves it DOWN.
+$matrix-bg-offset: 150px;
+
+.matrix-bg {
+  position: fixed;
+  left: 0;
+  width: 100vw;
+  top: calc(45vh - #{$matrix-bg-offset});
+  height: calc(55vh + #{$matrix-bg-offset});
+  border: 0;
+  // Deliberately low. #float is 9998, the searchbar 9999, and the feed's
+  // action icons are `position:fixed; z-index:9999 !important`, so every
+  // control keeps working on top of this without being touched.
+  z-index: 5;
+  background: #000;
+}
+
+// The slide's own <video> would cover the iframe. It rarely renders in
+// practice (the visible player is #float), so hiding it while the matrix
+// is up costs nothing and guarantees the grid is actually visible.
+.matrix-bg-on {
+  ion-slides ion-slide video {
+    visibility: hidden;
+  }
+}

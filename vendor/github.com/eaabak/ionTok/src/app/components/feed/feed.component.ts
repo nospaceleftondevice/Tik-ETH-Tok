@@ -25,6 +25,14 @@ export class FeedComponent implements OnInit {
   // videoList and re-anchors the current slide.
   @Output() reverseToggled = new EventEmitter<void>();
 
+  // Asks the host page to show/hide the matrix behind the feed. The feed
+  // owns the button but not the iframe, which lives in home.page so it can
+  // sit behind the slides rather than inside one of them.
+  @Output() matrixToggled = new EventEmitter<void>();
+
+  // Tints the toggle icon while the matrix is showing.
+  matrixStyle: string = '';
+
   option: AnimationOptions = {
     path: './assets/animations/music.json'
   };
@@ -110,6 +118,13 @@ export class FeedComponent implements OnInit {
   toggleListDirection(event: MouseEvent) {
     event.stopPropagation();
     this.reverseToggled.emit();
+  }
+
+  onMatrixToggle(event: MouseEvent) {
+    // Must not fall through to the slide/rating handlers underneath.
+    event.stopPropagation();
+    this.matrixStyle = this.matrixStyle === 'color: #4dd0e1;' ? '' : 'color: #4dd0e1;';
+    this.matrixToggled.emit();
   }
 
   buttonClicked(event: MouseEvent, button: string, video_id: number) {

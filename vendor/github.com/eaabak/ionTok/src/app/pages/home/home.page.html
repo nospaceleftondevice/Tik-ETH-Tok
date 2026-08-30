@@ -5,7 +5,7 @@
       <strong>For You</strong></ion-title>
   </ion-toolbar>
 </ion-header-->
-<ion-content fullscreen>
+<ion-content fullscreen [class.matrix-bg-on]="showMatrixBg">
     <!-- Shield overlay -->
     <div 
       *ngIf="showShield" 
@@ -92,7 +92,8 @@
       <!--button (click)="loadMoreVideos()" style="position: absolute; top: 20px; left: 10px">Load More</button-->
       <app-feed *ngIf="i !== 0" [video]="video" [listReversed]="videoListReversed"
                 (rated)="onFeedRated($event)"
-                (reverseToggled)="toggleVideoListOrder()"></app-feed>
+                (reverseToggled)="toggleVideoListOrder()"
+                (matrixToggled)="toggleMatrixBg()"></app-feed>
       <app-footer [video]="video"></app-footer>
     </ion-slide>
 
@@ -134,7 +135,20 @@
 
 <div>
 
-    <!-- Add your iframe here -->
+    <!--
+      Matrix behind the feed. Pulled UP by $matrix-bg-offset so the
+      matrix's own toolbar and filter row land under #float (the playing
+      video, fixed at top:0 height:45vh) and its "N loaded ..." status
+      line sits just above this page's searchbar at top:45%.
+
+      Low z-index on purpose: #float is 9998, the searchbar 9999, and the
+      feed's action icons are `position:fixed; z-index:9999 !important`,
+      so all of them keep working on top of it untouched.
+    -->
+    <iframe *ngIf="showMatrixBg"
+            class="matrix-bg"
+            [src]="matrixBgUrl"
+            title="Matrix for the current session"></iframe>
 
 
   <ion-searchbar *ngIf="showSearchBar" #searchbar (keyup)="onSearchKeyup($event)" id="search" style="z-index: 9999;position: absolute; top: 45%; left: 0px;" [placeholder]="searchPlaceholder"></ion-searchbar>
