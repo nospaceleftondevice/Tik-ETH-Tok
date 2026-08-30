@@ -63,8 +63,15 @@ export class HomePage implements OnInit, OnDestroy {
   private nowPlayingHeartbeatHandle: any = null;
   private lastReportedPlayingId: number | null = null;
   // Comfortably inside the backend's 90s TTL, so two beats can be missed
-  // (backgrounded phone, flaky wifi) before the box disappears.
+  // (flaky wifi) before the box disappears.
   private readonly NOW_PLAYING_HEARTBEAT_MS = 30 * 1000;
+  // How long the feed keeps claiming to be playing after the tab goes
+  // hidden. Long enough that switching to the matrix tab on the same
+  // machine doesn't drop the box; short enough that a tab left open
+  // overnight doesn't hold a phantom box on the wall display forever.
+  private readonly NOW_PLAYING_HIDDEN_GRACE_MS = 10 * 60 * 1000;
+  // Timestamp the tab went hidden, or null while it's visible.
+  private hiddenSince: number | null = null;
 
   // Per-touch counters used to gate the scroll-past hook so it only
   // fires for USER-initiated slide changes. The upstream remote-control
@@ -835,19 +842,50 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private startNowPlayingHeartbeat() {
+    document.addEventListener('visibilitychange', this.onFeedVisibilityChange);
     this.nowPlayingHeartbeatHandle = setInterval(() => {
-      // Nothing to refresh while backgrounded, and a phone in a pocket
-      // isn't playing anything anyone should see boxed on a wall display.
-      if (document.hidden) return;
+      // Keep reporting while the tab is hidden.
+      //
+      // This used to bail out immediately on document.hidden, reasoning
+      // that a phone in a pocket isn't playing anything worth boxing.
+      // That's right for two devices and WRONG for one: switching from
+      // this tab to the matrix tab makes the feed hidden, the heartbeat
+      // stopped, and 90s later the backend expired the row and the box
+      // silently vanished — the single most obvious way to look at the
+      // matrix is the way that broke it.
+      //
+      // A hidden tab still holds a real position in the deck, so it still
+      // represents what's playing. The grace period is what stops a tab
+      // forgotten overnight from pinning a phantom box on the wall
+      // display: past it we go quiet and the row expires on its own.
+      if (this.hiddenSince !== null &&
+          Date.now() - this.hiddenSince > this.NOW_PLAYING_HIDDEN_GRACE_MS) {
+        return;
+      }
       this.reportNowPlaying(this.lastSlideIndex, true);
     }, this.NOW_PLAYING_HEARTBEAT_MS);
   }
+
+  // Arrow property so `this` binds and removeEventListener gets the same
+  // reference back in ngOnDestroy.
+  private onFeedVisibilityChange = () => {
+    if (document.hidden) {
+      this.hiddenSince = Date.now();
+    } else {
+      // Back in front: reset the grace window and report at once rather
+      // than waiting out the interval, so the box reappears immediately
+      // if it had aged out.
+      this.hiddenSince = null;
+      this.reportNowPlaying(this.lastSlideIndex, true);
+    }
+  };
 
   ngOnDestroy() {
     if (this.nowPlayingHeartbeatHandle !== null) {
       clearInterval(this.nowPlayingHeartbeatHandle);
       this.nowPlayingHeartbeatHandle = null;
     }
+    document.removeEventListener('visibilitychange', this.onFeedVisibilityChange);
     if (this.ws) {
       this.ws.close();
     } 
