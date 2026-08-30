@@ -882,6 +882,39 @@ export class MatrixPage implements OnInit, OnDestroy {
     // pulse attached to the right mix.
     this.resolvePulseCell();
     this.resolvePlayingCells();
+
+    this.publishCountsToParent();
+  }
+
+  /**
+   * Hand the rating breakdown to the embedding page.
+   *
+   * The feed shows this matrix in an iframe and wants the same counts in
+   * a legend at the top of the screen. It can't compute them itself
+   * without repeating the /mixes query -- which scans the videos table
+   * and a 12K-row lookup -- so the page that already has the numbers
+   * pushes them out instead.
+   *
+   * postMessage rather than letting the parent read our DOM: same-origin
+   * makes that possible, but it would couple the feed to this page's
+   * markup, and the counts would go stale silently whenever the markup
+   * changed. Targeted at our own origin, never '*'.
+   */
+  private publishCountsToParent() {
+    if (window.parent === window) return;   // not embedded; nothing to tell
+    try {
+      window.parent.postMessage({
+        type: 'matrix:rating-counts',
+        counts: this.ratingCounts,
+        unrated: this.unratedCount,
+        rated: this.ratedTotal,
+        total: this.pairs.length,
+      }, window.location.origin);
+    } catch (e) {
+      // A cross-origin embed would throw here. Purely decorative, so a
+      // failure must not disturb the matrix itself.
+      console.warn('matrix.page: could not publish counts to parent', e);
+    }
   }
 
   /** Mixes carrying any rating at all — the complement of unratedCount.
