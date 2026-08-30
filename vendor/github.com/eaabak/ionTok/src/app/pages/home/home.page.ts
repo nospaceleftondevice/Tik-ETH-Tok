@@ -47,6 +47,10 @@ export class HomePage implements OnInit, OnDestroy {
   // Rating breakdown for the legend shown at the top while the matrix is
   // up. Pushed over postMessage by the embedded matrix page, which
   // already has the numbers -- see publishCountsToParent there.
+  // True once the info button has scrolled the matrix's list away from
+  // the top, so the next slide change knows to put it back.
+  private matrixScrolledToPlaying: boolean = false;
+
   matrixCounts: { rating: number; count: number }[] = [];
   matrixUnrated: number = 0;
   matrixRated: number = 0;
@@ -170,12 +174,20 @@ export class HomePage implements OnInit, OnDestroy {
    *  the pair list and knows which row is playing. Targeted at our own
    *  origin rather than '*'. */
   locatePlayingInMatrix() {
+    if (!this.postToMatrix('matrix:scroll-to-playing')) return;
+    // Remember the list has been scrolled away from the top, so the next
+    // slide can put it back. Only then -- resetting on every slide would
+    // fight the user any time they scrolled the list themselves.
+    this.matrixScrolledToPlaying = true;
+  }
+
+  /** Send a message into the embedded matrix. False when there's no
+   *  iframe to talk to. Targeted at our own origin, never '*'. */
+  private postToMatrix(type: string): boolean {
     const frame = document.querySelector('iframe.matrix-bg') as HTMLIFrameElement | null;
-    if (!frame || !frame.contentWindow) return;
-    frame.contentWindow.postMessage(
-      { type: 'matrix:scroll-to-playing' },
-      window.location.origin,
-    );
+    if (!frame || !frame.contentWindow) return false;
+    frame.contentWindow.postMessage({ type }, window.location.origin);
+    return true;
   }
 
   private onMatrixMessage = (e: MessageEvent) => {
@@ -1345,6 +1357,14 @@ async onSlideDidChange() {
   // unlike the skip hook above which is gated to user-initiated ones —
   // what's playing is what's playing regardless of how it got there.
   this.reportNowPlaying(index);
+
+  // Moving to another song makes a list scrolled to the PREVIOUS one
+  // misleading, so put it back to the top -- but only when the info
+  // button was what scrolled it, so a manual scroll isn't undone.
+  if (this.matrixScrolledToPlaying) {
+    this.matrixScrolledToPlaying = false;
+    this.postToMatrix('matrix:scroll-top');
+  }
 
   if (remote == 'true')
     this.remoteMode = true;

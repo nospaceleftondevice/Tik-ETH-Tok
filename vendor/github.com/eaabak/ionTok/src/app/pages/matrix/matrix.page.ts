@@ -1274,10 +1274,23 @@ export class MatrixPage implements OnInit, OnDestroy {
     }, 0);
   }
 
+  /** Back to the top of the page. Uses ion-content's own scrollToTop:
+   *  the page scrolls inside that element's shadow scroll container, so
+   *  window.scrollTo would move nothing. */
+  scrollToTop() {
+    const content = document.querySelector('ion-content') as any;
+    if (content && typeof content.scrollToTop === 'function') {
+      content.scrollToTop(300);
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   private onParentMessage = (e: MessageEvent) => {
     if (e.origin !== window.location.origin) return;
-    if (!e.data || e.data.type !== 'matrix:scroll-to-playing') return;
-    this.scrollToPlayingRow();
+    const t = e.data && e.data.type;
+    if (t === 'matrix:scroll-to-playing') this.scrollToPlayingRow();
+    else if (t === 'matrix:scroll-top') this.scrollToTop();
   };
 
   /** Axis keys for a rating event. Same tiers, same order, same helper as
