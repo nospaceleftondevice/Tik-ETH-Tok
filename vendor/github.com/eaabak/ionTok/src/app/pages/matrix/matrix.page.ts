@@ -201,6 +201,13 @@ export class MatrixPage implements OnInit, OnDestroy {
 
   pairs: PairRow[] = [];
 
+  // How many rated mixes actually know what two songs they contain
+  // (URL pair or artist pair). Drives the "why is there no matrix"
+  // message: 0 here with a non-empty pair list means the session has no
+  // source-pair data at all, which is the common case — only 3 of 75
+  // sessions have both pair data and ratings.
+  placeableCount: number = 0;
+
   axisUrls: string[] = [];
   axisShort: string[] = [];
   axisTooltip: string[] = [];
@@ -591,12 +598,9 @@ export class MatrixPage implements OnInit, OnDestroy {
     //     mp4 lacks a tvnn atom (ffmpeg-generated files etc.) but x/y
     //     artists are populated. Two positions per mix (symmetric). Label
     //     = artist name. Mirrors the backend dedup's "artists" tier.
-    //   - Rated file-size (FALLBACK): keyed by `size:<bytes>`. Used when
-    //     we have NEITHER URLs nor an artist pair, but the mp4 byte size
-    //     came back from S3 ListObjects. Single position per file
-    //     (sym cell at diagonal i=i); the file gets one label and its
-    //     rating shows on the diagonal. Not as informative as the
-    //     other tiers but signals "rated, source endpoints unknown."
+    //   (A byte-size tier used to sit here. It gave every mix its own row
+    //   and column for a single dot on the diagonal — see axisKeysFor()
+    //   at the bottom of this file for why it was removed.)
     //   - Library: keyed by `lib:<mp4 stem>`. One position per library
     //     entry. Per user spec — cells stay blank, the entry just
     //     contributes an axis row/column.
@@ -649,19 +653,6 @@ export class MatrixPage implements OnInit, OnDestroy {
       }
     }
 
-    // Per-file-size metadata for the last-resort axis. Only rated rows
-    // with file_size AND no URLs AND no artist pair land here.
-    const sizeMeta = new Map<string, { label: string }>();
-    for (const v of rated) {
-      if (v.x_url && v.y_url) continue;
-      if (v.x_artist && v.y_artist) continue;
-      if (!v.file_size) continue;
-      const key = 'size:' + v.file_size;
-      if (!sizeMeta.has(key)) {
-        sizeMeta.set(key, { label: mp4Stem(v.filename) });
-      }
-    }
-
     // Add rated URL axis entries.
     for (const u of urlMeta.keys()) {
       const m = urlMeta.get(u)!;
@@ -681,15 +672,6 @@ export class MatrixPage implements OnInit, OnDestroy {
       axisInfo.set(k, {
         label: artist,
         tooltip: m.title ? `${artist} — ${m.title}  (no URL extracted)` : `${artist}  (no URL extracted)`,
-        rated: true,
-      });
-    }
-    // Add file-size-fallback axis entries.
-    for (const k of sizeMeta.keys()) {
-      const m = sizeMeta.get(k)!;
-      axisInfo.set(k, {
-        label: m.label,
-        tooltip: `${m.label}  (no URL or artist extracted)`,
         rated: true,
       });
     }
@@ -723,7 +705,7 @@ export class MatrixPage implements OnInit, OnDestroy {
       }
     }
 
-    // Sort: rated URL → rated artist → rated size → library.
+    // Sort: rated URL → rated artist → library.
     // Within each tier, sort by mean rating desc; library alphabetical.
     const meanRatingFor = (member_filter: (v: MatrixVideo) => boolean): number => {
       const rs: number[] = [];
@@ -742,25 +724,20 @@ export class MatrixPage implements OnInit, OnDestroy {
         !v.x_url && !v.y_url && (v.x_artist === artist || v.y_artist === artist)
       ));
     }
-    for (const k of sizeMeta.keys()) {
-      const bytes = Number(k.substring(5));
-      meanByKey.set(k, meanRatingFor((v) =>
-        !v.x_url && !v.y_url && !(v.x_artist && v.y_artist) && v.file_size === bytes
-      ));
-    }
     const sortedUrls = Array.from(urlMeta.keys()).sort(
       (a, b) => meanByKey.get(b)! - meanByKey.get(a)!,
     );
     const sortedArtists = Array.from(artistMeta.keys()).sort(
       (a, b) => meanByKey.get(b)! - meanByKey.get(a)!,
     );
-    const sortedSizes = Array.from(sizeMeta.keys()).sort(
-      (a, b) => meanByKey.get(b)! - meanByKey.get(a)!,
-    );
     const sortedLibrary = Array.from(axisInfo.keys())
       .filter((k) => k.startsWith('lib:'))
       .sort((a, b) => axisInfo.get(a)!.label.localeCompare(axisInfo.get(b)!.label));
-    const sortedAxis = [...sortedUrls, ...sortedArtists, ...sortedSizes, ...sortedLibrary];
+    const sortedAxis = [...sortedUrls, ...sortedArtists, ...sortedLibrary];
+
+    this.placeableCount = rated.filter(
+      (v) => axisKeysFor(v.x_url, v.y_url, v.x_artist, v.y_artist) !== null,
+    ).length;
 
     this.axisUrls = sortedAxis;
     this.axisShort = sortedAxis.map((k) => axisInfo.get(k)!.label);
@@ -802,7 +779,7 @@ export class MatrixPage implements OnInit, OnDestroy {
     // Per-row axis-key resolution — see axisKeysFor() at the bottom of
     // this file for the tier order.
     const resolveAxisPair = (v: MatrixVideo): [string, string] | null =>
-      axisKeysFor(v.x_url, v.y_url, v.x_artist, v.y_artist, v.file_size);
+      axisKeysFor(v.x_url, v.y_url, v.x_artist, v.y_artist);
 
     // Place rated entries on the matrix. Each video contributes its full
     // ratings[] into the cell; we keep all ratings sorted desc so the
@@ -816,10 +793,10 @@ export class MatrixPage implements OnInit, OnDestroy {
       const j = idx.get(yKey);
       if (i === undefined || j === undefined) continue;
       if (this.strict && needle) {
-        if (xKey.startsWith('art:') || xKey.startsWith('size:')) {
+        if (xKey.startsWith('art:')) {
           // Strict q-match was a URL-tier-only feature (it uses urlMeta).
-          // For artist/size fallback tiers, fall back to matching on the
-          // row's own title/artist fields.
+          // For the artist tier, fall back to matching on the row's own
+          // title/artist fields.
           const hay = [v.x_title, v.y_title, v.x_artist, v.y_artist]
             .filter(Boolean)
             .map((s) => s!.toLowerCase())
@@ -920,7 +897,7 @@ export class MatrixPage implements OnInit, OnDestroy {
   // defers to the shared resolver.
   private pairAxisKeys(p: PairRow): [string, string] | null {
     if (p.source === 'library') return null;
-    return axisKeysFor(p.xUrl, p.yUrl, p.xArtist, p.yArtist, p.fileSize);
+    return axisKeysFor(p.xUrl, p.yUrl, p.xArtist, p.yArtist);
   }
 
   // Click a pair-list rating → highlight the matching matrix cell and
@@ -1156,7 +1133,7 @@ export class MatrixPage implements OnInit, OnDestroy {
   private applyPlaying(entries: PlayingEntry[]) {
     this.playingIds = entries.map((e) => ({
       videoId: e.video_id,
-      keys: axisKeysFor(e.x_url, e.y_url, e.x_artist, e.y_artist, e.file_size),
+      keys: axisKeysFor(e.x_url, e.y_url, e.x_artist, e.y_artist),
     }));
     this.resolvePlayingCells();
   }
@@ -1179,6 +1156,21 @@ export class MatrixPage implements OnInit, OnDestroy {
     this.playingCells = cells;
   }
 
+  /** True when we have mixes to show but none of them knows its two
+   *  source songs — so there is no matrix to draw, only a list. Kept
+   *  distinct from "no results", which the empty states already cover. */
+  get noPairData(): boolean {
+    return !this.loading && !this.errorMessage && this.pairs.length > 0 && this.placeableCount === 0;
+  }
+
+  /** True when SOME mixes are on the grid but most aren't. Without a note
+   *  saying so, a session where 1 of 95 mixes has source data renders a
+   *  2x2 grid next to a 95-row list and just looks broken — the matrix
+   *  isn't wrong, it's showing everything it legitimately can. */
+  get partialPairData(): boolean {
+    return this.placeableCount > 0 && this.placeableCount < this.ratedCount;
+  }
+
   /** Template predicate for the playing box. Set lookup, so it stays cheap
    *  called once per cell per render. */
   isPlayingCell(i: number, j: number): boolean {
@@ -1188,7 +1180,7 @@ export class MatrixPage implements OnInit, OnDestroy {
   /** Axis keys for a rating event. Same tiers, same order, same helper as
    *  the matrix build and the pair-list click-to-locate. */
   private eventAxisKeys(e: RatingEvent): [string, string] | null {
-    return axisKeysFor(e.x_url, e.y_url, e.x_artist, e.y_artist, e.file_size);
+    return axisKeysFor(e.x_url, e.y_url, e.x_artist, e.y_artist);
   }
 
   /** Re-point pulseRow/pulseCol at wherever the pulsing mix now lives.
@@ -1299,31 +1291,43 @@ export class MatrixPage implements OnInit, OnDestroy {
 /**
  * Canonical matrix axis-key pair for a mix, in tier order:
  *
- *   1. source YouTube URL pair        → [x_url, y_url]        (symmetric)
- *   2. artist pair, when URLs missing → ['art:X', 'art:Y']    (symmetric)
- *   3. mp4 byte size, last resort     → ['size:N', 'size:N']  (diagonal)
+ *   1. source YouTube URL pair        → [x_url, y_url]     (symmetric)
+ *   2. artist pair, when URLs missing → ['art:X', 'art:Y'] (symmetric)
  *
- * Returns null when no tier applies — a library row, or a rated row with
- * no URL, artist or size information at all.
+ * Returns null when neither applies — the mix has no idea what two songs
+ * it is made of, so there is no intersection to place it at.
+ *
+ * There used to be a third tier keyed on the mp4's byte size. It existed
+ * to say "this is rated, source endpoints unknown", and it was a mistake:
+ * a size key can only ever pair with ITSELF, so every such mix got its own
+ * row AND its own column and one dot where they crossed. N mixes produced
+ * an N x N grid to display N dots on the diagonal — 94x94 = 8,836 cells
+ * for 94 dots on session 153-feb-2-2025-left, with 94 identical truncated
+ * filenames for axis labels.
+ *
+ * Backend survey of all 75 sessions: only 2,591 of 28,264 videos (9.2%)
+ * have both URLs, and only three sessions have pair data AND ratings. So
+ * the size tier wasn't a rare fallback, it was the common case, and it
+ * was turning most sessions' "pair matrix" into a diagonal line that
+ * conveyed strictly less than the ranked list underneath it.
+ *
+ * Those mixes still appear in the pair list. They just no longer claim an
+ * axis position they can't justify.
  *
  * Single source of truth on purpose. buildMatrix() places dots with it,
- * the pair-list click-to-locate finds cells with it, and the live
- * rating-event handler resolves the ripple target with it. These three
- * MUST agree: when they drift, a rating either ripples on the wrong cell
- * or resolves to nothing and silently produces no ripple at all. The
- * backend's /mixes and /mixes/events endpoints feed the same fields, with
- * the same URL-from-title fallback applied, for the same reason.
+ * the pair-list click-to-locate finds cells with it, and the live rating
+ * and now-playing handlers resolve markers with it. These MUST agree:
+ * when they drift, a marker lands on the wrong cell or resolves to
+ * nothing and silently does nothing at all.
  */
 function axisKeysFor(
   xUrl: string | null,
   yUrl: string | null,
   xArtist: string | null,
   yArtist: string | null,
-  fileSize: number | null,
 ): [string, string] | null {
   if (xUrl && yUrl) return [xUrl, yUrl];
   if (xArtist && yArtist) return ['art:' + xArtist, 'art:' + yArtist];
-  if (fileSize) return ['size:' + fileSize, 'size:' + fileSize];
   return null;
 }
 

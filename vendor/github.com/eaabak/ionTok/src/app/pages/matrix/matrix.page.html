@@ -85,6 +85,28 @@
     </span>
   </div>
 
+  <!--
+    Explains an absent matrix rather than just showing nothing. A session
+    whose mixes have no source-pair data (no x_url/y_url, no artist pair)
+    can't be laid out as a grid at all — every mix would need its own row
+    and column for one dot on the diagonal. The ranked list below carries
+    the same information better.
+  -->
+  <div class="no-pair-data" *ngIf="noPairData">
+    <strong>No pair matrix for this session.</strong>
+    <p>
+      A matrix cell is one song crossed with another, so it needs both
+      source songs for each mix. None of the {{ pairs.length }} mixes here
+      has that — their mp4s carry no source URLs and no artist pair, so
+      there are no intersections to plot.
+    </p>
+    <p class="hint">
+      The ranked list below shows everything in this session. Sessions
+      loaded with source metadata (for example <code>126-mar-2-2025</code>)
+      do render a full matrix.
+    </p>
+  </div>
+
   <section class="matrix" *ngIf="axisUrls.length">
     <h2 class="matrix-heading">
       <span>Pair matrix</span>
@@ -94,6 +116,16 @@
         <span class="qr-btn-label">QR</span>
       </button>
     </h2>
+    <!--
+      Coverage note. The matrix can only plot mixes that know both their
+      source songs; the rest live in the list below. Saying so prevents a
+      sparse grid from reading as a bug.
+    -->
+    <div class="coverage-note" *ngIf="partialPairData">
+      Showing {{ placeableCount }} of {{ ratedCount }} mixes — only those
+      with both source songs identified can be placed on a grid. The rest
+      are in the list below.
+    </div>
     <div class="matrix-scroll">
       <table class="matrix-table">
         <thead>
