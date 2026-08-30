@@ -800,3 +800,52 @@ $playing-color: #69f0ae;
     opacity: 0.9;
   }
 }
+
+// ---- no-pair-data explainer ----
+//
+// Shown instead of the matrix when a session's mixes don't know which two
+// songs they contain. Most sessions are in this state: only 2,591 of
+// 28,264 videos across all 75 sessions have both source URLs, and only
+// three sessions have pair data AND ratings. Saying so plainly beats
+// rendering a diagonal line of dots that looks like a broken grid.
+.no-pair-data {
+  margin: 12px 8px 4px;
+  padding: 12px 14px;
+  border: 1px solid $border-subtle;
+  border-left: 3px solid $text-muted;
+  border-radius: 4px;
+  background: $bg-elevated;
+  color: $text-secondary;
+  font-size: 13px;
+  line-height: 1.5;
+
+  strong {
+    color: $text-primary;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  p {
+    margin: 0 0 6px;
+  }
+
+  .hint {
+    color: $text-muted;
+    font-size: 12px;
+    margin-bottom: 0;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: $text-primary;
+  }
+}
+
+// Coverage note above a sparse matrix. Same voice as .no-pair-data but
+// quieter — this is a caveat on real content, not a replacement for it.
+.coverage-note {
+  margin: 0 0 6px;
+  color: $text-muted;
+  font-size: 12px;
+  line-height: 1.4;
+}
