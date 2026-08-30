@@ -86,38 +86,16 @@
   </div>
 
   <!--
-    Rating distribution. Sits directly under the filters, above the
-    matrix, because it describes the CURRENT FILTER's result set: change
-    the session or the title/artist query and these counts are the first
-    thing that tells you what you just selected. Below the matrix it
-    read as a footnote to the grid rather than a summary of the query.
-    Zero-count buckets are kept so the row doesn't reflow as ratings
-    come in.
-  -->
-  <div class="rating-dist" *ngIf="pairs.length">
-    <span class="rd-item" *ngFor="let b of ratingCounts"
-          [attr.title]="b.count + ' mix' + (b.count === 1 ? '' : 'es') + ' rated ' + b.rating">
-      <span class="rd-dot"
-            [style.background]="cellColor(b.rating)"
-            [class.bordered]="cellNeedsBorder(b.rating)"></span>
-      <span class="rd-label">{{ b.rating }}</span>
-      <span class="rd-count">{{ b.count }}</span>
-    </span>
-    <span class="rd-item rd-unrated" title="No rating from any account yet">
-      <span class="rd-dot rd-dot-empty"></span>
-      <span class="rd-label">unrated</span>
-      <span class="rd-count">{{ unratedCount }}</span>
-    </span>
-    <span class="rd-total">{{ ratedTotal }} of {{ pairs.length }} rated</span>
-  </div>
-
-  <!--
     Explains an absent matrix rather than just showing nothing. A session
     whose mixes have no source-pair data (no x_url/y_url, no artist pair)
     can't be laid out as a grid at all — every mix would need its own row
     and column for one dot on the diagonal. The ranked list below carries
     the same information better.
   -->
+  <ng-container *ngIf="noPairData && pairs.length">
+    <ng-container *ngTemplateOutlet="ratingDist"></ng-container>
+  </ng-container>
+
   <div class="no-pair-data" *ngIf="noPairData">
     <strong>No pair matrix for this session.</strong>
     <p>
@@ -133,6 +111,31 @@
     </p>
   </div>
 
+  <!--
+    Rating distribution, defined once and rendered in two places: beside
+    the QR button in the matrix heading (its home), and standalone when
+    there is no matrix to hang it off. A session with no placeable mixes
+    still has ratings worth counting, so it must not vanish with the grid.
+  -->
+  <ng-template #ratingDist>
+    <div class="rating-dist">
+      <span class="rd-item" *ngFor="let b of ratingCounts"
+            [attr.title]="b.count + ' mix' + (b.count === 1 ? '' : 'es') + ' rated ' + b.rating">
+        <span class="rd-dot"
+              [style.background]="cellColor(b.rating)"
+              [class.bordered]="cellNeedsBorder(b.rating)"></span>
+        <span class="rd-label">{{ b.rating }}</span>
+        <span class="rd-count">{{ b.count }}</span>
+      </span>
+      <span class="rd-item rd-unrated" title="No rating from any account yet">
+        <span class="rd-dot rd-dot-empty"></span>
+        <span class="rd-label">unrated</span>
+        <span class="rd-count">{{ unratedCount }}</span>
+      </span>
+      <span class="rd-total">{{ ratedTotal }} of {{ pairs.length }} rated</span>
+    </div>
+  </ng-template>
+
   <section class="matrix" *ngIf="axisUrls.length">
     <h2 class="matrix-heading">
       <span>Pair matrix</span>
@@ -141,6 +144,7 @@
         <ion-icon name="qr-code-outline"></ion-icon>
         <span class="qr-btn-label">QR</span>
       </button>
+      <ng-container *ngTemplateOutlet="ratingDist"></ng-container>
     </h2>
     <!--
       Coverage note. The matrix can only plot mixes that know both their
