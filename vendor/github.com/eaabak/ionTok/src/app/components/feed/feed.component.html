@@ -36,14 +36,24 @@
  
   <!-- Search-bar toggle. Sits directly under the heart. The app used to
        show/hide the searchbar automatically on slide change; this makes
-       it the user's choice instead. -->
-  <div (click)="onSearchToggle($event)" title="Show/hide the search bar">
+       it the user's choice instead.
+
+       margin-bottom is load-bearing, not decoration. .actions ion-icon is
+       `position: fixed` with no top/bottom, so each icon paints at its
+       STATIC position -- i.e. wherever its wrapper sits in the flow. The
+       other buttons get their height from the <p> count elements inside
+       them; these two contain only an icon, which is out of flow, so
+       their wrappers are zero-height and every icon lands on the same
+       spot. The margin is what gives them distinct positions. -->
+  <div (click)="onSearchToggle($event)" title="Show/hide the search bar"
+       style="margin-bottom: 44px;">
     <ion-icon size="large" name="search-outline" [style]="searchStyle"></ion-icon>
   </div>
 
   <!-- Matrix background toggle. Shows the matrix for the current session
        behind the feed; the stars and searchbar keep working on top of it. -->
-  <div (click)="onMatrixToggle($event)" title="Show/hide the matrix behind the feed">
+  <div (click)="onMatrixToggle($event)" title="Show/hide the matrix behind the feed"
+       style="margin-bottom: 44px;">
     <ion-icon size="large" name="grid-outline" [style]="matrixStyle"></ion-icon>
   </div>
 
