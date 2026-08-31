@@ -315,6 +315,20 @@ export class DataService {
     // "N videos left to rate". Returns of(null) if there's nothing to ask
     // about (no session set yet) so the caller can leave the placeholder
     // unchanged in that case.
+    // Progress for an arbitrary pattern rather than the stored account.
+    // /sessions/progress matches `session` as a substring, so this doubles
+    // as "how many mixes are already loaded under names containing X?" --
+    // which is how the search bar decides whether it can filter instead of
+    // kicking off an S3 load.
+    getProgressFor(pattern: string): Observable<any> {
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
+        const apiUrl = `${protocol}//${host}/sessions/progress` +
+                       `?session=${encodeURIComponent(pattern)}` +
+                       `&account_number=${encodeURIComponent(pattern)}`;
+        return this.http.get<any>(apiUrl);
+    }
+
     getSessionProgress(): Observable<any> {
         const account = window.localStorage.getItem('account');
         if (!account) {

@@ -257,12 +257,21 @@ export class HomePage implements OnInit, OnDestroy {
   private currentJobId: string | null = null;
   private currentPollHandle: any = null;
 
-  // Search bar submit now triggers a server-side S3 load instead of the old
-  // client-side searchVideos filter. The typed pattern is sent to
-  // POST /sessions/load; the backend lists s3://coin.computer/Videos/,
-  // egreps the keys against `pattern`, and DELETE+INSERTs rows tagged with
-  // session=pattern. On completion we set localStorage.account = pattern
-  // and reload the feed so the user sees the new session immediately.
+  // Search bar submit FILTERS what is already loaded, and only falls back
+  // to an S3 load when the pattern matches nothing in the database.
+  //
+  // It used to load unconditionally: the typed pattern went straight to
+  // POST /sessions/load, which egreps the S3 keys and INSERTs rows tagged
+  // session=<pattern>. Because /videos matched `session` exactly, a partial
+  // name found nothing locally, so loading was the only way to see those
+  // videos -- and it re-inserted files already present under their real
+  // session name. Typing "sun" built a 473-row session out of
+  // Sun-May-24-26; "wed", "mon", "sat" and "tue" did the same.
+  //
+  // /videos and /sessions/progress now match `session` as a substring (as
+  // /mixes always did), so "sun" simply *selects* the Sun-May-24-26 rows.
+  // We ask /sessions/progress first: a non-zero total means the content is
+  // already here and we just retarget the feed -- no writes, no duplicates.
   performSearch(searchTerm: string) {
     const pattern = (searchTerm || '').trim();
     if (!pattern) {
@@ -273,9 +282,53 @@ export class HomePage implements OnInit, OnDestroy {
     // the previous loading overlay or a runaway poll loop.
     this.cleanupLoadJob();
 
+    this.data.getProgressFor(pattern).subscribe(
+      (prog) => {
+        const total = (prog && prog.total) || 0;
+        if (total > 0) {
+          this.applyFilter(pattern, total, (prog && prog.remaining) || 0);
+        } else {
+          this.loadFromS3(pattern);
+        }
+      },
+      (err) => {
+        // Progress is only an optimisation; if it fails, fall back to the
+        // old behaviour rather than leaving the search dead.
+        console.error('home.page.ts: performSearch progress lookup failed:', err);
+        this.loadFromS3(pattern);
+      },
+    );
+  }
+
+  // Retarget the feed at rows already in the database. localStorage.account
+  // doubles as the session filter (data.service.getVideoList appends it),
+  // so setting it is the whole of "filtering" -- no request writes anything.
+  private applyFilter(pattern: string, total: number, remaining: number) {
+    window.localStorage.setItem('account', pattern);
+    window.sessionStorage.setItem('account', pattern);
+    this.videoList = [];
+    this.currentPage = 1;
+    this.loadVideos();
+    // New filter = new "left to rate" count; refresh the searchbar placeholder.
+    this.refreshProgress();
+    this.presentToast(
+      `${total} mixes match "${pattern}" — ${remaining} left to rate`,
+    );
+    // Snap to the first slide so the user sees the new content.
+    try {
+      this.slides.slideTo(0);
+    } catch { /* slide may not be ready yet — loadVideos will populate first */ }
+  }
+
+  // The old path, now reserved for patterns with no matching rows: list
+  // s3://coin.computer/Videos/, egrep the keys, and INSERT what is found.
+  // Rows inserted here inherit x_url/y_url/title from any twin already in
+  // the database (see _run_load_job), so a genuine new load still dedups
+  // against what came before.
+  private loadFromS3(pattern: string) {
     this.loadingController
       .create({
-        message: `Searching for "${pattern}"…`,
+        message: `Searching S3 for "${pattern}"…`,
         backdropDismiss: false,
       })
       .then(async (el) => {
@@ -285,11 +338,11 @@ export class HomePage implements OnInit, OnDestroy {
         this.data.loadSession(pattern).subscribe(
           (resp) => {
             this.currentJobId = resp.job_id;
-            console.log(`home.page.ts: performSearch job ${resp.job_id} started for session '${resp.session}'`);
+            console.log(`home.page.ts: loadFromS3 job ${resp.job_id} started for session '${resp.session}'`);
             this.currentPollHandle = setInterval(() => this.pollLoadJob(pattern), 2000);
           },
           (err) => {
-            console.error('home.page.ts: performSearch loadSession failed:', err);
+            console.error('home.page.ts: loadFromS3 loadSession failed:', err);
             const msg = (err && err.error && err.error.error)
               ? err.error.error
               : 'failed to start search';
